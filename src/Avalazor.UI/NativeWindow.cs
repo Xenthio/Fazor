@@ -68,8 +68,8 @@ public class NativeWindow : INativeWindow, IDisposable
         {
             if (OperatingSystem.IsWindows())
             {
-                backendType = GraphicsBackendType.DirectX11; // Best for Windows
-                Console.WriteLine("Auto-selected DirectX11 backend for Windows");
+                backendType = GraphicsBackendType.DirectX11Composition; // Best for Windows
+                Console.WriteLine("Auto-selected DirectX11Composition backend for Windows");
             }
             else
             {
