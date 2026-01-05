@@ -187,6 +187,14 @@ public static class AvalazorApplication
         rootPanel.PanelBounds = new Rect(0, 0, width, height);
         rootPanel.Layout();
         
+        // Trigger a few ticks to allow dynamic UI updates (e.g., title bar creation based on CSS)
+        // This simulates the first few frames of the application
+        for (int i = 0; i < 3; i++)
+        {
+            rootPanel.Tick();
+            rootPanel.Layout();
+        }
+        
         // If custom handler is set, use it
         if (AIModeCallback != null)
         {

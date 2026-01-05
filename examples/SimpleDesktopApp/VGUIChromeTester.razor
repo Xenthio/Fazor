@@ -1,0 +1,75 @@
+@namespace SimpleDesktopApp
+@using System
+@using Sandbox.UI
+@attribute [StyleSheet("/themes/Avalazor.Defaults.scss")]
+@attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
+@inherits Window
+
+<root title="VGUI Custom Chrome Test" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="600" windowheight="400">
+    <div class="content-area">
+        <h2>VGUI Custom Chrome Test</h2>
+        <p>This window should show custom chrome (title bar with controls) because the VGUI theme sets --custom-chrome: true</p>
+        
+        <div class="info-box">
+            <h3>What to Check:</h3>
+            <ul>
+                <li>✓ Title bar should be visible inside the window</li>
+                <li>✓ Title should read "VGUI Custom Chrome Test"</li>
+                <li>✓ Minimize, Maximize, and Close buttons should be visible</li>
+                <li>✓ Buttons should be styled according to the VGUI theme</li>
+            </ul>
+        </div>
+        
+        <div class="test-status">
+            <strong>HasCustomChrome:</strong> @HasCustomChrome<br/>
+            <strong>TitleBar exists:</strong> @(TitleBar != null)<br/>
+            <strong>CSS --custom-chrome:</strong> @GetCustomChromeProperty()
+        </div>
+    </div>
+</root>
+
+<style>
+.content-area {
+    padding: 16px;
+    flex-direction: column;
+}
+
+.info-box {
+    margin-top: 16px;
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.info-box ul {
+    margin-left: 20px;
+}
+
+.test-status {
+    margin-top: 20px;
+    padding: 12px;
+    background-color: rgba(0, 255, 0, 0.1);
+    border-radius: 4px;
+    font-family: monospace;
+}
+</style>
+
+@code {
+    private string GetCustomChromeProperty()
+    {
+        var value = ComputedStyle?.GetCustomProperty("--custom-chrome");
+        return value ?? "not set";
+    }
+    
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine($"[VGUIChromeTester] HasCustomChrome: {HasCustomChrome}");
+            Console.WriteLine($"[VGUIChromeTester] TitleBar exists: {TitleBar != null}");
+            Console.WriteLine($"[VGUIChromeTester] CSS --custom-chrome: {GetCustomChromeProperty()}");
+        }
+    }
+}

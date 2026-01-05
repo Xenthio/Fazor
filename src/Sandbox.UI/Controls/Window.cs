@@ -294,8 +294,7 @@ public class Window : Panel
                 WindowContent = contentPanel;
             }
 
-            // Create title bar after processing attributes
-            CreateTitleBar();
+            // Note: CreateTitleBar is now called from Tick() when ComputedStyle is available
 
             if (AutoFocus)
             {
@@ -423,22 +422,10 @@ public class Window : Panel
 
     /// <summary>
     /// Create and configure the title bar with controls.
-    /// Only creates title bar if HasCustomChrome is true OR if theme CSS sets --custom-chrome: true
+    /// Internal method - call from Tick() which handles the logic of when to create/remove.
     /// </summary>
-    public void CreateTitleBar()
+    private void CreateTitleBarInternal()
     {
-        // Check if theme requests custom chrome via CSS custom property
-        bool themeRequestsChrome = false;
-        if (ComputedStyle != null)
-        {
-            // Check for --custom-chrome CSS variable
-            var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
-            themeRequestsChrome = customChromeVar == "true" || customChromeVar == "1";
-        }
-
-        // Don't create title bar unless explicitly requested
-        if (!HasCustomChrome && !HasTitleBar && !themeRequestsChrome) return;
-
         // Create TitleBar if it doesn't exist
         if (TitleBar == null)
         {
@@ -630,6 +617,41 @@ public class Window : Panel
     {
         base.Tick();
 
+        // Check if theme requests custom chrome (do this every tick in case theme changes)
+        bool shouldHaveChrome = HasCustomChrome || HasTitleBar;
+        
+        // Check for CSS custom property if ComputedStyle is available
+        if (ComputedStyle != null)
+        {
+            var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
+            bool themeRequestsChrome = customChromeVar == "true" || customChromeVar == "1";
+            Console.WriteLine($"[Window.Tick] CSS --custom-chrome: '{customChromeVar}', themeRequestsChrome: {themeRequestsChrome}");
+            shouldHaveChrome = shouldHaveChrome || themeRequestsChrome;
+        }
+        else
+        {
+            Console.WriteLine($"[Window.Tick] ComputedStyle is null");
+        }
+        
+        // Create or remove title bar based on current state
+        bool hasTitleBar = TitleBar != null && TitleBar.IsValid();
+        
+        Console.WriteLine($"[Window.Tick] shouldHaveChrome={shouldHaveChrome}, hasTitleBar={hasTitleBar}");
+        
+        if (shouldHaveChrome && !hasTitleBar)
+        {
+            // Need to create title bar
+            Console.WriteLine("[Window.Tick] Creating title bar (theme or property requests it)");
+            CreateTitleBarInternal();
+        }
+        else if (!shouldHaveChrome && hasTitleBar)
+        {
+            // Need to remove title bar (theme changed to one without custom chrome)
+            Console.WriteLine("[Window.Tick] Removing title bar (no longer requested)");
+            TitleBar?.Delete();
+            TitleBar = null;
+        }
+
         // Only apply position/size override if explicitly set (non-zero)
         // Apply position and size to style for floating window behavior
         // BUT only if there's no native window (for window-in-window scenarios)
@@ -817,32 +839,14 @@ public class Window : Panel
                 HasTitleBar = value == "true" || value == "1";
                 SetClass("notitlebar", !HasTitleBar);
                 
-                // Dynamically create or remove title bar
-                if (HasTitleBar && TitleBar == null)
-                {
-                    CreateTitleBar();
-                }
-                else if (!HasTitleBar && TitleBar != null)
-                {
-                    TitleBar.Delete();
-                    TitleBar = null;
-                }
+                // Title bar creation/removal is now handled in Tick()
                 return;
 
             case "hascustomchrome":
                 HasCustomChrome = value == "true" || value == "1";
                 SetClass("customchrome", HasCustomChrome);
                 
-                // Dynamically create or remove title bar
-                if (HasCustomChrome && TitleBar == null)
-                {
-                    CreateTitleBar();
-                }
-                else if (!HasCustomChrome && TitleBar != null)
-                {
-                    TitleBar.Delete();
-                    TitleBar = null;
-                }
+                // Title bar creation/removal is now handled in Tick()
                 return;
 
             case "hasminimise":

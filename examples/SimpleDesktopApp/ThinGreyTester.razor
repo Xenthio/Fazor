@@ -1,0 +1,103 @@
+@namespace SimpleDesktopApp
+@using System
+@using Sandbox.UI
+@attribute [StyleSheet("/themes/Avalazor.Defaults.scss")]
+@attribute [StyleSheet("/XGUI/DefaultStyles/ThinGrey.scss")]
+@inherits Window
+
+<root title="ThinGrey Transparency Test" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="600" windowheight="400">
+    <div class="content-area">
+        <h2>ThinGrey Transparency Test</h2>
+        <p>This window uses the ThinGrey theme which should have a transparent framebuffer.</p>
+        
+        <div class="info-box">
+            <h3>What to Check:</h3>
+            <ul>
+                <li>✓ Window should have semi-transparent background</li>
+                <li>✓ You should be able to see through the window to what's behind it</li>
+                <li>✓ Custom chrome (title bar) should be visible</li>
+                <li>✓ Colors should have transparency (alpha channel)</li>
+            </ul>
+        </div>
+        
+        <div class="test-status">
+            <strong>CSS --transparent-window:</strong> @GetTransparentWindowProperty()<br/>
+            <strong>CSS --custom-chrome:</strong> @GetCustomChromeProperty()<br/>
+            <strong>HasCustomChrome:</strong> @HasCustomChrome<br/>
+            <strong>TitleBar exists:</strong> @(TitleBar != null)
+        </div>
+        
+        <div class="transparency-demo">
+            <p>This area should show varying transparency levels:</p>
+            <div class="semi-transparent">50% transparent</div>
+            <div class="very-transparent">80% transparent</div>
+        </div>
+    </div>
+</root>
+
+<style>
+.content-area {
+    padding: 16px;
+    flex-direction: column;
+}
+
+.info-box {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 4px;
+}
+
+.info-box ul {
+    margin-left: 20px;
+}
+
+.test-status {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.transparency-demo {
+    margin-top: 20px;
+}
+
+.semi-transparent {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: rgba(100, 150, 200, 0.5);
+}
+
+.very-transparent {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: rgba(200, 100, 150, 0.2);
+}
+</style>
+
+@code {
+    private string GetTransparentWindowProperty()
+    {
+        var value = ComputedStyle?.GetCustomProperty("--transparent-window");
+        return value ?? "not set";
+    }
+    
+    private string GetCustomChromeProperty()
+    {
+        var value = ComputedStyle?.GetCustomProperty("--custom-chrome");
+        return value ?? "not set";
+    }
+    
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine($"[ThinGreyTester] CSS --transparent-window: {GetTransparentWindowProperty()}");
+            Console.WriteLine($"[ThinGreyTester] CSS --custom-chrome: {GetCustomChromeProperty()}");
+            Console.WriteLine($"[ThinGreyTester] HasCustomChrome: {HasCustomChrome}");
+            Console.WriteLine($"[ThinGreyTester] TitleBar exists: {TitleBar != null}");
+        }
+    }
+}
