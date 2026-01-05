@@ -166,6 +166,12 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Initialize popup manager
         _popupManager = new PopupManager(this);
+        
+        // Install Win32 hit test handler for borderless windows with custom chrome
+        if (!_hasNativeBorder && Win32HitTestHelper.IsSupported)
+        {
+            Win32HitTestHelper.InstallHitTestHandler(_window, true);
+        }
     }
 
     private void OnFocusChanged(bool focused)

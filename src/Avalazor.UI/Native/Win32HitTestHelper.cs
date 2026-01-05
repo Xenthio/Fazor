@@ -65,6 +65,7 @@ public static partial class Win32HitTestHelper
             var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, true);
             if (result != HTCLIENT)
             {
+                Console.WriteLine($"[Win32HitTest] Hit test returned: {result} at window size {_currentWindow.Size.X}x{_currentWindow.Size.Y}");
                 return new IntPtr(result);
             }
         }
@@ -156,6 +157,8 @@ public static partial class Win32HitTestHelper
 
             int x = cursorPos.X;
             int y = cursorPos.Y;
+            
+            Console.WriteLine($"[Win32HitTest] Mouse at client coords ({x},{y}), window size ({windowWidth},{windowHeight})");
 
             // Extend detection zone slightly outside window bounds to catch edges/corners
             // This allows grabbing from just outside the visible window
