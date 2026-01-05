@@ -21,8 +21,14 @@ internal static class ImageRect
 		public Length? ImagePositionX;
 		public Length? ImagePositionY;
 
+		/// <summary>
+		/// Scale factor to convert pixel values to screen coordinates (typically 1.0 or DPI scale factor)
+		/// </summary>
 		public float ScaleToScreen;
 
+		/// <summary>
+		/// Default size to use when no size is specified (typically Length.Auto)
+		/// </summary>
 		public Length DefaultSize;
 	}
 
