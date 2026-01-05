@@ -49,17 +49,15 @@ public static class TestImageGenerator
             }
             
             // Draw text "TEST"
+            using (var font = new SKFont(SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold), 32))
             using (var paint = new SKPaint 
             { 
                 Color = new SKColor(74, 144, 226), // Match background color
-                IsAntialias = true,
-                TextSize = 32,
-                TextAlign = SKTextAlign.Center,
-                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+                IsAntialias = true
             })
             {
                 // Center vertically by adjusting y (text baseline)
-                canvas.DrawText("TEST", 100, 115, paint);
+                canvas.DrawText("TEST", 100, 115, SKTextAlign.Center, font, paint);
             }
         }
 

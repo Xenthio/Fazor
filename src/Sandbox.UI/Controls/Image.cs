@@ -65,27 +65,43 @@ public partial class Image : Panel
         if (widthMode == exact)
         {
             // Width fixed, scale height proportionally
-            float aspectRatio = defaultSize.y / defaultSize.x;
-            return new Vector2(width, width * aspectRatio);
+            if (defaultSize.x > 0)
+            {
+                float aspectRatio = defaultSize.y / defaultSize.x;
+                return new Vector2(width, width * aspectRatio);
+            }
+            return new Vector2(width, width); // Fallback to square if texture width is zero
         }
 
         if (heightMode == exact)
         {
             // Height fixed, scale width proportionally
-            float aspectRatio = defaultSize.x / defaultSize.y;
-            return new Vector2(height * aspectRatio, height);
+            if (defaultSize.y > 0)
+            {
+                float aspectRatio = defaultSize.x / defaultSize.y;
+                return new Vector2(height * aspectRatio, height);
+            }
+            return new Vector2(height, height); // Fallback to square if texture height is zero
         }
 
         if (widthMode == atMost && width < defaultSize.x)
         {
-            float aspectRatio = defaultSize.y / defaultSize.x;
-            return new Vector2(width, width * aspectRatio);
+            if (defaultSize.x > 0)
+            {
+                float aspectRatio = defaultSize.y / defaultSize.x;
+                return new Vector2(width, width * aspectRatio);
+            }
+            return new Vector2(width, width); // Fallback to square
         }
 
         if (heightMode == atMost && height < defaultSize.y)
         {
-            float aspectRatio = defaultSize.x / defaultSize.y;
-            return new Vector2(height * aspectRatio, height);
+            if (defaultSize.y > 0)
+            {
+                float aspectRatio = defaultSize.x / defaultSize.y;
+                return new Vector2(height * aspectRatio, height);
+            }
+            return new Vector2(height, height); // Fallback to square
         }
 
         return defaultSize;

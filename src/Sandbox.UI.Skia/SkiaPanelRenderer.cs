@@ -603,11 +603,8 @@ public class SkiaPanelRenderer : IPanelRenderer
     {
         if (string.IsNullOrEmpty(path)) return null;
         
-        // Try to load the texture (will use cache if already loaded)
-        var tempRenderer = new SkiaPanelRenderer();
-        var image = tempRenderer.LoadTextureFromPath(path);
-        
-        if (image != null)
+        // Use the static cache directly - don't create unnecessary renderer instances
+        if (_textureCache.TryGetValue(path, out var image) && image != null)
         {
             return (image.Width, image.Height);
         }
@@ -1387,6 +1384,12 @@ public class SkiaPanelRenderer : IPanelRenderer
 
     private SKRect CalculateObjectFitRect(SKRect container, int imageWidth, int imageHeight, ObjectFit objectFit)
     {
+        // Guard against zero dimensions
+        if (imageWidth <= 0 || imageHeight <= 0 || container.Width <= 0 || container.Height <= 0)
+        {
+            return container; // Fallback to container rect if dimensions are invalid
+        }
+
         switch (objectFit)
         {
             case ObjectFit.Contain:
@@ -1449,53 +1452,61 @@ public class SkiaPanelRenderer : IPanelRenderer
 
     // Lazy-initialized missing texture
     private static SKImage? _missingTexture = null;
+    private static readonly object _missingTextureLock = new();
     
     /// <summary>
     /// Get or create the pink and black checkerboard missing texture fallback
     /// </summary>
     private static SKImage? GetMissingTexture()
     {
+        // Fast path without locking
         if (_missingTexture != null) return _missingTexture;
         
-        try
+        lock (_missingTextureLock)
         {
-            // Create a 64x64 pink and black checkerboard pattern
-            const int size = 64;
-            const int checkSize = 8; // 8x8 pixel checks = 8x8 grid of checks
+            // Check again inside the lock in case another thread initialized it
+            if (_missingTexture != null) return _missingTexture;
             
-            using var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
-            using var canvas = new SKCanvas(bitmap);
-            
-            // Fill with pink
-            canvas.Clear(new SKColor(255, 0, 255)); // Magenta/Pink
-            
-            // Draw black checks in checkerboard pattern
-            using var blackPaint = new SKPaint { Color = SKColors.Black };
-            for (int y = 0; y < size / checkSize; y++)
+            try
             {
-                for (int x = 0; x < size / checkSize; x++)
+                // Create a 64x64 pink and black checkerboard pattern
+                const int size = 64;
+                const int checkSize = 8; // 8x8 pixel checks = 8x8 grid of checks
+                
+                using var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
+                using var canvas = new SKCanvas(bitmap);
+                
+                // Fill with pink
+                canvas.Clear(new SKColor(255, 0, 255)); // Magenta/Pink
+                
+                // Draw black checks in checkerboard pattern
+                using var blackPaint = new SKPaint { Color = SKColors.Black };
+                for (int y = 0; y < size / checkSize; y++)
                 {
-                    // Checkerboard: alternate based on (x + y) % 2
-                    if ((x + y) % 2 == 1)
+                    for (int x = 0; x < size / checkSize; x++)
                     {
-                        var rect = new SKRect(
-                            x * checkSize, 
-                            y * checkSize, 
-                            (x + 1) * checkSize, 
-                            (y + 1) * checkSize
-                        );
-                        canvas.DrawRect(rect, blackPaint);
+                        // Checkerboard: alternate based on (x + y) % 2
+                        if ((x + y) % 2 == 1)
+                        {
+                            var rect = new SKRect(
+                                x * checkSize, 
+                                y * checkSize, 
+                                (x + 1) * checkSize, 
+                                (y + 1) * checkSize
+                            );
+                            canvas.DrawRect(rect, blackPaint);
+                        }
                     }
                 }
+                
+                _missingTexture = SKImage.FromBitmap(bitmap);
+                return _missingTexture;
             }
-            
-            _missingTexture = SKImage.FromBitmap(bitmap);
-            return _missingTexture;
-        }
-        catch (Exception ex)
-        {
-            Log.Warning($"Failed to create missing texture: {ex.Message}");
-            return null;
+            catch (Exception ex)
+            {
+                Log.Warning($"Failed to create missing texture: {ex.Message}");
+                return null;
+            }
         }
     }
 
