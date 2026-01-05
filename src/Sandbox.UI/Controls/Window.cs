@@ -631,7 +631,7 @@ public class Window : Panel
     }
 
     /// <summary>
-    /// Start dragging the window. For native windows, stores offset from window position.
+    /// Start dragging the window. For native windows, uses screen coordinates.
     /// </summary>
     public void StartDrag(Vector2 mousePos)
     {
@@ -639,12 +639,11 @@ public class Window : Panel
 
         if (_nativeWindow != null)
         {
-            // For native windows, store offset from current native window position
+            // For native windows, use SCREEN coordinates to avoid feedback loop
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
             var (winX, winY) = _nativeWindow.GetPosition();
-            _dragOffsetX = mousePos.x;
-            _dragOffsetY = mousePos.y;
-            _dragStartWindowX = winX;
-            _dragStartWindowY = winY;
+            _dragOffsetX = screenMouseX - winX; // Offset from window origin to mouse
+            _dragOffsetY = screenMouseY - winY;
         }
         else
         {
@@ -672,11 +671,10 @@ public class Window : Panel
 
         if (_nativeWindow != null)
         {
-            // For native windows, calculate delta from start and apply to window position
-            var deltaX = mousePos.x - _dragOffsetX;
-            var deltaY = mousePos.y - _dragOffsetY;
-            var newX = _dragStartWindowX + (int)deltaX;
-            var newY = _dragStartWindowY + (int)deltaY;
+            // For native windows, use SCREEN coordinates
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            var newX = screenMouseX - (int)_dragOffsetX;
+            var newY = screenMouseY - (int)_dragOffsetY;
             _nativeWindow.SetPosition(newX, newY);
         }
         else
@@ -710,12 +708,13 @@ public class Window : Panel
         if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
         if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
         
-        // Store start position for delta calculation
-        _resizeOffsetX1 = mousePos.x;
-        _resizeOffsetY1 = mousePos.y;
-        
         if (_nativeWindow != null)
         {
+            // For native windows, store screen mouse position
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            _resizeOffsetX1 = screenMouseX;
+            _resizeOffsetY1 = screenMouseY;
+            
             var (winW, winH) = _nativeWindow.GetSize();
             var (winX, winY) = _nativeWindow.GetPosition();
             _resizeStartWindowWidth = winW;
@@ -725,6 +724,10 @@ public class Window : Panel
         }
         else
         {
+            // For in-panel windows, store client mouse position
+            _resizeOffsetX1 = mousePos.x;
+            _resizeOffsetY1 = mousePos.y;
+            
             _resizeStartWindowWidth = (int)rect.Width;
             _resizeStartWindowHeight = (int)rect.Height;
             _resizeStartWindowX = (int)Position.x;
@@ -772,9 +775,21 @@ public class Window : Panel
         
         if (!IsResizing) return;
         
-        // Calculate delta from start position
-        var deltaX = mousePos.x - _resizeOffsetX1;
-        var deltaY = mousePos.y - _resizeOffsetY1;
+        float deltaX, deltaY;
+        
+        if (_nativeWindow != null)
+        {
+            // For native windows, calculate delta using screen coordinates
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            deltaX = screenMouseX - _resizeOffsetX1;
+            deltaY = screenMouseY - _resizeOffsetY1;
+        }
+        else
+        {
+            // For in-panel windows, use client coordinates
+            deltaX = mousePos.x - _resizeOffsetX1;
+            deltaY = mousePos.y - _resizeOffsetY1;
+        }
         
         int newWidth = _resizeStartWindowWidth;
         int newHeight = _resizeStartWindowHeight;

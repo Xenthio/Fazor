@@ -70,4 +70,14 @@ public interface INativeWindow
     /// Get the current window size.
     /// </summary>
     (int width, int height) GetSize();
+
+    /// <summary>
+    /// Get the current mouse position in screen coordinates.
+    /// </summary>
+    (int x, int y) GetScreenMousePosition();
+
+    /// <summary>
+    /// Convert client coordinates to screen coordinates.
+    /// </summary>
+    (int x, int y) ClientToScreen(int clientX, int clientY);
 }

@@ -11,6 +11,25 @@ using D3D11Box = Silk.NET.Direct3D11.Box;
 
 namespace Avalazor.UI;
 
+// DWM APIs for transparent windows
+internal static partial class DwmApi
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MARGINS
+    {
+        public int Left;
+        public int Right;
+        public int Top;
+        public int Bottom;
+    }
+
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmExtendFrameIntoClientArea(nint hwnd, ref MARGINS margins);
+    
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmIsCompositionEnabled(out int enabled);
+}
+
 /// <summary>
 /// DirectX 11 graphics backend for Avalazor.
 /// Provides hardware-accelerated rendering using Direct3D 11 and SkiaSharp.
@@ -159,7 +178,20 @@ public class D3D11Backend : IGraphicsBackend
         }
         var hwnd = (nint)nativeWindow.Value.Hwnd;
         
-        // Create swap chain
+        // Enable DWM composition for transparent windows
+        bool dwmEnabled = false;
+        if (DwmApi.DwmIsCompositionEnabled(out int compositionEnabled) >= 0 && compositionEnabled != 0)
+        {
+            // Extend DWM frame into entire client area for transparency
+            var margins = new DwmApi.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+            if (DwmApi.DwmExtendFrameIntoClientArea(hwnd, ref margins) >= 0)
+            {
+                dwmEnabled = true;
+                Console.WriteLine("[D3D11Backend] DWM composition enabled for transparency");
+            }
+        }
+        
+        // Create swap chain - use Premultiplied alpha for transparency support
         var swapChainDesc = new SwapChainDesc1
         {
             Width = (uint)_width,
@@ -171,7 +203,7 @@ public class D3D11Backend : IGraphicsBackend
             BufferCount = 2,
             Scaling = Scaling.None, // Don't stretch - maintain 1:1 pixel mapping
             SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Unspecified,
+            AlphaMode = dwmEnabled ? AlphaMode.Premultiplied : AlphaMode.Unspecified,
             Flags = 0
         };
         

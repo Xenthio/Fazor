@@ -347,6 +347,28 @@ public class NativeWindow : INativeWindow, IDisposable
         return (_window.Size.X, _window.Size.Y);
     }
 
+    /// <summary>
+    /// Get the current mouse position in screen coordinates.
+    /// </summary>
+    public (int x, int y) GetScreenMousePosition()
+    {
+        if (_mouse == null) return (0, 0);
+        
+        // Mouse position is in client coordinates, convert to screen
+        var clientX = (int)_mouse.Position.X;
+        var clientY = (int)_mouse.Position.Y;
+        return ClientToScreen(clientX, clientY);
+    }
+
+    /// <summary>
+    /// Convert client coordinates to screen coordinates.
+    /// </summary>
+    public (int x, int y) ClientToScreen(int clientX, int clientY)
+    {
+        var (winX, winY) = GetPosition();
+        return (winX + clientX, winY + clientY);
+    }
+
     // --- Input Helpers ---
     private void OnMouseDown(IMouse mouse, MouseButton button) 
     {
