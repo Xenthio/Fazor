@@ -6,11 +6,14 @@ This folder contains built-in assets (themes, fonts, images) that are shared acr
 
 ```
 Assets/
-├── themes/          # Built-in UI themes (XGUI, defaults)
-│   ├── XGUI/       # XGUI theme system
-│   └── *.scss      # Base theme files
-├── fonts/          # Font files (.ttf, .otf)
-└── images/         # Shared image assets
+├── XGUI/            # XGUI theme system (compatible with XGUI-3)
+│   ├── DefaultStyles/    # Complete theme definitions
+│   ├── FunctionStyles/   # Base component styles  
+│   └── Resources/        # Theme images and icons
+├── themes/          # Avalazor-specific styles
+│   ├── Avalazor.Defaults.scss
+│   └── PanelInspector.scss
+└── fonts/           # Font files (.ttf, .otf)
 ```
 
 ## Usage
@@ -30,6 +33,16 @@ Projects can access these global assets by importing the `Assets.props` file:
 ```
 
 This automatically copies all global assets to the project's output directory.
+
+## XGUI Theme Compatibility
+
+The `/Assets/XGUI/` folder structure matches [XGUI-3](https://github.com/Xenthio/XGUI-3), allowing themes to be used without path modifications:
+
+```razor
+@attribute [StyleSheet("/XGUI/DefaultStyles/Computer95.scss")]
+```
+
+Image paths in themes like `url("XGUI/Resources/icon.png")` resolve correctly to `/Assets/XGUI/Resources/icon.png`.
 
 ## Global vs Project Assets
 
@@ -63,12 +76,13 @@ When `Assets.props` is imported:
 ## File Resolution Priority
 
 When loading stylesheets or images, the framework searches in this order:
-1. **Assets subdirectory** - `{BaseDirectory}/Assets/{path}` (new structure)
+1. **Assets subdirectory** - `{BaseDirectory}/Assets/{path}` (primary location)
 2. **Direct path** - `{BaseDirectory}/{path}` (backward compatibility)
 3. **Legacy paths** - `assets/`, `wwwroot/` subdirectories
 
 This means:
-- `[StyleSheet("/themes/MyTheme.scss")]` resolves to `Assets/themes/MyTheme.scss`
+- `[StyleSheet("/XGUI/DefaultStyles/MyTheme.scss")]` resolves to `Assets/XGUI/DefaultStyles/MyTheme.scss`
+- `[StyleSheet("/themes/Avalazor.Defaults.scss")]` resolves to `Assets/themes/Avalazor.Defaults.scss`
 - Project-specific assets in `ProjectName/Assets/` override global ones
 - Old code referencing direct paths continues to work
 
@@ -76,19 +90,17 @@ This means:
 
 ### Adding a Built-in Theme
 
-1. Place theme files in `/Assets/themes/`:
+1. Place theme files in `/Assets/XGUI/` (XGUI-compatible) or `/Assets/themes/`:
    ```
    Assets/
-   └── themes/
-       └── MyBuiltInTheme/
-           ├── MyTheme.scss
-           └── Resources/
-               └── icons.png
+   └── XGUI/
+       └── DefaultStyles/
+           └── MyTheme.scss
    ```
 
 2. Projects automatically have access via StyleSheet attribute:
    ```csharp
-   [StyleSheet("/themes/MyBuiltInTheme/MyTheme.scss")]
+   [StyleSheet("/XGUI/DefaultStyles/MyTheme.scss")]
    ```
 
 ### Adding Fonts
@@ -105,41 +117,18 @@ This means:
 
 ### Adding Shared Images
 
-1. Place images in `/Assets/images/`:
+1. Place images in appropriate location:
    ```
    Assets/
-   └── images/
-       └── shared/
-           └── logo.png
+   └── XGUI/
+       └── Resources/
+           └── my-icon.png
    ```
 
-2. Reference in themes or code:
+2. Reference in themes:
    ```scss
-   background-image: url("images/shared/logo.png");
+   background-image: url("XGUI/Resources/my-icon.png");
    ```
-
-## Migration Guide
-
-### From `/themes/` (old) → `/Assets/themes/` (new)
-
-The old structure:
-```
-/themes/
-  └── XGUI/
-```
-
-New structure:
-```
-/Assets/
-  └── themes/
-      └── XGUI/
-```
-
-Projects using `[StyleSheet("/themes/...")]` continue to work - the path is resolved from the output directory where Assets are copied.
-
-### From `/fonts/` (old) → `/Assets/fonts/` (new)
-
-Similar migration - fonts are copied to output at build time.
 
 ## Best Practices
 
@@ -148,6 +137,7 @@ Similar migration - fonts are copied to output at build time.
 3. **Optimize files**: Compress images and minify resources
 4. **Document usage**: Add README files for complex asset structures
 5. **Naming conventions**: Use lowercase, hyphen-separated names for cross-platform compatibility
+6. **XGUI compatibility**: Keep XGUI themes in `/Assets/XGUI/` structure
 
 ## Troubleshooting
 

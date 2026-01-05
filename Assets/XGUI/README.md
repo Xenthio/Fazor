@@ -5,7 +5,7 @@ This directory contains themes ported from [XGUI-3](https://github.com/Xenthio/X
 ## Structure
 
 ```
-themes/XGUI/
+Assets/XGUI/
 ├── DefaultStyles/        # Complete theme definitions
 │   ├── OliveGreen.scss  # Half-Life style theme
 │   ├── Computer95.scss  # Windows 95 style
@@ -29,13 +29,13 @@ themes/XGUI/
 To use an XGUI theme in your component:
 
 ```razor
-@attribute [StyleSheet("/themes/XGUI/DefaultStyles/OliveGreen.scss")]
+@attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
 ```
 
 Or reference it relatively:
 
 ```razor
-@attribute [StyleSheet("../../themes/XGUI/DefaultStyles/ComputerXP.scss")]
+@attribute [StyleSheet("../../XGUI/DefaultStyles/ComputerXP.scss")]
 ```
 
 ## Available Themes
@@ -95,13 +95,17 @@ Example:
 $base-colour: #your-color;
 $default-text-colour: #your-text-color;
 
-@import "/themes/XGUI/FunctionStyles/FunctionStyles.scss";
-@import "/themes/XGUI/DefaultStyles/BaseStyles/VGUI.scss";
+@import "/XGUI/FunctionStyles/FunctionStyles.scss";
+@import "/XGUI/DefaultStyles/BaseStyles/VGUI.scss";
 ```
 
 ## Path Resolution
 
-The SCSS compiler will resolve paths starting with `/` relative to the project root. To use XGUI themes, ensure your project structure includes the `themes/` directory at the root.
+The SCSS compiler will resolve paths starting with `/` relative to the `Assets/` directory. This matches XGUI-3's path resolution, so themes from XGUI-3 work without modification.
+
+## OS-Decorated Windows
+
+When using OS-decorated windows (native window chrome), the `.osdecorated` class is automatically added to the window panel. This hides theme borders since the OS handles window decoration.
 
 ## License
 

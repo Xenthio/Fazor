@@ -137,17 +137,40 @@ internal static partial class StyleParser
 
 				string localPath;
 				
-				// Handle absolute paths starting with / (theme paths)
+				// Handle absolute paths starting with / (asset paths)
 				if ( cleanFile.StartsWith( "/" ) )
 				{
-					// Find the themes directory by going up from current file
+					var trimmedPath = cleanFile.TrimStart( '/' );
+					
+					// Find the Assets directory by going up from current file
 					var searchRoot = thisRoot;
 					while ( !string.IsNullOrEmpty( searchRoot ) )
 					{
+						// Try Assets folder first (new structure for XGUI-3 compatibility)
+						var assetsPath = System.IO.Path.Combine( searchRoot, "Assets" );
+						if ( System.IO.Directory.Exists( assetsPath ) )
+						{
+							localPath = System.IO.Path.Combine( assetsPath, trimmedPath );
+							if ( System.IO.File.Exists( localPath ) )
+							{
+								TryImport( sheet, localPath, p.FileAndLine );
+								goto nextFile;
+							}
+						}
+						
+						// Also check if the path exists directly from searchRoot (for when already inside Assets)
+						localPath = System.IO.Path.Combine( searchRoot, trimmedPath );
+						if ( System.IO.File.Exists( localPath ) )
+						{
+							TryImport( sheet, localPath, p.FileAndLine );
+							goto nextFile;
+						}
+						
+						// Also try themes folder for backwards compatibility
 						var themesPath = System.IO.Path.Combine( searchRoot, "themes" );
 						if ( System.IO.Directory.Exists( themesPath ) )
 						{
-							localPath = System.IO.Path.Combine( themesPath, cleanFile.TrimStart( '/' ) );
+							localPath = System.IO.Path.Combine( themesPath, trimmedPath );
 							if ( System.IO.File.Exists( localPath ) )
 							{
 								TryImport( sheet, localPath, p.FileAndLine );
@@ -157,8 +180,8 @@ internal static partial class StyleParser
 						searchRoot = System.IO.Path.GetDirectoryName( searchRoot );
 					}
 					
-					// If not found in themes, try relative to output directory
-					localPath = cleanFile.TrimStart( '/' );
+					// If not found in Assets or themes, try relative to output directory
+					localPath = trimmedPath;
 				}
 				else
 				{
