@@ -28,6 +28,11 @@ public static partial class Win32HitTestHelper
     // Edge detection distance (matching XGUI-3)
     private const int RESIZE_BORDER_WIDTH = 5;
     
+    // Window style constants
+    private const int GWL_STYLE = -16;
+    private const uint WS_THICKFRAME = 0x00040000;
+    private const uint WS_CAPTION = 0x00C00000;
+    
     // Window subclassing
     private const int GWLP_WNDPROC = -4;
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -44,6 +49,12 @@ public static partial class Win32HitTestHelper
     
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+    
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
+    
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
     
     [DllImport("user32.dll")]
     private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
@@ -89,6 +100,13 @@ public static partial class Win32HitTestHelper
             var hwnd = window.Native!.Win32!.Value.Hwnd;
             _currentWindow = window;
             _hasCustomChrome = hasCustomChrome;
+            
+            // CRITICAL: Add WS_THICKFRAME to window style for resize to work
+            // Without this style, Windows ignores WM_NCHITTEST resize codes
+            uint currentStyle = GetWindowLong(hwnd, GWL_STYLE);
+            uint newStyle = currentStyle | WS_THICKFRAME;
+            SetWindowLong(hwnd, GWL_STYLE, newStyle);
+            Console.WriteLine($"[Win32HitTest] Added WS_THICKFRAME to window style (0x{currentStyle:X} -> 0x{newStyle:X})");
             
             // Create delegate and keep it alive
             _wndProcDelegate = WndProc;
