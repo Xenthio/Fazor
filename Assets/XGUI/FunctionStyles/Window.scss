@@ -25,4 +25,17 @@
 		flex-direction: column;
 		flex-grow: 1;
 	}
+	
+	// Hide borders when using OS window decorations (native chrome)
+	&.osdecorated {
+		border: none !important;
+		border-width: 0 !important;
+		border-image: none !important;
+		
+		> .window-content {
+			border: none !important;
+			border-width: 0 !important;
+			border-image: none !important;
+		}
+	}
 }

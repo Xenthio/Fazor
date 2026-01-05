@@ -51,14 +51,14 @@ XGUI themes now work correctly without manual flex declarations:
 
 ```razor
 @attribute [StyleSheet("/themes/Avalazor.Defaults.scss")]
-@attribute [StyleSheet("/themes/XGUI/DefaultStyles/OliveGreen.scss")]
+@attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
 ```
 
 Or import it in your SCSS:
 
 ```scss
 @import "/themes/Avalazor.Defaults.scss";
-@import "/themes/XGUI/DefaultStyles/OliveGreen.scss";
+@import "/XGUI/DefaultStyles/OliveGreen.scss";
 
 // Your custom styles
 ```

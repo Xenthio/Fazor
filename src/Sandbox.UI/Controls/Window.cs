@@ -194,6 +194,10 @@ public class Window : Panel
     {
         _nativeWindow = nativeWindow;
         
+        // Add osdecorated class when using native window (OS handles window chrome)
+        // This allows themes to hide borders when the OS is providing window decoration
+        AddClass("osdecorated");
+        
         // When native window is set, clear any panel positioning that was applied during initial layout
         // (since position/size should control native window, not panel styles)
         if (Position != Vector2.Zero)

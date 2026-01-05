@@ -10,6 +10,19 @@
 
 .window {
     pointer-events: all;
+    
+    // Hide borders when using OS window decorations (native chrome)
+    &.osdecorated {
+        border: none !important;
+        border-width: 0 !important;
+        border-image: none !important;
+        
+        > .window-content {
+            border: none !important;
+            border-width: 0 !important;
+            border-image: none !important;
+        }
+    }
 }
 
 /* Text elements should use inline display */
