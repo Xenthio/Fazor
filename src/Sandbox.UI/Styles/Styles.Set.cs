@@ -8,6 +8,11 @@ namespace Sandbox.UI
 		/// </summary>
 		public override bool Set( string property, string value )
 		{
+			// CSS custom properties (variables) starting with -- are always valid
+			// They are stored in RawValues for retrieval via GetCustomProperty()
+			if ( property.StartsWith( "--" ) )
+				return true;
+
 			// CSS standard: "color" is an alias for "font-color"
 			if ( property == "color" )
 				property = "font-color";

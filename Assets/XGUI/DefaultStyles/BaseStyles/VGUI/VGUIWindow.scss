@@ -7,6 +7,7 @@
 	border-bottom: 1px solid $border-colour-bottom;
 	border-right: 1px solid $border-colour-right;
 	background-color: $base-colour;
+	--custom-chrome: true;
 
 	&.unfocused {
 		.TitleBar {

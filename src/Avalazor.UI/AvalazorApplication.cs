@@ -145,13 +145,27 @@ public static class AvalazorApplication
             
             PrintPanelTree(rootPanel, 0);
 
-            // Create and configure native window
-            var nativeWindow = new NativeWindow(width, height, title);
-            
-            // If panel is a Window, give it a reference to the native window
+            // Check if the window requests transparent framebuffer (e.g., for ThinGrey theme)
+            bool transparentFramebuffer = false;
             if (panel is Sandbox.UI.Window winPanel)
             {
-                winPanel.SetNativeWindow(nativeWindow);
+                // Check for --transparent-window CSS property
+                var transparentWindowVar = winPanel.ComputedStyle?.GetCustomProperty("--transparent-window");
+                transparentFramebuffer = transparentWindowVar == "true" || transparentWindowVar == "1";
+                
+                if (transparentFramebuffer)
+                {
+                    Console.WriteLine("Transparent framebuffer requested via CSS --transparent-window property");
+                }
+            }
+
+            // Create and configure native window
+            var nativeWindow = new NativeWindow(width, height, title, null, transparentFramebuffer);
+            
+            // If panel is a Window, give it a reference to the native window
+            if (panel is Sandbox.UI.Window winPanel2)
+            {
+                winPanel2.SetNativeWindow(nativeWindow);
             }
             
             nativeWindow.RootPanel = rootPanel;

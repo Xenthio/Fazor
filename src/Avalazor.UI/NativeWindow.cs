@@ -42,13 +42,19 @@ public class NativeWindow : INativeWindow, IDisposable
     /// </summary>
     public PopupManager? PopupManager => _popupManager;
 
-    public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null)
+    public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null, bool transparentFramebuffer = false)
     {
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>(width, height);
         options.Title = title;
         options.VSync = true;
         options.IsEventDriven = false;
+        options.TransparentFramebuffer = transparentFramebuffer;
+
+        if (transparentFramebuffer)
+        {
+            Console.WriteLine("Creating window with transparent framebuffer");
+        }
 
         // Auto-select best backend for platform if not specified
         if (backendType == null)
