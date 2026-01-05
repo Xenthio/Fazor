@@ -62,7 +62,7 @@ public static partial class Win32HitTestHelper
     {
         if (msg == WM_NCHITTEST && _currentWindow != null && _hasCustomChrome)
         {
-            var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, true);
+            var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, 120, true);
             if (result != HTCLIENT)
             {
                 Console.WriteLine($"[Win32HitTest] Hit test returned: {result} at window size {_currentWindow.Size.X}x{_currentWindow.Size.Y}");
@@ -133,7 +133,8 @@ public static partial class Win32HitTestHelper
     /// <summary>
     /// Performs hit testing for a borderless window to determine which part of the window the cursor is over.
     /// </summary>
-    private static int PerformHitTest(IWindow window, int windowWidth, int windowHeight, int titleBarHeight, bool hasCustomChrome)
+    /// <param name="titleBarControlsWidth">Width in pixels from the right edge reserved for titlebar controls (minimize, maximize, close buttons)</param>
+    private static int PerformHitTest(IWindow window, int windowWidth, int windowHeight, int titleBarHeight, int titleBarControlsWidth, bool hasCustomChrome)
     {
         if (!hasCustomChrome)
         {
@@ -164,7 +165,16 @@ public static partial class Win32HitTestHelper
             // This allows grabbing from just outside the visible window
             const int EXTENDED_BORDER = RESIZE_BORDER_WIDTH + 2; // 7px total (5+2)
 
-            // Check corners first (highest priority)
+            // PRIORITY 1: Check titlebar controls area - must remain clickable
+            // This is the area on the right side of the titlebar with minimize/maximize/close buttons
+            if (titleBarControlsWidth > 0 && y >= 0 && y < titleBarHeight && 
+                x >= windowWidth - titleBarControlsWidth && x < windowWidth)
+            {
+                // Return HTCLIENT so our UI can handle button clicks
+                return HTCLIENT;
+            }
+
+            // PRIORITY 2: Check corners FIRST (higher priority than edges)
             // Allow detection when slightly outside the window bounds
             if (x < RESIZE_BORDER_WIDTH && y < RESIZE_BORDER_WIDTH)
                 return HTTOPLEFT;
@@ -191,7 +201,8 @@ public static partial class Win32HitTestHelper
             if ((outsideRight || x >= windowWidth - EXTENDED_BORDER) && (outsideBottom || y >= windowHeight - EXTENDED_BORDER))
                 return HTBOTTOMRIGHT;
 
-            // Check edges (including extended zone outside window)
+            // PRIORITY 3: Check edges (including extended zone outside window)
+            // These take priority over the titlebar drag area!
             if (x < RESIZE_BORDER_WIDTH || outsideLeft)
                 return HTLEFT;
             if (x >= windowWidth - RESIZE_BORDER_WIDTH || outsideRight)
@@ -201,8 +212,9 @@ public static partial class Win32HitTestHelper
             if (y >= windowHeight - RESIZE_BORDER_WIDTH || outsideBottom)
                 return HTBOTTOM;
 
-            // Check titlebar for dragging (if provided)
-            if (titleBarHeight > 0 && y < titleBarHeight)
+            // PRIORITY 4: Check titlebar for dragging (only if not in edges/corners/controls)
+            if (titleBarHeight > 0 && y >= RESIZE_BORDER_WIDTH && y < titleBarHeight && 
+                x >= RESIZE_BORDER_WIDTH && x < windowWidth - RESIZE_BORDER_WIDTH - titleBarControlsWidth)
             {
                 return HTCAPTION;
             }
