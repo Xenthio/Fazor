@@ -23,8 +23,24 @@ public class NativeWindow : INativeWindow, IDisposable
     private IMouse? _mouse;
     private IKeyboard? _keyboard;
     private bool _disposed = false;
+    private PopupManager? _popupManager;
 
     public RootPanel? RootPanel { get; set; }
+
+    /// <summary>
+    /// Get the current window position in screen coordinates
+    /// </summary>
+    public Vector2D<int> WindowPosition => _window.Position;
+
+    /// <summary>
+    /// Get the current window size
+    /// </summary>
+    public Vector2D<int> WindowSize => _window.Size;
+
+    /// <summary>
+    /// The popup manager for this window
+    /// </summary>
+    public PopupManager? PopupManager => _popupManager;
 
     public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null)
     {
@@ -111,6 +127,9 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Set system DPI scale for UI rendering
         UpdateDpiScale();
+
+        // Initialize popup manager
+        _popupManager = new PopupManager(this);
     }
 
     private void UpdateDpiScale()
@@ -166,6 +185,12 @@ public class NativeWindow : INativeWindow, IDisposable
         UpdateCursor();
 
         _backend.Render(RootPanel);
+
+        // Process native popup windows when enabled
+        if (_popupManager != null && _popupManager.SupportsNativePopups && !_popupManager.UseOverlayFallback)
+        {
+            _popupManager.ProcessPopups();
+        }
     }
 
     /// <summary>
@@ -190,6 +215,8 @@ public class NativeWindow : INativeWindow, IDisposable
 
     private void OnClosing()
     {
+        _popupManager?.Dispose();
+        _popupManager = null;
         _backend.Dispose();
         _input?.Dispose();
     }
@@ -229,7 +256,17 @@ public class NativeWindow : INativeWindow, IDisposable
     }
 
     // --- Input Helpers ---
-    private void OnMouseDown(IMouse mouse, MouseButton button) => RootPanel?.ProcessButtonEvent(MouseButtonToString(button), true, GetKeyboardModifiers());
+    private void OnMouseDown(IMouse mouse, MouseButton button) 
+    {
+        // Handle popup close on click outside
+        if (button == MouseButton.Left && _popupManager != null && RootPanel != null)
+        {
+            var mousePos = new UIVector2(mouse.Position.X, mouse.Position.Y);
+            _popupManager.HandleGlobalClick(mousePos, RootPanel);
+        }
+        
+        RootPanel?.ProcessButtonEvent(MouseButtonToString(button), true, GetKeyboardModifiers());
+    }
     private void OnMouseUp(IMouse mouse, MouseButton button) => RootPanel?.ProcessButtonEvent(MouseButtonToString(button), false, GetKeyboardModifiers());
     private void OnMouseScroll(IMouse mouse, ScrollWheel scroll) => RootPanel?.ProcessMouseWheel(new UIVector2(scroll.X, -scroll.Y), GetKeyboardModifiers());
     private void OnKeyDown(IKeyboard keyboard, Key key, int scancode) => RootPanel?.ProcessButtonEvent(key.ToString().ToLower(), true, GetKeyboardModifiers());

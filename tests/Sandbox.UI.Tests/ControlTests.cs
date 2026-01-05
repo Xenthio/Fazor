@@ -240,3 +240,127 @@ class TestSlotPanel : Panel
         SlotPanel = panel;
     }
 }
+
+/// <summary>
+/// Tests for popup system (BasePopup, ComboBoxDropdown)
+/// </summary>
+public class PopupTests
+{
+    [Fact]
+    public void BasePopup_InitializesCorrectly()
+    {
+        var popup = new BasePopup();
+
+        Assert.NotNull(popup);
+        Assert.False(popup.IsPopupOpen);
+        Assert.True(popup.CloseOnClickOutside);
+        Assert.True(popup.CloseOnFocusLoss);
+        Assert.Null(popup.Opener);
+        Assert.True(popup.HasClass("popup"));
+    }
+
+    [Fact]
+    public void ComboBoxDropdown_InitializesCorrectly()
+    {
+        var dropdown = new ComboBoxDropdown();
+
+        Assert.NotNull(dropdown);
+        Assert.True(dropdown.HasClass("dropdown-panel"));
+        Assert.True(dropdown.HasClass("flat-top"));
+        Assert.Empty(dropdown.Options);
+    }
+
+    [Fact]
+    public void ComboBoxDropdown_PopulatesOptions()
+    {
+        var dropdown = new ComboBoxDropdown();
+        dropdown.Options = new System.Collections.Generic.List<Option>
+        {
+            new Option("Option 1", "value1"),
+            new Option("Option 2", "value2"),
+            new Option("Option 3", "value3")
+        };
+
+        dropdown.PopulateOptions();
+
+        Assert.Equal(3, dropdown.ChildrenCount);
+    }
+
+    [Fact]
+    public void ComboBox_CreatesDropdownOnOpen()
+    {
+        var rootPanel = new RootPanel();
+        rootPanel.PanelBounds = new Rect(0, 0, 800, 600);
+
+        var comboBox = new ComboBox();
+        comboBox.Options = new System.Collections.Generic.List<Option>
+        {
+            new Option("Test 1", "test1"),
+            new Option("Test 2", "test2")
+        };
+        rootPanel.AddChild(comboBox);
+
+        // Perform layout so Box.Rect is set
+        rootPanel.Layout();
+
+        Assert.False(comboBox.IsOpen);
+
+        comboBox.Open();
+
+        Assert.True(comboBox.IsOpen);
+    }
+
+    [Fact]
+    public void ComboBox_ClosesDropdown()
+    {
+        var rootPanel = new RootPanel();
+        rootPanel.PanelBounds = new Rect(0, 0, 800, 600);
+
+        var comboBox = new ComboBox();
+        comboBox.Options = new System.Collections.Generic.List<Option>
+        {
+            new Option("Test 1", "test1")
+        };
+        rootPanel.AddChild(comboBox);
+        rootPanel.Layout();
+
+        comboBox.Open();
+        Assert.True(comboBox.IsOpen);
+
+        comboBox.Close();
+        Assert.False(comboBox.IsOpen);
+    }
+
+    [Fact]
+    public void PopupServiceProvider_CanRegisterAndUnregister()
+    {
+        var oldService = PopupServiceProvider.Current;
+
+        // Create mock service
+        var mockService = new MockPopupService();
+
+        PopupServiceProvider.Register(mockService);
+        Assert.Same(mockService, PopupServiceProvider.Current);
+
+        PopupServiceProvider.Unregister();
+        Assert.Null(PopupServiceProvider.Current);
+
+        // Restore original
+        if (oldService != null)
+            PopupServiceProvider.Register(oldService);
+    }
+
+    private class MockPopupService : IPopupService
+    {
+        public bool SupportsNativePopups => false;
+
+        public void OpenPopup(BasePopup popup, Vector2 screenPosition, Panel? opener = null) { }
+        public void MarkPopupForClose(BasePopup popup) { }
+        public void ClosePopup(BasePopup popup) { }
+        public void CloseAllPopups(BasePopup? except = null) { }
+        public Vector2 ConvertToScreenCoordinates(Vector2 panelPos, RootPanel? rootPanel) => panelPos;
+        public Vector2 ConvertFromScreenCoordinates(Vector2 screenPos, RootPanel? rootPanel) => screenPos;
+        public Vector2 GetWindowPosition() => Vector2.Zero;
+        public Vector2 GetWindowSize() => new Vector2(800, 600);
+    }
+}
