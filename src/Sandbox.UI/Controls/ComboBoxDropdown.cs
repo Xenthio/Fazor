@@ -69,6 +69,10 @@ public class ComboBoxDropdown : BasePopup
             Style.Width = opener.Box.Rect.Width;
         }
 
+        // Set max height to allow scrolling for long lists
+        Style.MaxHeight = 300;
+        Style.OverflowY = OverflowMode.Scroll;
+
         base.Open(opener, preferBelow);
         PopulateOptions();
     }

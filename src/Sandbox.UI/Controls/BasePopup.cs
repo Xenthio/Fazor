@@ -112,7 +112,8 @@ public class BasePopup : Panel
     }
 
     /// <summary>
-    /// Fallback method to open popup in root panel when native popups aren't available
+    /// Fallback method to open popup in root panel when native popups aren't available.
+    /// Adjusts position to keep popup within window bounds when possible.
     /// </summary>
     protected virtual void OpenInRootPanel(Panel opener)
     {
@@ -122,9 +123,48 @@ public class BasePopup : Panel
         root.AddChild(this);
         
         Style.Position = PositionMode.Absolute;
-        Style.Left = PopupPosition.x;
-        Style.Top = PopupPosition.y;
         Style.ZIndex = 10000;
+
+        // Get the window bounds
+        var windowBounds = root.PanelBounds;
+        var openerRect = opener.Box?.Rect ?? new Rect(0, 0, 100, 20);
+        
+        // Estimate popup size (use a reasonable default, will be refined after layout)
+        var estimatedWidth = openerRect.Width;
+        var estimatedHeight = 200f; // Default estimated height for dropdowns
+        
+        // Calculate initial position
+        var popupX = PopupPosition.x;
+        var popupY = PopupPosition.y;
+        
+        // Adjust horizontal position if popup would extend beyond right edge
+        if (popupX + estimatedWidth > windowBounds.Width)
+        {
+            popupX = Math.Max(0, windowBounds.Width - estimatedWidth);
+        }
+        
+        // Adjust vertical position if popup would extend beyond bottom edge
+        // Try to flip above the opener if there's more room there
+        if (popupY + estimatedHeight > windowBounds.Height)
+        {
+            var spaceBelow = windowBounds.Height - openerRect.Bottom;
+            var spaceAbove = openerRect.Top;
+            
+            if (spaceAbove > spaceBelow)
+            {
+                // Position above the opener
+                popupY = openerRect.Top - estimatedHeight;
+                if (popupY < 0) popupY = 0;
+            }
+            else
+            {
+                // Keep below but constrain to window
+                popupY = Math.Max(0, windowBounds.Height - estimatedHeight);
+            }
+        }
+        
+        Style.Left = popupX;
+        Style.Top = popupY;
     }
 
     /// <summary>
