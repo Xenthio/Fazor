@@ -56,7 +56,8 @@ public class OpenGLBackend : IGraphicsBackend
         // Reset Skia's GL state tracking since Silk.NET may have changed GL state
         _grContext.ResetContext();
 
-        _surface.Canvas.Clear(new SKColor(240, 240, 240));
+        // Clear with transparent color to support window transparency (e.g., ThinGrey theme)
+        _surface.Canvas.Clear(SKColors.Transparent);
 
         _renderer.Render(_surface.Canvas, panel);
 

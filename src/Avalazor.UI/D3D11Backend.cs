@@ -365,12 +365,12 @@ public class D3D11Backend : IGraphicsBackend
             return;
         }
 
-        // Clear the back buffer
-        float* clearColor = stackalloc float[] { 0.9375f, 0.9375f, 0.9375f, 1.0f }; // Light gray (240/256)
+        // Clear the back buffer with transparent color to support window transparency
+        float* clearColor = stackalloc float[] { 0.0f, 0.0f, 0.0f, 0.0f }; // Transparent
         _context.ClearRenderTargetView(_renderTargetView, clearColor);
 
-        // Render UI to Skia surface
-        _surface.Canvas.Clear(new SKColor(240, 240, 240));
+        // Render UI to Skia surface - use transparent clear for window transparency support
+        _surface.Canvas.Clear(SKColors.Transparent);
         _renderer.Render(_surface.Canvas, panel);
         _surface.Canvas.Flush();
 

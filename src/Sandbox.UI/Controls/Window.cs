@@ -651,6 +651,9 @@ public class Window : Panel
             mousePos.x - _dragOffsetX,
             mousePos.y - _dragOffsetY
         );
+        
+        // Sync position to native window if present
+        _nativeWindow?.SetPosition((int)Position.x, (int)Position.y);
     }
 
     // -------------
@@ -714,6 +717,9 @@ public class Window : Panel
         else if (almostLeft || _resizingLeft) Style.Cursor = "ew-resize";
         else Style.Cursor = "unset";
         
+        bool sizeChanged = false;
+        bool positionChanged = false;
+        
         // Apply resize
         if (_resizingBottom)
         {
@@ -722,6 +728,8 @@ public class Window : Panel
             {
                 Style.Height = newHeight;
                 Size = new Vector2(Size.x, newHeight);
+                WindowHeight = (int)newHeight;
+                sizeChanged = true;
             }
         }
         
@@ -732,6 +740,8 @@ public class Window : Panel
             {
                 Style.Width = newWidth;
                 Size = new Vector2(newWidth, Size.y);
+                WindowWidth = (int)newWidth;
+                sizeChanged = true;
             }
         }
         
@@ -742,7 +752,10 @@ public class Window : Panel
             {
                 Style.Height = newHeight;
                 Size = new Vector2(Size.x, newHeight);
+                WindowHeight = (int)newHeight;
                 Position = new Vector2(Position.x, localMousePos.y - _resizeOffsetY2);
+                sizeChanged = true;
+                positionChanged = true;
             }
         }
         
@@ -753,8 +766,21 @@ public class Window : Panel
             {
                 Style.Width = newWidth;
                 Size = new Vector2(newWidth, Size.y);
+                WindowWidth = (int)newWidth;
                 Position = new Vector2(localMousePos.x - _resizeOffsetX2, Position.y);
+                sizeChanged = true;
+                positionChanged = true;
             }
+        }
+        
+        // Sync to native window if present
+        if (sizeChanged && _nativeWindow != null)
+        {
+            _nativeWindow.SetSize(WindowWidth, WindowHeight);
+        }
+        if (positionChanged && _nativeWindow != null)
+        {
+            _nativeWindow.SetPosition((int)Position.x, (int)Position.y);
         }
     }
     
