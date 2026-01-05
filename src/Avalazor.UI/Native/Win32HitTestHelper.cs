@@ -174,42 +174,38 @@ public static partial class Win32HitTestHelper
                 return HTCLIENT;
             }
 
-            // PRIORITY 2: Check corners FIRST (higher priority than edges)
-            // Allow detection when slightly outside the window bounds
-            if (x < RESIZE_BORDER_WIDTH && y < RESIZE_BORDER_WIDTH)
-                return HTTOPLEFT;
-            if (x >= windowWidth - RESIZE_BORDER_WIDTH && y < RESIZE_BORDER_WIDTH)
-                return HTTOPRIGHT;
-            if (x < RESIZE_BORDER_WIDTH && y >= windowHeight - RESIZE_BORDER_WIDTH)
-                return HTBOTTOMLEFT;
-            if (x >= windowWidth - RESIZE_BORDER_WIDTH && y >= windowHeight - RESIZE_BORDER_WIDTH)
-                return HTBOTTOMRIGHT;
-
             // Check if cursor is just outside the window bounds (within extended zone)
             bool outsideLeft = x < 0 && x >= -EXTENDED_BORDER;
             bool outsideRight = x >= windowWidth && x < windowWidth + EXTENDED_BORDER;
             bool outsideTop = y < 0 && y >= -EXTENDED_BORDER;
             bool outsideBottom = y >= windowHeight && y < windowHeight + EXTENDED_BORDER;
+            
+            // Define corner zones (inside window + extended outside)
+            bool inLeftZone = x < RESIZE_BORDER_WIDTH || outsideLeft;
+            bool inRightZone = x >= windowWidth - RESIZE_BORDER_WIDTH || outsideRight;
+            bool inTopZone = y < RESIZE_BORDER_WIDTH || outsideTop;
+            bool inBottomZone = y >= windowHeight - RESIZE_BORDER_WIDTH || outsideBottom;
 
-            // Handle corners when outside window bounds
-            if ((outsideLeft || x < EXTENDED_BORDER) && (outsideTop || y < EXTENDED_BORDER))
+            // PRIORITY 2: Check corners FIRST (higher priority than edges)
+            // Corners must be checked before edges to prevent edges from capturing corner zones
+            if (inLeftZone && inTopZone)
                 return HTTOPLEFT;
-            if ((outsideRight || x >= windowWidth - EXTENDED_BORDER) && (outsideTop || y < EXTENDED_BORDER))
+            if (inRightZone && inTopZone)
                 return HTTOPRIGHT;
-            if ((outsideLeft || x < EXTENDED_BORDER) && (outsideBottom || y >= windowHeight - EXTENDED_BORDER))
+            if (inLeftZone && inBottomZone)
                 return HTBOTTOMLEFT;
-            if ((outsideRight || x >= windowWidth - EXTENDED_BORDER) && (outsideBottom || y >= windowHeight - EXTENDED_BORDER))
+            if (inRightZone && inBottomZone)
                 return HTBOTTOMRIGHT;
 
-            // PRIORITY 3: Check edges (including extended zone outside window)
+            // PRIORITY 3: Check edges (only if not in corners)
             // These take priority over the titlebar drag area!
-            if (x < RESIZE_BORDER_WIDTH || outsideLeft)
+            if (inLeftZone)
                 return HTLEFT;
-            if (x >= windowWidth - RESIZE_BORDER_WIDTH || outsideRight)
+            if (inRightZone)
                 return HTRIGHT;
-            if (y < RESIZE_BORDER_WIDTH || outsideTop)
+            if (inTopZone)
                 return HTTOP;
-            if (y >= windowHeight - RESIZE_BORDER_WIDTH || outsideBottom)
+            if (inBottomZone)
                 return HTBOTTOM;
 
             // PRIORITY 4: Check titlebar for dragging (only if not in edges/corners/controls)
