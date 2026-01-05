@@ -157,7 +157,12 @@ public static partial class Win32HitTestHelper
             int x = cursorPos.X;
             int y = cursorPos.Y;
 
+            // Extend detection zone slightly outside window bounds to catch edges/corners
+            // This allows grabbing from just outside the visible window
+            const int EXTENDED_BORDER = RESIZE_BORDER_WIDTH + 2; // 7px total (5+2)
+
             // Check corners first (highest priority)
+            // Allow detection when slightly outside the window bounds
             if (x < RESIZE_BORDER_WIDTH && y < RESIZE_BORDER_WIDTH)
                 return HTTOPLEFT;
             if (x >= windowWidth - RESIZE_BORDER_WIDTH && y < RESIZE_BORDER_WIDTH)
@@ -167,14 +172,30 @@ public static partial class Win32HitTestHelper
             if (x >= windowWidth - RESIZE_BORDER_WIDTH && y >= windowHeight - RESIZE_BORDER_WIDTH)
                 return HTBOTTOMRIGHT;
 
-            // Check edges
-            if (x < RESIZE_BORDER_WIDTH)
+            // Check if cursor is just outside the window bounds (within extended zone)
+            bool outsideLeft = x < 0 && x >= -EXTENDED_BORDER;
+            bool outsideRight = x >= windowWidth && x < windowWidth + EXTENDED_BORDER;
+            bool outsideTop = y < 0 && y >= -EXTENDED_BORDER;
+            bool outsideBottom = y >= windowHeight && y < windowHeight + EXTENDED_BORDER;
+
+            // Handle corners when outside window bounds
+            if ((outsideLeft || x < EXTENDED_BORDER) && (outsideTop || y < EXTENDED_BORDER))
+                return HTTOPLEFT;
+            if ((outsideRight || x >= windowWidth - EXTENDED_BORDER) && (outsideTop || y < EXTENDED_BORDER))
+                return HTTOPRIGHT;
+            if ((outsideLeft || x < EXTENDED_BORDER) && (outsideBottom || y >= windowHeight - EXTENDED_BORDER))
+                return HTBOTTOMLEFT;
+            if ((outsideRight || x >= windowWidth - EXTENDED_BORDER) && (outsideBottom || y >= windowHeight - EXTENDED_BORDER))
+                return HTBOTTOMRIGHT;
+
+            // Check edges (including extended zone outside window)
+            if (x < RESIZE_BORDER_WIDTH || outsideLeft)
                 return HTLEFT;
-            if (x >= windowWidth - RESIZE_BORDER_WIDTH)
+            if (x >= windowWidth - RESIZE_BORDER_WIDTH || outsideRight)
                 return HTRIGHT;
-            if (y < RESIZE_BORDER_WIDTH)
+            if (y < RESIZE_BORDER_WIDTH || outsideTop)
                 return HTTOP;
-            if (y >= windowHeight - RESIZE_BORDER_WIDTH)
+            if (y >= windowHeight - RESIZE_BORDER_WIDTH || outsideBottom)
                 return HTBOTTOM;
 
             // Check titlebar for dragging (if provided)
