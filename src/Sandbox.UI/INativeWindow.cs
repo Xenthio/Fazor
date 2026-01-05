@@ -55,4 +55,19 @@ public interface INativeWindow
     /// Request focus for the native window.
     /// </summary>
     void Focus();
+
+    /// <summary>
+    /// Close the native window.
+    /// </summary>
+    void Close();
+
+    /// <summary>
+    /// Get the current window position.
+    /// </summary>
+    (int x, int y) GetPosition();
+
+    /// <summary>
+    /// Get the current window size.
+    /// </summary>
+    (int width, int height) GetSize();
 }

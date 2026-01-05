@@ -323,6 +323,30 @@ public class NativeWindow : INativeWindow, IDisposable
         _window.Focus();
     }
 
+    /// <summary>
+    /// Close the native window.
+    /// </summary>
+    public void Close()
+    {
+        _window.Close();
+    }
+
+    /// <summary>
+    /// Get the current window position.
+    /// </summary>
+    public (int x, int y) GetPosition()
+    {
+        return (_window.Position.X, _window.Position.Y);
+    }
+
+    /// <summary>
+    /// Get the current window size.
+    /// </summary>
+    public (int width, int height) GetSize()
+    {
+        return (_window.Size.X, _window.Size.Y);
+    }
+
     // --- Input Helpers ---
     private void OnMouseDown(IMouse mouse, MouseButton button) 
     {

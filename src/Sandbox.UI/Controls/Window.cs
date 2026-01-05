@@ -152,6 +152,8 @@ public class Window : Panel
     private bool _dragging = false;
     private float _dragOffsetX = 0;
     private float _dragOffsetY = 0;
+    private int _dragStartWindowX = 0;
+    private int _dragStartWindowY = 0;
 
     // Resize state tracking
     internal bool _resizingRight = false;
@@ -162,6 +164,10 @@ public class Window : Panel
     internal float _resizeOffsetY1 = 0;
     internal float _resizeOffsetX2 = 0;
     internal float _resizeOffsetY2 = 0;
+    private int _resizeStartWindowWidth = 0;
+    private int _resizeStartWindowHeight = 0;
+    private int _resizeStartWindowX = 0;
+    private int _resizeStartWindowY = 0;
 
     public Window()
     {
@@ -589,6 +595,10 @@ public class Window : Panel
     {
         OnClose();
         OnCloseAction?.Invoke();
+        
+        // Close native window if present
+        _nativeWindow?.Close();
+        
         Delete();
     }
 
@@ -621,14 +631,27 @@ public class Window : Panel
     }
 
     /// <summary>
-    /// Start dragging the window
+    /// Start dragging the window. For native windows, stores offset from window position.
     /// </summary>
     public void StartDrag(Vector2 mousePos)
     {
         if (!IsDraggable) return;
 
-        _dragOffsetX = mousePos.x - Box.Rect.Left;
-        _dragOffsetY = mousePos.y - Box.Rect.Top;
+        if (_nativeWindow != null)
+        {
+            // For native windows, store offset from current native window position
+            var (winX, winY) = _nativeWindow.GetPosition();
+            _dragOffsetX = mousePos.x;
+            _dragOffsetY = mousePos.y;
+            _dragStartWindowX = winX;
+            _dragStartWindowY = winY;
+        }
+        else
+        {
+            // For in-panel windows, store offset from panel position
+            _dragOffsetX = mousePos.x - Box.Rect.Left;
+            _dragOffsetY = mousePos.y - Box.Rect.Top;
+        }
         _dragging = true;
     }
 
@@ -647,13 +670,23 @@ public class Window : Panel
     {
         if (!_dragging) return;
 
-        Position = new Vector2(
-            mousePos.x - _dragOffsetX,
-            mousePos.y - _dragOffsetY
-        );
-        
-        // Sync position to native window if present
-        _nativeWindow?.SetPosition((int)Position.x, (int)Position.y);
+        if (_nativeWindow != null)
+        {
+            // For native windows, calculate delta from start and apply to window position
+            var deltaX = mousePos.x - _dragOffsetX;
+            var deltaY = mousePos.y - _dragOffsetY;
+            var newX = _dragStartWindowX + (int)deltaX;
+            var newY = _dragStartWindowY + (int)deltaY;
+            _nativeWindow.SetPosition(newX, newY);
+        }
+        else
+        {
+            // For in-panel windows, use local mouse position
+            Position = new Vector2(
+                mousePos.x - _dragOffsetX,
+                mousePos.y - _dragOffsetY
+            );
+        }
     }
 
     // -------------
@@ -667,17 +700,36 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        const float Distance = 5;
+        const float Distance = 8; // Increased from 5 for easier edge grabbing
         
-        if (mousePos.y.AlmostEqual(Box.Rect.Bottom, Distance)) _resizingBottom = true;
-        if (mousePos.x.AlmostEqual(Box.Rect.Right, Distance)) _resizingRight = true;
-        if (mousePos.y.AlmostEqual(Box.Rect.Top, Distance)) _resizingTop = true;
-        if (mousePos.x.AlmostEqual(Box.Rect.Left, Distance)) _resizingLeft = true;
+        // Use panel rect for edge detection
+        var rect = Box.Rect;
         
-        _resizeOffsetX1 = mousePos.x - Box.Rect.Right;
-        _resizeOffsetY1 = mousePos.y - Box.Rect.Bottom;
-        _resizeOffsetX2 = mousePos.x - Box.Rect.Left;
-        _resizeOffsetY2 = mousePos.y - Box.Rect.Top;
+        if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
+        if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
+        if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
+        if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
+        
+        // Store start position for delta calculation
+        _resizeOffsetX1 = mousePos.x;
+        _resizeOffsetY1 = mousePos.y;
+        
+        if (_nativeWindow != null)
+        {
+            var (winW, winH) = _nativeWindow.GetSize();
+            var (winX, winY) = _nativeWindow.GetPosition();
+            _resizeStartWindowWidth = winW;
+            _resizeStartWindowHeight = winH;
+            _resizeStartWindowX = winX;
+            _resizeStartWindowY = winY;
+        }
+        else
+        {
+            _resizeStartWindowWidth = (int)rect.Width;
+            _resizeStartWindowHeight = (int)rect.Height;
+            _resizeStartWindowX = (int)Position.x;
+            _resizeStartWindowY = (int)Position.y;
+        }
     }
     
     /// <summary>
@@ -698,13 +750,14 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        // Update cursor based on position
-        const float Distance = 5;
+        // Update cursor based on position - use panel rect for edge detection
+        const float Distance = 8;
+        var rect = Box.Rect;
         
-        var almostBottom = mousePos.y.AlmostEqual(Box.Rect.Bottom, Distance);
-        var almostRight = mousePos.x.AlmostEqual(Box.Rect.Right, Distance);
-        var almostTop = mousePos.y.AlmostEqual(Box.Rect.Top, Distance);
-        var almostLeft = mousePos.x.AlmostEqual(Box.Rect.Left, Distance);
+        var almostBottom = mousePos.y >= rect.Bottom - Distance;
+        var almostRight = mousePos.x >= rect.Right - Distance;
+        var almostTop = mousePos.y <= rect.Top + Distance;
+        var almostLeft = mousePos.x <= rect.Left + Distance;
         
         // Set cursor based on resize position
         if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
@@ -717,71 +770,77 @@ public class Window : Panel
         else if (almostLeft || _resizingLeft) Style.Cursor = "ew-resize";
         else Style.Cursor = "unset";
         
-        bool sizeChanged = false;
-        bool positionChanged = false;
+        if (!IsResizing) return;
         
-        // Apply resize
-        if (_resizingBottom)
-        {
-            var newHeight = (mousePos.y - Box.Rect.Top) - _resizeOffsetY1;
-            if (newHeight > MinSize.y)
-            {
-                Style.Height = newHeight;
-                Size = new Vector2(Size.x, newHeight);
-                WindowHeight = (int)newHeight;
-                sizeChanged = true;
-            }
-        }
+        // Calculate delta from start position
+        var deltaX = mousePos.x - _resizeOffsetX1;
+        var deltaY = mousePos.y - _resizeOffsetY1;
         
+        int newWidth = _resizeStartWindowWidth;
+        int newHeight = _resizeStartWindowHeight;
+        int newX = _resizeStartWindowX;
+        int newY = _resizeStartWindowY;
+        
+        // Apply resize based on which edges are being dragged
         if (_resizingRight)
         {
-            var newWidth = (mousePos.x - Box.Rect.Left) - _resizeOffsetX1;
-            if (newWidth > MinSize.x)
-            {
-                Style.Width = newWidth;
-                Size = new Vector2(newWidth, Size.y);
-                WindowWidth = (int)newWidth;
-                sizeChanged = true;
-            }
+            newWidth = _resizeStartWindowWidth + (int)deltaX;
         }
-        
-        if (_resizingTop)
+        if (_resizingBottom)
         {
-            var newHeight = Box.Rect.Height - ((mousePos.y - _resizeOffsetY2) - Box.Rect.Top);
-            if (newHeight > MinSize.y)
-            {
-                Style.Height = newHeight;
-                Size = new Vector2(Size.x, newHeight);
-                WindowHeight = (int)newHeight;
-                Position = new Vector2(Position.x, localMousePos.y - _resizeOffsetY2);
-                sizeChanged = true;
-                positionChanged = true;
-            }
+            newHeight = _resizeStartWindowHeight + (int)deltaY;
         }
-        
         if (_resizingLeft)
         {
-            var newWidth = Box.Rect.Width - ((mousePos.x - _resizeOffsetX2) - Box.Rect.Left);
-            if (newWidth > MinSize.x)
+            newWidth = _resizeStartWindowWidth - (int)deltaX;
+            newX = _resizeStartWindowX + (int)deltaX;
+        }
+        if (_resizingTop)
+        {
+            newHeight = _resizeStartWindowHeight - (int)deltaY;
+            newY = _resizeStartWindowY + (int)deltaY;
+        }
+        
+        // Enforce minimum size
+        if (newWidth < MinSize.x)
+        {
+            if (_resizingLeft)
             {
-                Style.Width = newWidth;
-                Size = new Vector2(newWidth, Size.y);
-                WindowWidth = (int)newWidth;
-                Position = new Vector2(localMousePos.x - _resizeOffsetX2, Position.y);
-                sizeChanged = true;
-                positionChanged = true;
+                newX = _resizeStartWindowX + _resizeStartWindowWidth - (int)MinSize.x;
+            }
+            newWidth = (int)MinSize.x;
+        }
+        if (newHeight < MinSize.y)
+        {
+            if (_resizingTop)
+            {
+                newY = _resizeStartWindowY + _resizeStartWindowHeight - (int)MinSize.y;
+            }
+            newHeight = (int)MinSize.y;
+        }
+        
+        // Apply to native window or panel
+        if (_nativeWindow != null)
+        {
+            _nativeWindow.SetSize(newWidth, newHeight);
+            if (_resizingLeft || _resizingTop)
+            {
+                _nativeWindow.SetPosition(newX, newY);
+            }
+        }
+        else
+        {
+            Style.Width = newWidth;
+            Style.Height = newHeight;
+            Size = new Vector2(newWidth, newHeight);
+            if (_resizingLeft || _resizingTop)
+            {
+                Position = new Vector2(newX, newY);
             }
         }
         
-        // Sync to native window if present
-        if (sizeChanged && _nativeWindow != null)
-        {
-            _nativeWindow.SetSize(WindowWidth, WindowHeight);
-        }
-        if (positionChanged && _nativeWindow != null)
-        {
-            _nativeWindow.SetPosition((int)Position.x, (int)Position.y);
-        }
+        WindowWidth = newWidth;
+        WindowHeight = newHeight;
     }
     
     /// <summary>

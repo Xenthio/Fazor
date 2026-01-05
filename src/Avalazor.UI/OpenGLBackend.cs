@@ -56,7 +56,13 @@ public class OpenGLBackend : IGraphicsBackend
         // Reset Skia's GL state tracking since Silk.NET may have changed GL state
         _grContext.ResetContext();
 
+        // Enable alpha blending for transparent windows
+        _gl.Enable(EnableCap.Blend);
+        _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
         // Clear with transparent color to support window transparency (e.g., ThinGrey theme)
+        _gl.ClearColor(0, 0, 0, 0);
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
         _surface.Canvas.Clear(SKColors.Transparent);
 
         _renderer.Render(_surface.Canvas, panel);
