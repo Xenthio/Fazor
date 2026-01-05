@@ -186,8 +186,11 @@ public class NativeWindow : INativeWindow, IDisposable
 
         _backend.Render(RootPanel);
 
-        // Process popup windows
-        _popupManager?.ProcessPopups();
+        // Process native popup windows only if enabled (disabled by default)
+        if (_popupManager != null && _popupManager.SupportsNativePopups && !_popupManager.UseOverlayFallback)
+        {
+            _popupManager.ProcessPopups();
+        }
     }
 
     /// <summary>

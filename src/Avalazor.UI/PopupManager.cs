@@ -16,15 +16,17 @@ public class PopupManager : IPopupService, IDisposable
 
     /// <summary>
     /// Whether native popup windows are supported.
-    /// For desktop applications, this should be true to allow proper popup behavior.
+    /// Currently disabled by default due to complexity with managing multiple Silk.NET windows.
+    /// The overlay fallback provides reliable behavior within the main window.
     /// </summary>
-    public bool SupportsNativePopups { get; set; } = true;
+    public bool SupportsNativePopups { get; set; } = false;
 
     /// <summary>
     /// If true, use overlay-based fallback instead of native popup windows.
-    /// Set to true if native popups cause issues on certain platforms.
+    /// This is the default and recommended mode - popups appear as high z-index overlays
+    /// within the main window, which works reliably across all platforms.
     /// </summary>
-    public bool UseOverlayFallback { get; set; } = false;
+    public bool UseOverlayFallback { get; set; } = true;
 
     public PopupManager(NativeWindow mainWindow)
     {
