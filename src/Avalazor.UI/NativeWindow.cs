@@ -274,7 +274,6 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
-        Console.WriteLine($"[NativeWindow] Window border changed to: {(hasNativeBorder ? "native" : "borderless")}");
     }
 
     /// <summary>
@@ -291,14 +290,11 @@ public class NativeWindow : INativeWindow, IDisposable
     /// </summary>
     public void SetTransparentFramebuffer(bool transparent)
     {
-        if (_hasTransparentFramebuffer == transparent) return;
-        
         // Note: Changing transparent framebuffer at runtime is not supported by most platforms.
         // This would require recreating the window. Since transparent framebuffer is now 
         // enabled by default, this should rarely need to be called.
-        Console.WriteLine($"[NativeWindow] Note: Transparent framebuffer is enabled by default. " +
-                          $"Runtime changes are not supported on most platforms. " +
-                          $"Requested: {transparent}, Current: {_hasTransparentFramebuffer}.");
+        // We update the tracking field but the actual window property cannot be changed.
+        _hasTransparentFramebuffer = transparent;
     }
 
     /// <summary>
