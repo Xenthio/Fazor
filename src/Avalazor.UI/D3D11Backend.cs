@@ -11,6 +11,25 @@ using D3D11Box = Silk.NET.Direct3D11.Box;
 
 namespace Avalazor.UI;
 
+// DWM APIs for transparent windows
+internal static partial class DwmApi
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MARGINS
+    {
+        public int Left;
+        public int Right;
+        public int Top;
+        public int Bottom;
+    }
+
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmExtendFrameIntoClientArea(nint hwnd, ref MARGINS margins);
+    
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmIsCompositionEnabled(out int enabled);
+}
+
 /// <summary>
 /// DirectX 11 graphics backend for Avalazor.
 /// Provides hardware-accelerated rendering using Direct3D 11 and SkiaSharp.
@@ -159,7 +178,23 @@ public class D3D11Backend : IGraphicsBackend
         }
         var hwnd = (nint)nativeWindow.Value.Hwnd;
         
+        // Enable DWM composition for transparent windows
+        // Note: Even with DWM enabled, CreateSwapChainForHwnd does NOT support AlphaMode.Premultiplied
+        // Premultiplied alpha requires CreateSwapChainForComposition or CreateSwapChainForCoreWindow
+        // We still enable DWM composition as it may help with some transparency scenarios
+        if (DwmApi.DwmIsCompositionEnabled(out int compositionEnabled) >= 0 && compositionEnabled != 0)
+        {
+            // Extend DWM frame into entire client area for transparency
+            var margins = new DwmApi.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+            if (DwmApi.DwmExtendFrameIntoClientArea(hwnd, ref margins) >= 0)
+            {
+                Console.WriteLine("[D3D11Backend] DWM composition enabled");
+            }
+        }
+        
         // Create swap chain
+        // Note: AlphaMode.Premultiplied is NOT supported with CreateSwapChainForHwnd
+        // Using Unspecified which is the only reliable option for HWND-based windows
         var swapChainDesc = new SwapChainDesc1
         {
             Width = (uint)_width,
@@ -171,7 +206,7 @@ public class D3D11Backend : IGraphicsBackend
             BufferCount = 2,
             Scaling = Scaling.None, // Don't stretch - maintain 1:1 pixel mapping
             SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Unspecified,
+            AlphaMode = AlphaMode.Unspecified, // Premultiplied requires CreateSwapChainForComposition
             Flags = 0
         };
         
@@ -365,12 +400,12 @@ public class D3D11Backend : IGraphicsBackend
             return;
         }
 
-        // Clear the back buffer
-        float* clearColor = stackalloc float[] { 0.9375f, 0.9375f, 0.9375f, 1.0f }; // Light gray (240/256)
+        // Clear the back buffer with transparent color to support window transparency
+        float* clearColor = stackalloc float[] { 0.0f, 0.0f, 0.0f, 0.0f }; // Transparent
         _context.ClearRenderTargetView(_renderTargetView, clearColor);
 
-        // Render UI to Skia surface
-        _surface.Canvas.Clear(new SKColor(240, 240, 240));
+        // Render UI to Skia surface - use transparent clear for window transparency support
+        _surface.Canvas.Clear(SKColors.Transparent);
         _renderer.Render(_surface.Canvas, panel);
         _surface.Canvas.Flush();
 

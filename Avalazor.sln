@@ -33,7 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "thirdparty", "thirdparty", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RichTextKit", "RichTextKit", "{2B7E0BFD-0BEB-ED5A-65AD-6071D533C1DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topten.RichTextKit", "thirdparty\Topten.RichTextKit\Topten.RichTextKit.csproj", "{0BD7D000-FA7A-4301-A5E6-764CB438586E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Topten.RichTextKit", "thirdparty\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj", "{0BD7D000-FA7A-4301-A5E6-764CB438586E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

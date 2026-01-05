@@ -11,6 +11,7 @@ public class Window : Panel
 {
     private string _title = "Window";
     private INativeWindow? _nativeWindow; // Reference to the native window interface
+    private bool _lastCustomChromeFromCss = false; // Track last CSS value for change detection
 
     /// <summary>
     /// The window title displayed in the native window title bar and optional in-window title bar
@@ -151,6 +152,22 @@ public class Window : Panel
     private bool _dragging = false;
     private float _dragOffsetX = 0;
     private float _dragOffsetY = 0;
+    private int _dragStartWindowX = 0;
+    private int _dragStartWindowY = 0;
+
+    // Resize state tracking
+    internal bool _resizingRight = false;
+    internal bool _resizingLeft = false;
+    internal bool _resizingTop = false;
+    internal bool _resizingBottom = false;
+    internal float _resizeOffsetX1 = 0;
+    internal float _resizeOffsetY1 = 0;
+    internal float _resizeOffsetX2 = 0;
+    internal float _resizeOffsetY2 = 0;
+    private int _resizeStartWindowWidth = 0;
+    private int _resizeStartWindowHeight = 0;
+    private int _resizeStartWindowX = 0;
+    private int _resizeStartWindowY = 0;
 
     public Window()
     {
@@ -194,9 +211,25 @@ public class Window : Panel
     {
         _nativeWindow = nativeWindow;
         
+        // Check if custom chrome is requested (either by property or CSS)
+        bool customChromeRequested = HasCustomChrome || HasTitleBar;
+        if (!customChromeRequested && ComputedStyle != null)
+        {
+            var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
+            customChromeRequested = customChromeVar == "true" || customChromeVar == "1";
+        }
+        
         // Add osdecorated class when using native window (OS handles window chrome)
-        // This allows themes to hide borders when the OS is providing window decoration
-        AddClass("osdecorated");
+        // BUT only if custom chrome is not requested
+        if (!customChromeRequested)
+        {
+            AddClass("osdecorated");
+        }
+        else
+        {
+            // If custom chrome is requested, make the native window borderless
+            _nativeWindow.SetWindowBorder(false);
+        }
         
         // When native window is set, clear any panel positioning that was applied during initial layout
         // (since position/size should control native window, not panel styles)
@@ -562,6 +595,10 @@ public class Window : Panel
     {
         OnClose();
         OnCloseAction?.Invoke();
+        
+        // Close native window if present
+        _nativeWindow?.Close();
+        
         Delete();
     }
 
@@ -594,14 +631,26 @@ public class Window : Panel
     }
 
     /// <summary>
-    /// Start dragging the window
+    /// Start dragging the window. For native windows, uses screen coordinates.
     /// </summary>
     public void StartDrag(Vector2 mousePos)
     {
         if (!IsDraggable) return;
 
-        _dragOffsetX = mousePos.x - Box.Rect.Left;
-        _dragOffsetY = mousePos.y - Box.Rect.Top;
+        if (_nativeWindow != null)
+        {
+            // For native windows, use SCREEN coordinates to avoid feedback loop
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            var (winX, winY) = _nativeWindow.GetPosition();
+            _dragOffsetX = screenMouseX - winX; // Offset from window origin to mouse
+            _dragOffsetY = screenMouseY - winY;
+        }
+        else
+        {
+            // For in-panel windows, store offset from panel position
+            _dragOffsetX = mousePos.x - Box.Rect.Left;
+            _dragOffsetY = mousePos.y - Box.Rect.Top;
+        }
         _dragging = true;
     }
 
@@ -620,15 +669,247 @@ public class Window : Panel
     {
         if (!_dragging) return;
 
-        Position = new Vector2(
-            mousePos.x - _dragOffsetX,
-            mousePos.y - _dragOffsetY
-        );
+        if (_nativeWindow != null)
+        {
+            // For native windows, use SCREEN coordinates
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            var newX = screenMouseX - (int)_dragOffsetX;
+            var newY = screenMouseY - (int)_dragOffsetY;
+            _nativeWindow.SetPosition(newX, newY);
+        }
+        else
+        {
+            // For in-panel windows, use local mouse position
+            Position = new Vector2(
+                mousePos.x - _dragOffsetX,
+                mousePos.y - _dragOffsetY
+            );
+        }
+    }
+
+    // -------------
+    // Resizing (ported from XGUI-3)
+    // -------------
+    
+    /// <summary>
+    /// Start resizing from mouse position. Determines which edges to resize based on proximity.
+    /// </summary>
+    public void StartResize(Vector2 mousePos)
+    {
+        if (!IsResizable) return;
+        
+        const float Distance = 8; // Increased from 5 for easier edge grabbing
+        
+        // Use panel rect for edge detection
+        var rect = Box.Rect;
+        
+        if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
+        if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
+        if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
+        if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
+        
+        if (_nativeWindow != null)
+        {
+            // For native windows, store screen mouse position
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            _resizeOffsetX1 = screenMouseX;
+            _resizeOffsetY1 = screenMouseY;
+            
+            var (winW, winH) = _nativeWindow.GetSize();
+            var (winX, winY) = _nativeWindow.GetPosition();
+            _resizeStartWindowWidth = winW;
+            _resizeStartWindowHeight = winH;
+            _resizeStartWindowX = winX;
+            _resizeStartWindowY = winY;
+        }
+        else
+        {
+            // For in-panel windows, store client mouse position
+            _resizeOffsetX1 = mousePos.x;
+            _resizeOffsetY1 = mousePos.y;
+            
+            _resizeStartWindowWidth = (int)rect.Width;
+            _resizeStartWindowHeight = (int)rect.Height;
+            _resizeStartWindowX = (int)Position.x;
+            _resizeStartWindowY = (int)Position.y;
+        }
+    }
+    
+    /// <summary>
+    /// Stop resizing
+    /// </summary>
+    public void StopResize()
+    {
+        _resizingBottom = false;
+        _resizingRight = false;
+        _resizingTop = false;
+        _resizingLeft = false;
+    }
+    
+    /// <summary>
+    /// Update resize based on mouse position
+    /// </summary>
+    public void UpdateResize(Vector2 mousePos, Vector2 localMousePos)
+    {
+        if (!IsResizable) return;
+        
+        // Update cursor based on position - use panel rect for edge detection
+        const float Distance = 8;
+        var rect = Box.Rect;
+        
+        var almostBottom = mousePos.y >= rect.Bottom - Distance;
+        var almostRight = mousePos.x >= rect.Right - Distance;
+        var almostTop = mousePos.y <= rect.Top + Distance;
+        var almostLeft = mousePos.x <= rect.Left + Distance;
+        
+        // Set cursor based on resize position
+        if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
+        else if ((almostRight && almostTop) || (_resizingRight && _resizingTop)) Style.Cursor = "nesw-resize";
+        else if ((almostRight && almostBottom) || (_resizingRight && _resizingBottom)) Style.Cursor = "nwse-resize";
+        else if ((almostLeft && almostTop) || (_resizingLeft && _resizingTop)) Style.Cursor = "nwse-resize";
+        else if (almostBottom || _resizingBottom) Style.Cursor = "ns-resize";
+        else if (almostRight || _resizingRight) Style.Cursor = "ew-resize";
+        else if (almostTop || _resizingTop) Style.Cursor = "ns-resize";
+        else if (almostLeft || _resizingLeft) Style.Cursor = "ew-resize";
+        else Style.Cursor = "unset";
+        
+        if (!IsResizing) return;
+        
+        float deltaX, deltaY;
+        
+        if (_nativeWindow != null)
+        {
+            // For native windows, calculate delta using screen coordinates
+            var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
+            deltaX = screenMouseX - _resizeOffsetX1;
+            deltaY = screenMouseY - _resizeOffsetY1;
+        }
+        else
+        {
+            // For in-panel windows, use client coordinates
+            deltaX = mousePos.x - _resizeOffsetX1;
+            deltaY = mousePos.y - _resizeOffsetY1;
+        }
+        
+        int newWidth = _resizeStartWindowWidth;
+        int newHeight = _resizeStartWindowHeight;
+        int newX = _resizeStartWindowX;
+        int newY = _resizeStartWindowY;
+        
+        // Apply resize based on which edges are being dragged
+        if (_resizingRight)
+        {
+            newWidth = _resizeStartWindowWidth + (int)deltaX;
+        }
+        if (_resizingBottom)
+        {
+            newHeight = _resizeStartWindowHeight + (int)deltaY;
+        }
+        if (_resizingLeft)
+        {
+            newWidth = _resizeStartWindowWidth - (int)deltaX;
+            newX = _resizeStartWindowX + (int)deltaX;
+        }
+        if (_resizingTop)
+        {
+            newHeight = _resizeStartWindowHeight - (int)deltaY;
+            newY = _resizeStartWindowY + (int)deltaY;
+        }
+        
+        // Enforce minimum size
+        if (newWidth < MinSize.x)
+        {
+            if (_resizingLeft)
+            {
+                newX = _resizeStartWindowX + _resizeStartWindowWidth - (int)MinSize.x;
+            }
+            newWidth = (int)MinSize.x;
+        }
+        if (newHeight < MinSize.y)
+        {
+            if (_resizingTop)
+            {
+                newY = _resizeStartWindowY + _resizeStartWindowHeight - (int)MinSize.y;
+            }
+            newHeight = (int)MinSize.y;
+        }
+        
+        // Apply to native window or panel
+        if (_nativeWindow != null)
+        {
+            _nativeWindow.SetSize(newWidth, newHeight);
+            if (_resizingLeft || _resizingTop)
+            {
+                _nativeWindow.SetPosition(newX, newY);
+            }
+        }
+        else
+        {
+            Style.Width = newWidth;
+            Style.Height = newHeight;
+            Size = new Vector2(newWidth, newHeight);
+            if (_resizingLeft || _resizingTop)
+            {
+                Position = new Vector2(newX, newY);
+            }
+        }
+        
+        WindowWidth = newWidth;
+        WindowHeight = newHeight;
+    }
+    
+    /// <summary>
+    /// Whether any resize is in progress
+    /// </summary>
+    public bool IsResizing => _resizingRight || _resizingLeft || _resizingTop || _resizingBottom;
+
+    // -------------
+    // Mouse Event Handlers
+    // -------------
+    
+    /// <summary>
+    /// Handle mouse down - focus window and start resize
+    /// </summary>
+    protected override void OnMouseDown(MousePanelEvent e)
+    {
+        base.OnMouseDown(e);
+        
+        // Focus the window when clicked
+        FocusWindow();
+        
+        // Start resize if applicable
+        var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
+        StartResize(mousePos);
+    }
+    
+    /// <summary>
+    /// Handle mouse up - stop resize
+    /// </summary>
+    protected override void OnMouseUp(MousePanelEvent e)
+    {
+        base.OnMouseUp(e);
+        StopResize();
+        StopDrag();
+    }
+    
+    /// <summary>
+    /// Handle mouse move - update resize
+    /// </summary>
+    protected override void OnMouseMove(MousePanelEvent e)
+    {
+        base.OnMouseMove(e);
+        
+        var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
+        var localMousePos = Parent?.MousePosition ?? Vector2.Zero;
+        UpdateResize(mousePos, localMousePos);
     }
 
     public override void Tick()
     {
         base.Tick();
+
+        // Monitor CSS --custom-chrome property for dynamic theme changes
+        UpdateCustomChromeFromCss();
 
         // Only apply position/size override if explicitly set (non-zero)
         // Apply position and size to style for floating window behavior
@@ -654,7 +935,59 @@ public class Window : Panel
         // Update classes
         SetClass("minimised", IsMinimised);
         SetClass("maximised", IsMaximised);
-        SetClass("unfocused", !HasFocus);
+        
+        // Check focus state - use native window's focus if available, otherwise use panel focus
+        bool isFocused = _nativeWindow?.IsFocused ?? HasFocus;
+        SetClass("unfocused", !isFocused);
+    }
+
+    /// <summary>
+    /// Check the CSS --custom-chrome property and update the title bar accordingly.
+    /// This allows themes to dynamically switch between native and custom chrome.
+    /// </summary>
+    private void UpdateCustomChromeFromCss()
+    {
+        if (ComputedStyle == null) return;
+
+        // Check for --custom-chrome CSS variable
+        var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
+        bool cssRequestsCustomChrome = customChromeVar == "true" || customChromeVar == "1";
+
+        // Only update if the CSS value has changed (avoid repeated processing)
+        if (cssRequestsCustomChrome != _lastCustomChromeFromCss)
+        {
+            _lastCustomChromeFromCss = cssRequestsCustomChrome;
+            
+            // Determine if custom chrome should be shown (from property OR CSS)
+            bool shouldHaveCustomChrome = HasCustomChrome || HasTitleBar || cssRequestsCustomChrome;
+            bool currentlyHasCustomChrome = TitleBar != null && TitleBar.IsValid();
+
+            if (shouldHaveCustomChrome && !currentlyHasCustomChrome)
+            {
+                // Need to create title bar
+                CreateTitleBar();
+                
+                // Update native window to be borderless when using custom chrome
+                if (_nativeWindow != null)
+                {
+                    _nativeWindow.SetWindowBorder(false);
+                    RemoveClass("osdecorated");
+                }
+            }
+            else if (!shouldHaveCustomChrome && currentlyHasCustomChrome)
+            {
+                // Need to remove title bar (CSS no longer requests it and properties don't require it)
+                TitleBar?.Delete();
+                TitleBar = null;
+                
+                // Update native window to have native border
+                if (_nativeWindow != null)
+                {
+                    _nativeWindow.SetWindowBorder(true);
+                    AddClass("osdecorated");
+                }
+            }
+        }
     }
 
     /// <summary>

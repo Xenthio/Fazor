@@ -24,6 +24,8 @@ public class NativeWindow : INativeWindow, IDisposable
     private IKeyboard? _keyboard;
     private bool _disposed = false;
     private PopupManager? _popupManager;
+    private bool _hasNativeBorder = true;
+    private bool _hasTransparentFramebuffer = false;
 
     public RootPanel? RootPanel { get; set; }
 
@@ -42,13 +44,19 @@ public class NativeWindow : INativeWindow, IDisposable
     /// </summary>
     public PopupManager? PopupManager => _popupManager;
 
-    public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null)
+    public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null, bool transparentFramebuffer = true, bool borderless = false)
     {
+        // Always enable transparent framebuffer by default to support themes with transparency (e.g., ThinGrey)
+        _hasTransparentFramebuffer = transparentFramebuffer;
+        _hasNativeBorder = !borderless;
+        
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>(width, height);
         options.Title = title;
         options.VSync = true;
         options.IsEventDriven = false;
+        options.TransparentFramebuffer = transparentFramebuffer; // Enable by default for theme transparency support
+        options.WindowBorder = borderless ? WindowBorder.Hidden : WindowBorder.Resizable;
 
         // Auto-select best backend for platform if not specified
         if (backendType == null)
@@ -101,6 +109,7 @@ public class NativeWindow : INativeWindow, IDisposable
         _window.Render += OnRender;
         _window.Closing += OnClosing;
         _window.FramebufferResize += OnFramebufferResize;
+        _window.FocusChanged += OnFocusChanged;
     }
 
     public void Run() => _window.Run();
@@ -130,6 +139,11 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Initialize popup manager
         _popupManager = new PopupManager(this);
+    }
+
+    private void OnFocusChanged(bool focused)
+    {
+        _isFocused = focused;
     }
 
     private void UpdateDpiScale()
@@ -253,6 +267,106 @@ public class NativeWindow : INativeWindow, IDisposable
     public void SetSize(int width, int height)
     {
         _window.Size = new Vector2D<int>(width, height);
+    }
+
+    /// <summary>
+    /// Set whether the window should use native window decorations (title bar, borders).
+    /// When false, the window is borderless and custom chrome can be drawn by the UI.
+    /// </summary>
+    public void SetWindowBorder(bool hasNativeBorder)
+    {
+        if (_hasNativeBorder == hasNativeBorder) return;
+        _hasNativeBorder = hasNativeBorder;
+
+        // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
+        _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+    }
+
+    /// <summary>
+    /// Get whether the window currently has native window decorations.
+    /// </summary>
+    public bool HasNativeBorder => _hasNativeBorder;
+
+    /// <summary>
+    /// Set whether the window should have a transparent framebuffer.
+    /// This allows transparency in themes that use semi-transparent backgrounds.
+    /// Note: Transparent framebuffer is enabled by default to support all themes.
+    /// Changing this at runtime is not supported on most platforms as it requires
+    /// recreating the window context.
+    /// </summary>
+    public void SetTransparentFramebuffer(bool transparent)
+    {
+        // Note: Changing transparent framebuffer at runtime is not supported by most platforms.
+        // This would require recreating the window. Since transparent framebuffer is now 
+        // enabled by default, this should rarely need to be called.
+        // We update the tracking field but the actual window property cannot be changed.
+        _hasTransparentFramebuffer = transparent;
+    }
+
+    /// <summary>
+    /// Get whether the window currently has a transparent framebuffer.
+    /// Default is true to support themes with transparency (e.g., ThinGrey).
+    /// </summary>
+    public bool HasTransparentFramebuffer => _hasTransparentFramebuffer;
+
+    /// <summary>
+    /// Get whether the native window currently has focus.
+    /// </summary>
+    public bool IsFocused => _isFocused;
+    private bool _isFocused = true; // Assume focused on start
+
+    /// <summary>
+    /// Request focus for the native window.
+    /// </summary>
+    public void Focus()
+    {
+        _window.Focus();
+    }
+
+    /// <summary>
+    /// Close the native window.
+    /// </summary>
+    public void Close()
+    {
+        _window.Close();
+    }
+
+    /// <summary>
+    /// Get the current window position.
+    /// </summary>
+    public (int x, int y) GetPosition()
+    {
+        return (_window.Position.X, _window.Position.Y);
+    }
+
+    /// <summary>
+    /// Get the current window size.
+    /// </summary>
+    public (int width, int height) GetSize()
+    {
+        return (_window.Size.X, _window.Size.Y);
+    }
+
+    /// <summary>
+    /// Get the current mouse position in screen coordinates.
+    /// </summary>
+    public (int x, int y) GetScreenMousePosition()
+    {
+        if (_mouse == null) return (0, 0);
+        
+        // Mouse position is in client coordinates, convert to screen
+        var clientX = (int)_mouse.Position.X;
+        var clientY = (int)_mouse.Position.Y;
+        return ClientToScreen(clientX, clientY);
+    }
+
+    /// <summary>
+    /// Convert client coordinates to screen coordinates.
+    /// </summary>
+    public (int x, int y) ClientToScreen(int clientX, int clientY)
+    {
+        var (winX, winY) = GetPosition();
+        return (winX + clientX, winY + clientY);
     }
 
     // --- Input Helpers ---
