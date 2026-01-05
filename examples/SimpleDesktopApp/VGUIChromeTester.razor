@@ -58,6 +58,14 @@
     private string GetCustomChromeProperty()
     {
         var value = ComputedStyle?.GetCustomProperty("--custom-chrome");
+        
+        // Debug: Check if we can get ANY property
+        if (ComputedStyle != null)
+        {
+            var testBg = ComputedStyle.GetCustomProperty("background-color");
+            Console.WriteLine($"[VGUIChromeTester] Test background-color: '{testBg}'");
+        }
+        
         return value ?? "not set";
     }
     

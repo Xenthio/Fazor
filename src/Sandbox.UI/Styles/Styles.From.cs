@@ -49,6 +49,12 @@ namespace Sandbox.UI
 				TextGradient = a.TextGradient;
 			}
 
+			// Copy custom properties (RawValues dictionary) to preserve CSS variables
+			RawValues.Clear();
+			foreach ( var kvp in a.RawValues )
+			{
+				RawValues[kvp.Key] = kvp.Value;
+			}
 		}
 
 		internal void CopyShadows( BaseStyles bs )

@@ -49,10 +49,23 @@ public partial class Styles : BaseStyles
 	/// </summary>
 	public string? GetCustomProperty(string propertyName)
 	{
+		Console.WriteLine($"[Styles.GetCustomProperty] Looking for '{propertyName}'");
+		Console.WriteLine($"[Styles.GetCustomProperty] RawValues has {RawValues.Count} entries");
+		
+		// Debug: List first few custom properties
+		var customProps = RawValues.Where(kv => kv.Key.StartsWith("--")).Take(5).ToList();
+		Console.WriteLine($"[Styles.GetCustomProperty] Found {customProps.Count} custom properties:");
+		foreach (var kvp in customProps)
+		{
+			Console.WriteLine($"[Styles.GetCustomProperty]   '{kvp.Key}' = '{kvp.Value.Value}'");
+		}
+		
 		if (RawValues.TryGetValue(propertyName, out var value))
 		{
+			Console.WriteLine($"[Styles.GetCustomProperty] Found '{propertyName}' = '{value.Value}'");
 			return value.Value;
 		}
+		Console.WriteLine($"[Styles.GetCustomProperty] Property '{propertyName}' not found");
 		return null;
 	}
 
