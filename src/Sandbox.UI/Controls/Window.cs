@@ -162,12 +162,6 @@ public class Window : Panel
     /// </summary>
     public bool IsDragging => _dragging;
 
-    // Edge detection distances for resizing
-    private const float EDGE_DETECTION_DISTANCE = 5; // Match XGUI-3
-    
-    // Visual padding for custom chrome windows (creates invisible border for edge detection)
-    private const float CUSTOM_CHROME_VISUAL_PADDING = 5; // Match XGUI-3
-
     // Resize state tracking
     internal bool _resizingRight = false;
     internal bool _resizingLeft = false;
@@ -727,28 +721,17 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        const float Distance = EDGE_DETECTION_DISTANCE;
+        // Use a larger distance (10px instead of 5px) to make edges easier to grab
+        // Especially important for borderless windows where there's no visual frame
+        const float Distance = 10;
+        
+        // Use panel rect for edge detection
         var rect = Box.Rect;
         
-        // For borderless windows with custom chrome, check against the outer edge of the visual padding
-        // This allows grabbing edges even when mouse is in the padding area
-        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
-        {
-            // Extend detection to the framebuffer edge (visual padding area)
-            var padding = CUSTOM_CHROME_VISUAL_PADDING;
-            if (mousePos.y >= rect.Bottom - padding - Distance && mousePos.y <= rect.Bottom + padding) _resizingBottom = true;
-            if (mousePos.x >= rect.Right - padding - Distance && mousePos.x <= rect.Right + padding) _resizingRight = true;
-            if (mousePos.y <= rect.Top + padding + Distance && mousePos.y >= rect.Top - padding) _resizingTop = true;
-            if (mousePos.x <= rect.Left + padding + Distance && mousePos.x >= rect.Left - padding) _resizingLeft = true;
-        }
-        else
-        {
-            // Standard window detection
-            if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
-            if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
-            if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
-            if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
-        }
+        if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
+        if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
+        if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
+        if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
         
         if (_nativeWindow != null)
         {
@@ -795,27 +778,15 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        const float Distance = EDGE_DETECTION_DISTANCE;
+        // Update cursor based on position - use panel rect for edge detection
+        // Use a larger distance (10px) to make edges easier to grab
+        const float Distance = 10;
         var rect = Box.Rect;
         
-        // For borderless windows with custom chrome, check against the outer edge of the visual padding
-        bool almostBottom, almostRight, almostTop, almostLeft;
-        
-        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
-        {
-            var padding = CUSTOM_CHROME_VISUAL_PADDING;
-            almostBottom = mousePos.y >= rect.Bottom - padding - Distance && mousePos.y <= rect.Bottom + padding;
-            almostRight = mousePos.x >= rect.Right - padding - Distance && mousePos.x <= rect.Right + padding;
-            almostTop = mousePos.y <= rect.Top + padding + Distance && mousePos.y >= rect.Top - padding;
-            almostLeft = mousePos.x <= rect.Left + padding + Distance && mousePos.x >= rect.Left - padding;
-        }
-        else
-        {
-            almostBottom = mousePos.y >= rect.Bottom - Distance;
-            almostRight = mousePos.x >= rect.Right - Distance;
-            almostTop = mousePos.y <= rect.Top + Distance;
-            almostLeft = mousePos.x <= rect.Left + Distance;
-        }
+        var almostBottom = mousePos.y >= rect.Bottom - Distance;
+        var almostRight = mousePos.x >= rect.Right - Distance;
+        var almostTop = mousePos.y <= rect.Top + Distance;
+        var almostLeft = mousePos.x <= rect.Left + Distance;
         
         // Set cursor based on resize position
         if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
