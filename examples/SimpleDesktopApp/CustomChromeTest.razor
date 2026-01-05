@@ -1,0 +1,53 @@
+@namespace SimpleDesktopApp
+@using Sandbox.UI
+@using System
+@attribute [StyleSheet("/XGUI/DefaultStyles/Computer11.scss")]
+@inherits Window
+
+<root title="Custom Chrome Test" hasminimise="true" hasmaximise="true" hasclose="true" 
+      windowwidth="600" windowheight="400">
+    <div class="window-content" style="padding: 20px;">
+        <h2>Custom Chrome Window Test</h2>
+        
+        <section style="margin-top: 20px;">
+            <h3>Edge Resizing Test</h3>
+            <p>This window has custom chrome (borderless with UI titlebar).</p>
+            <p>With the improvements:</p>
+            <ul>
+                <li>✅ Edge detection distance increased to 12px (was 8px)</li>
+                <li>✅ Easier to grab window edges for resizing</li>
+                <li>✅ Try resizing from all edges and corners</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>Dragging Performance Test</h3>
+            <p>Try dragging the window by its titlebar.</p>
+            <p>Performance improvements:</p>
+            <ul>
+                <li>✅ Drag only updates when actively dragging (not on every mouse move)</li>
+                <li>✅ Redundant position updates eliminated</li>
+                <li>✅ Should feel smoother and more responsive</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <p style="color: #888;">Drag State: @(IsDragging ? "DRAGGING" : "Idle")</p>
+            <p style="color: #888;">Resize State: @(IsResizing ? "RESIZING" : "Idle")</p>
+        </section>
+    </div>
+</root>
+
+@code {
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine("CustomChromeTest initialized");
+            Console.WriteLine($"HasCustomChrome: {HasCustomChrome}");
+            Console.WriteLine($"Window is borderless with custom chrome");
+        }
+    }
+}

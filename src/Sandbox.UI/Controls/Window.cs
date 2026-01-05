@@ -154,11 +154,17 @@ public class Window : Panel
     private float _dragOffsetY = 0;
     private int _dragStartWindowX = 0;
     private int _dragStartWindowY = 0;
+    private int _lastDragWindowX = 0;
+    private int _lastDragWindowY = 0;
 
     /// <summary>
     /// Whether the window is currently being dragged
     /// </summary>
     public bool IsDragging => _dragging;
+
+    // Edge detection distances for resizing
+    private const float CUSTOM_CHROME_EDGE_DISTANCE = 12; // Larger distance for borderless windows
+    private const float STANDARD_EDGE_DISTANCE = 8; // Standard distance for windows with OS decorations
 
     // Resize state tracking
     internal bool _resizingRight = false;
@@ -649,6 +655,8 @@ public class Window : Panel
             var (winX, winY) = _nativeWindow.GetPosition();
             _dragOffsetX = screenMouseX - winX; // Offset from window origin to mouse
             _dragOffsetY = screenMouseY - winY;
+            _lastDragWindowX = winX;
+            _lastDragWindowY = winY;
         }
         else
         {
@@ -682,10 +690,12 @@ public class Window : Panel
             var newY = screenMouseY - (int)_dragOffsetY;
             
             // Only update if position actually changed (reduces redundant API calls)
-            var (currentX, currentY) = _nativeWindow.GetPosition();
-            if (newX != currentX || newY != currentY)
+            // Use cached last position to avoid expensive GetPosition() calls
+            if (newX != _lastDragWindowX || newY != _lastDragWindowY)
             {
                 _nativeWindow.SetPosition(newX, newY);
+                _lastDragWindowX = newX;
+                _lastDragWindowY = newY;
             }
         }
         else
@@ -717,7 +727,7 @@ public class Window : Panel
         
         // Use larger padding for custom chrome windows (borderless) where edge detection is harder
         // Standard windows with OS decorations use smaller distance
-        float Distance = (HasCustomChrome || HasTitleBar) ? 12 : 8;
+        float Distance = (HasCustomChrome || HasTitleBar) ? CUSTOM_CHROME_EDGE_DISTANCE : STANDARD_EDGE_DISTANCE;
         
         // Use panel rect for edge detection
         var rect = Box.Rect;
@@ -774,7 +784,7 @@ public class Window : Panel
         
         // Update cursor based on position - use panel rect for edge detection
         // Use larger padding for custom chrome windows (borderless) where edge detection is harder
-        float Distance = (HasCustomChrome || HasTitleBar) ? 12 : 8;
+        float Distance = (HasCustomChrome || HasTitleBar) ? CUSTOM_CHROME_EDGE_DISTANCE : STANDARD_EDGE_DISTANCE;
         var rect = Box.Rect;
         
         var almostBottom = mousePos.y >= rect.Bottom - Distance;
