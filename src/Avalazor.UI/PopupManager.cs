@@ -16,17 +16,17 @@ public class PopupManager : IPopupService, IDisposable
 
     /// <summary>
     /// Whether native popup windows are supported.
-    /// Currently disabled by default due to complexity with managing multiple Silk.NET windows.
-    /// The overlay fallback provides reliable behavior within the main window.
+    /// When true, popups will be rendered in separate native OS windows that can
+    /// extend beyond the main application window bounds.
     /// </summary>
-    public bool SupportsNativePopups { get; set; } = false;
+    public bool SupportsNativePopups { get; set; } = true;
 
     /// <summary>
     /// If true, use overlay-based fallback instead of native popup windows.
-    /// This is the default and recommended mode - popups appear as high z-index overlays
-    /// within the main window, which works reliably across all platforms.
+    /// Overlay popups appear as high z-index overlays within the main window.
+    /// Set this to true if native popups cause issues on specific platforms.
     /// </summary>
-    public bool UseOverlayFallback { get; set; } = true;
+    public bool UseOverlayFallback { get; set; } = false;
 
     public PopupManager(NativeWindow mainWindow)
     {
@@ -50,7 +50,7 @@ public class PopupManager : IPopupService, IDisposable
 
         // Calculate popup size - start with a reasonable default
         var width = 200;
-        var height = 200;
+        var height = 300; // Reasonable height for dropdown lists
 
         // If opener has a width, match it for dropdowns
         if (opener?.Box != null)
@@ -58,18 +58,31 @@ public class PopupManager : IPopupService, IDisposable
             width = Math.Max(width, (int)opener.Box.Rect.Width);
         }
 
-        // Create native popup window
-        var popupWindow = new PopupWindow(
-            width, height,
-            (int)screenPosition.x, (int)screenPosition.y,
-            _mainWindow
-        );
+        try
+        {
+            // Create native popup window
+            var popupWindow = new PopupWindow(
+                width, height,
+                (int)screenPosition.x, (int)screenPosition.y,
+                _mainWindow
+            );
 
-        popupWindow.SetContent(popup, opener);
-        popupWindow.OnCloseRequested += OnPopupCloseRequested;
+            popupWindow.SetContent(popup, opener);
+            popupWindow.OnCloseRequested += OnPopupCloseRequested;
 
-        _openPopups.Add(popupWindow);
-        popupWindow.Show();
+            _openPopups.Add(popupWindow);
+            
+            // Initialize and show the popup window
+            popupWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PopupManager] Failed to create native popup: {ex.Message}");
+            Console.WriteLine($"[PopupManager] Falling back to overlay mode");
+            
+            // Fall back to overlay mode if native popup fails
+            TrackPopupForOverlay(popup);
+        }
     }
 
     private readonly List<BasePopup> _overlayPopups = new();
@@ -179,6 +192,8 @@ public class PopupManager : IPopupService, IDisposable
             window.PopupContent.Delete();
         }
         
+        // Clean up and dispose the window
+        window.Reset();
         window.Dispose();
     }
 
@@ -187,18 +202,28 @@ public class PopupManager : IPopupService, IDisposable
     /// </summary>
     public void ProcessPopups()
     {
+        if (_openPopups.Count == 0) return;
+        
         // Process each native popup window
         var closedPopups = new List<PopupWindow>();
         
         foreach (var popup in _openPopups.ToList())
         {
-            if (popup.IsClosing)
+            try
             {
-                closedPopups.Add(popup);
+                if (popup.IsClosing)
+                {
+                    closedPopups.Add(popup);
+                }
+                else
+                {
+                    popup.DoFrame();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                popup.DoFrame();
+                Console.WriteLine($"[PopupManager] Error processing popup: {ex.Message}");
+                closedPopups.Add(popup);
             }
         }
 
@@ -276,7 +301,15 @@ public class PopupManager : IPopupService, IDisposable
         // Close all native popup windows
         foreach (var popup in _openPopups.ToList())
         {
-            popup.Dispose();
+            try
+            {
+                popup.Reset();
+                popup.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
         }
         _openPopups.Clear();
 

@@ -12,6 +12,9 @@ namespace Avalazor.UI;
 /// <summary>
 /// A native popup window that can extend beyond the main application window.
 /// Used for dropdown menus, tooltips, context menus, etc.
+/// 
+/// Important: This window must be properly initialized before use by calling Initialize().
+/// The window lifecycle is managed manually through DoFrame() calls from the main render loop.
 /// </summary>
 public class PopupWindow : IDisposable
 {
@@ -20,6 +23,8 @@ public class PopupWindow : IDisposable
     private IInputContext? _input;
     private IMouse? _mouse;
     private bool _disposed = false;
+    private bool _initialized = false;
+    private bool _closeRequested = false;
 
     /// <summary>
     /// The root panel containing the popup content
@@ -52,6 +57,11 @@ public class PopupWindow : IDisposable
     public NativeWindow? ParentWindow { get; set; }
 
     /// <summary>
+    /// Whether the window has been initialized
+    /// </summary>
+    public bool IsInitialized => _initialized;
+
+    /// <summary>
     /// Event fired when this popup should be closed (e.g., clicked outside)
     /// </summary>
     public event Action<PopupWindow>? OnCloseRequested;
@@ -68,11 +78,11 @@ public class PopupWindow : IDisposable
         options.Title = ""; // Popups typically have no title
         options.WindowBorder = WindowBorder.Hidden; // Borderless popup
         options.TopMost = true; // Always on top
-        options.IsVisible = true;
+        options.IsVisible = false; // Start hidden until initialized
         options.ShouldSwapAutomatically = true;
         options.VSync = true;
         options.IsEventDriven = false;
-        options.TransparentFramebuffer = false; // Could enable for drop shadows
+        options.TransparentFramebuffer = false;
 
         // Use same backend type as parent
         if (OperatingSystem.IsWindows())
@@ -96,6 +106,19 @@ public class PopupWindow : IDisposable
         RootPanel.PanelBounds = new Rect(0, 0, width, height);
     }
 
+    /// <summary>
+    /// Initialize the popup window. Must be called before DoFrame() or accessing IsClosing.
+    /// This triggers the window's Load event and sets up graphics resources.
+    /// </summary>
+    public void Initialize()
+    {
+        if (_initialized) return;
+        
+        // Initialize the window - this triggers the Load event
+        _window.Initialize();
+        _initialized = true;
+    }
+
     private void OnLoad()
     {
         _backend.Initialize(_window);
@@ -111,10 +134,11 @@ public class PopupWindow : IDisposable
 
     private void OnRender(double delta)
     {
-        PanelRealTime.Update(delta);
-        RealTime.Update(delta);
-
+        if (!_initialized) return;
+        
         var size = _window.FramebufferSize;
+        if (size.X <= 0 || size.Y <= 0) return;
+        
         RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
 
         var mousePos = _mouse != null ? new UIVector2(_mouse.Position.X, _mouse.Position.Y) : UIVector2.Zero;
@@ -126,7 +150,7 @@ public class PopupWindow : IDisposable
 
     private void OnClosing()
     {
-        _backend.Dispose();
+        _backend?.Dispose();
         _input?.Dispose();
     }
 
@@ -134,7 +158,7 @@ public class PopupWindow : IDisposable
     {
         if (!focused && PopupContent?.CloseOnFocusLoss == true)
         {
-            // Delay the close request slightly to allow click events to process
+            _closeRequested = true;
             OnCloseRequested?.Invoke(this);
         }
     }
@@ -152,6 +176,7 @@ public class PopupWindow : IDisposable
         }
         else if (PopupContent?.CloseOnClickOutside == true)
         {
+            _closeRequested = true;
             OnCloseRequested?.Invoke(this);
         }
     }
@@ -215,12 +240,17 @@ public class PopupWindow : IDisposable
     }
 
     /// <summary>
-    /// Process one frame of the popup window
+    /// Process one frame of the popup window.
+    /// Must call Initialize() first.
     /// </summary>
     public void DoFrame()
     {
+        if (!_initialized || _disposed) return;
+        
         _window.DoEvents();
-        if (!_window.IsClosing)
+        
+        // Check if window is closing (either requested or native close)
+        if (!IsClosing)
         {
             _window.DoUpdate();
             _window.DoRender();
@@ -228,15 +258,37 @@ public class PopupWindow : IDisposable
     }
 
     /// <summary>
-    /// Check if this window should be closed
+    /// Check if this window should be closed.
+    /// Returns true if close was requested or window is being disposed.
     /// </summary>
-    public bool IsClosing => _window.IsClosing;
+    public bool IsClosing
+    {
+        get
+        {
+            if (_closeRequested || _disposed) return true;
+            if (!_initialized) return false;
+            
+            try
+            {
+                return _window.IsClosing;
+            }
+            catch
+            {
+                // If we can't access window state, treat as closing
+                return true;
+            }
+        }
+    }
 
     /// <summary>
     /// Show the popup window
     /// </summary>
     public void Show()
     {
+        if (!_initialized)
+        {
+            Initialize();
+        }
         _window.IsVisible = true;
     }
 
@@ -245,7 +297,10 @@ public class PopupWindow : IDisposable
     /// </summary>
     public void Hide()
     {
-        _window.IsVisible = false;
+        if (_initialized)
+        {
+            _window.IsVisible = false;
+        }
     }
 
     /// <summary>
@@ -253,7 +308,36 @@ public class PopupWindow : IDisposable
     /// </summary>
     public void Close()
     {
-        _window.Close();
+        _closeRequested = true;
+        if (_initialized)
+        {
+            try
+            {
+                _window.Close();
+            }
+            catch
+            {
+                // Ignore close errors
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reset and clean up window resources (call when removing from list)
+    /// </summary>
+    public void Reset()
+    {
+        if (_initialized)
+        {
+            try
+            {
+                _window.Reset();
+            }
+            catch
+            {
+                // Ignore reset errors
+            }
+        }
     }
 
     public void Dispose()
@@ -262,6 +346,18 @@ public class PopupWindow : IDisposable
         _disposed = true;
 
         OnClosing();
-        _window.Dispose();
+        
+        if (_initialized)
+        {
+            try
+            {
+                _window.Reset();
+                _window.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
     }
 }
