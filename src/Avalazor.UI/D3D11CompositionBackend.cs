@@ -13,21 +13,12 @@ namespace Avalazor.UI;
 
 /// <summary>
 /// DirectComposition interop APIs for transparent window support.
-/// DirectComposition allows per-pixel alpha blending with the desktop.
+/// Uses raw COM vtable calls for reliable interop with DirectComposition.
 /// </summary>
 internal static partial class DCompApi
 {
     /// <summary>
     /// Creates a DirectComposition device from a DXGI device.
-    /// </summary>
-    [LibraryImport("dcomp.dll")]
-    public static partial int DCompositionCreateDevice2(
-        nint renderingDevice,
-        ref Guid iid,
-        out nint dcompositionDevice);
-    
-    /// <summary>
-    /// Creates a DirectComposition device from a D3D device (DCompositionCreateDevice).
     /// </summary>
     [LibraryImport("dcomp.dll")]
     public static partial int DCompositionCreateDevice(
@@ -37,60 +28,148 @@ internal static partial class DCompApi
     
     // IDCompositionDevice interface IID
     public static readonly Guid IID_IDCompositionDevice = new("C37EA93A-E7AA-450D-B16F-9746CB0407F3");
+}
+
+/// <summary>
+/// Raw COM vtable wrapper for IDCompositionDevice.
+/// Using raw vtable calls instead of managed COM interop for reliability.
+/// </summary>
+internal unsafe struct DCompDevice : IDisposable
+{
+    private nint _ptr;
     
-    // IDCompositionTarget interface IID
-    public static readonly Guid IID_IDCompositionTarget = new("EACDD04C-117E-4E17-88F4-D1B12B0E3D89");
+    public DCompDevice(nint ptr) => _ptr = ptr;
+    public bool IsValid => _ptr != 0;
+    public nint Ptr => _ptr;
     
-    // IDCompositionVisual interface IID
-    public static readonly Guid IID_IDCompositionVisual = new("4D93059D-097B-4651-9A60-F0F25116E2F2");
+    // VTable layout for IDCompositionDevice:
+    // 0: QueryInterface
+    // 1: AddRef
+    // 2: Release
+    // 3: Commit
+    // 4: WaitForCommitCompletion
+    // 5: GetFrameStatistics
+    // 6: CreateTargetForHwnd
+    // 7: CreateVisual
+    
+    private nint* VTable => *(nint**)_ptr;
+    
+    public int Commit()
+    {
+        var fn = (delegate* unmanaged[Stdcall]<nint, int>)VTable[3];
+        return fn(_ptr);
+    }
+    
+    public int CreateTargetForHwnd(nint hwnd, bool topmost, out DCompTarget target)
+    {
+        nint targetPtr = 0;
+        var fn = (delegate* unmanaged[Stdcall]<nint, nint, int, nint*, int>)VTable[6];
+        var hr = fn(_ptr, hwnd, topmost ? 1 : 0, &targetPtr);
+        target = new DCompTarget(targetPtr);
+        return hr;
+    }
+    
+    public int CreateVisual(out DCompVisual visual)
+    {
+        nint visualPtr = 0;
+        var fn = (delegate* unmanaged[Stdcall]<nint, nint*, int>)VTable[7];
+        var hr = fn(_ptr, &visualPtr);
+        visual = new DCompVisual(visualPtr);
+        return hr;
+    }
+    
+    public void Dispose()
+    {
+        if (_ptr != 0)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<nint, uint>)VTable[2]; // Release
+            fn(_ptr);
+            _ptr = 0;
+        }
+    }
 }
 
 /// <summary>
-/// IDCompositionDevice interface for creating composition targets and visuals.
+/// Raw COM vtable wrapper for IDCompositionTarget.
 /// </summary>
-[Guid("C37EA93A-E7AA-450D-B16F-9746CB0407F3")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IDCompositionDevice
+internal unsafe struct DCompTarget : IDisposable
 {
-    int Commit();
-    int WaitForCommitCompletion();
-    int GetFrameStatistics(out object frameStatistics);
-    int CreateTargetForHwnd(nint hwnd, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool topmost, out IDCompositionTarget target);
-    int CreateVisual(out IDCompositionVisual visual);
-    // Remaining methods omitted for brevity - we only need the above
+    private nint _ptr;
+    
+    public DCompTarget(nint ptr) => _ptr = ptr;
+    public bool IsValid => _ptr != 0;
+    
+    // VTable layout for IDCompositionTarget:
+    // 0: QueryInterface
+    // 1: AddRef
+    // 2: Release
+    // 3: SetRoot
+    
+    private nint* VTable => *(nint**)_ptr;
+    
+    public int SetRoot(DCompVisual visual)
+    {
+        var fn = (delegate* unmanaged[Stdcall]<nint, nint, int>)VTable[3];
+        return fn(_ptr, visual.Ptr);
+    }
+    
+    public void Dispose()
+    {
+        if (_ptr != 0)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<nint, uint>)VTable[2]; // Release
+            fn(_ptr);
+            _ptr = 0;
+        }
+    }
 }
 
 /// <summary>
-/// IDCompositionTarget interface for setting the root visual.
+/// Raw COM vtable wrapper for IDCompositionVisual.
 /// </summary>
-[Guid("EACDD04C-117E-4E17-88F4-D1B12B0E3D89")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IDCompositionTarget
+internal unsafe struct DCompVisual : IDisposable
 {
-    int SetRoot(IDCompositionVisual? visual);
-}
-
-/// <summary>
-/// IDCompositionVisual interface for setting content and transforms.
-/// </summary>
-[Guid("4D93059D-097B-4651-9A60-F0F25116E2F2")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IDCompositionVisual
-{
-    int SetOffsetX(float offsetX);
-    int SetOffsetXWithAnimation(nint animation);
-    int SetOffsetY(float offsetY);
-    int SetOffsetYWithAnimation(nint animation);
-    int SetTransform(nint transform);
-    int SetTransformWithMatrix(ref object matrix);
-    int SetTransformParent(IDCompositionVisual? parent);
-    int SetEffect(nint effect);
-    int SetBitmapInterpolationMode(int interpolationMode);
-    int SetBorderMode(int borderMode);
-    int SetClip(nint clip);
-    int SetClipWithRect(ref object rect);
-    int SetContent(nint content);
-    // The content is actually an IUnknown (the swap chain)
+    private nint _ptr;
+    
+    public DCompVisual(nint ptr) => _ptr = ptr;
+    public bool IsValid => _ptr != 0;
+    public nint Ptr => _ptr;
+    
+    // VTable layout for IDCompositionVisual:
+    // 0: QueryInterface
+    // 1: AddRef
+    // 2: Release
+    // 3: SetOffsetX (IDCompositionTransform)
+    // 4: SetOffsetX (float)
+    // 5: SetOffsetY (IDCompositionTransform)
+    // 6: SetOffsetY (float)
+    // 7: SetTransform (IDCompositionTransform)
+    // 8: SetTransform (D2D_MATRIX_3X2_F)
+    // 9: SetTransformParent
+    // 10: SetEffect
+    // 11: SetBitmapInterpolationMode
+    // 12: SetBorderMode
+    // 13: SetClip (IDCompositionClip)
+    // 14: SetClip (D2D_RECT_F)
+    // 15: SetContent
+    
+    private nint* VTable => *(nint**)_ptr;
+    
+    public int SetContent(nint content)
+    {
+        var fn = (delegate* unmanaged[Stdcall]<nint, nint, int>)VTable[15];
+        return fn(_ptr, content);
+    }
+    
+    public void Dispose()
+    {
+        if (_ptr != 0)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<nint, uint>)VTable[2]; // Release
+            fn(_ptr);
+            _ptr = 0;
+        }
+    }
 }
 
 /// <summary>
@@ -120,10 +199,10 @@ public class D3D11CompositionBackend : IGraphicsBackend
     private ComPtr<ID3D11DeviceContext> _context;
     private ComPtr<IDXGISwapChain1> _swapChain;
     
-    // DirectComposition objects - stored as COM pointers
-    private IDCompositionDevice? _dcompDevice;
-    private IDCompositionTarget? _dcompTarget;
-    private IDCompositionVisual? _dcompVisual;
+    // DirectComposition objects - stored as raw COM vtable wrappers
+    private DCompDevice _dcompDevice;
+    private DCompTarget _dcompTarget;
+    private DCompVisual _dcompVisual;
     
     // Use raw pointers for resources that need to be released during resize
     private unsafe ID3D11RenderTargetView* _renderTargetView;
@@ -314,19 +393,19 @@ public class D3D11CompositionBackend : IGraphicsBackend
             throw new Exception($"Failed to create DirectComposition device: HRESULT 0x{hr:X8}");
         }
         
-        _dcompDevice = (IDCompositionDevice)Marshal.GetObjectForIUnknown(dcompDevicePtr);
+        _dcompDevice = new DCompDevice(dcompDevicePtr);
         Console.WriteLine("[D3D11CompositionBackend] DirectComposition device created");
     }
 
     private unsafe void BindSwapChainToComposition(nint hwnd)
     {
-        if (_dcompDevice == null)
+        if (!_dcompDevice.IsValid)
         {
             throw new InvalidOperationException("DirectComposition device not created");
         }
         
         // Create composition target for the window
-        var hr = _dcompDevice.CreateTargetForHwnd(hwnd, true, out _dcompTarget!);
+        var hr = _dcompDevice.CreateTargetForHwnd(hwnd, true, out _dcompTarget);
         if (hr < 0)
         {
             throw new Exception($"Failed to create composition target: HRESULT 0x{hr:X8}");
@@ -334,7 +413,7 @@ public class D3D11CompositionBackend : IGraphicsBackend
         Console.WriteLine("[D3D11CompositionBackend] Composition target created");
         
         // Create a visual for the swap chain content
-        hr = _dcompDevice.CreateVisual(out _dcompVisual!);
+        hr = _dcompDevice.CreateVisual(out _dcompVisual);
         if (hr < 0)
         {
             throw new Exception($"Failed to create composition visual: HRESULT 0x{hr:X8}");
@@ -491,7 +570,10 @@ public class D3D11CompositionBackend : IGraphicsBackend
         CreateSurface(new Vector2D<int>(_width, _height));
         
         // Commit the composition after resize
-        _dcompDevice?.Commit();
+        if (_dcompDevice.IsValid)
+        {
+            _dcompDevice.Commit();
+        }
         
         Console.WriteLine($"[D3D11CompositionBackend] Resize complete: {_width}x{_height}");
     }
@@ -618,24 +700,10 @@ public class D3D11CompositionBackend : IGraphicsBackend
         _surface?.Dispose();
         _grContext?.Dispose();
         
-        // Release DirectComposition objects
-        if (_dcompVisual != null)
-        {
-            Marshal.ReleaseComObject(_dcompVisual);
-            _dcompVisual = null;
-        }
-        
-        if (_dcompTarget != null)
-        {
-            Marshal.ReleaseComObject(_dcompTarget);
-            _dcompTarget = null;
-        }
-        
-        if (_dcompDevice != null)
-        {
-            Marshal.ReleaseComObject(_dcompDevice);
-            _dcompDevice = null;
-        }
+        // Release DirectComposition objects using struct Dispose methods
+        _dcompVisual.Dispose();
+        _dcompTarget.Dispose();
+        _dcompDevice.Dispose();
         
         // Release D3D11 resources
         if (_stagingTexture != null)
