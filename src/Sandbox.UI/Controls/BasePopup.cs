@@ -259,6 +259,20 @@ public class BasePopup : Panel
         PopupServiceProvider.Current?.CloseAllPopups(exceptThisOne as BasePopup);
     }
 
+    /// <summary>
+    /// Get the preferred size for this popup. Override in derived classes to 
+    /// calculate actual content size.
+    /// </summary>
+    /// <param name="maxWidth">Maximum width constraint</param>
+    /// <param name="maxHeight">Maximum height constraint</param>
+    /// <returns>Preferred width and height for the popup</returns>
+    public virtual Vector2 GetPreferredSize(float maxWidth = 400, float maxHeight = 600)
+    {
+        // Default implementation returns a reasonable default size
+        // Derived classes should override to calculate actual content size
+        return new Vector2(Math.Min(200, maxWidth), Math.Min(200, maxHeight));
+    }
+
     protected override void OnMouseDown(MousePanelEvent e)
     {
         base.OnMouseDown(e);

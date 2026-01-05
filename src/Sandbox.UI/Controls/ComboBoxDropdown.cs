@@ -77,6 +77,36 @@ public class ComboBoxDropdown : BasePopup
         PopulateOptions();
     }
 
+    /// <summary>
+    /// Get the preferred size for this dropdown based on option count
+    /// </summary>
+    public override Vector2 GetPreferredSize(float maxWidth = 400, float maxHeight = 600)
+    {
+        // Match opener width exactly (no minimum)
+        var width = 100f; // Fallback if no opener
+        if (OwnerComboBox?.Box != null)
+        {
+            width = OwnerComboBox.Box.Rect.Width;
+        }
+        else if (Opener?.Box != null)
+        {
+            width = Opener.Box.Rect.Width;
+        }
+        
+        // Estimate height based on number of options
+        // Typical button height is around 26-30 pixels with padding
+        const float itemHeight = 30f;
+        const float padding = 8f; // Top/bottom padding
+        
+        var contentHeight = (Options.Count * itemHeight) + padding;
+        
+        // Clamp to max height
+        var height = Math.Min(contentHeight, maxHeight);
+        height = Math.Min(height, 300f); // Match our MaxHeight style
+        
+        return new Vector2(Math.Min(width, maxWidth), height);
+    }
+
     protected override void OpenInRootPanel(Panel opener)
     {
         base.OpenInRootPanel(opener);

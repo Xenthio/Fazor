@@ -49,14 +49,15 @@ public class PopupManager : IPopupService, IDisposable
             return;
         }
 
-        // Calculate popup size - start with a reasonable default
-        var width = 200;
-        var height = 300; // Reasonable height for dropdown lists
+        // Get preferred size from the popup itself (allows content-aware sizing)
+        var preferredSize = popup.GetPreferredSize();
+        var width = (int)preferredSize.x;
+        var height = (int)preferredSize.y;
 
-        // If opener has a width, match it for dropdowns
-        if (opener?.Box != null)
+        // If opener has a width, use it (popup may not have calculated it yet)
+        if (opener?.Box != null && width < opener.Box.Rect.Width)
         {
-            width = Math.Max(width, (int)opener.Box.Rect.Width);
+            width = (int)opener.Box.Rect.Width;
         }
 
         try
