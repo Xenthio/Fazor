@@ -342,22 +342,12 @@ public class D3D11CompositionBackend : IGraphicsBackend
         Console.WriteLine("[D3D11CompositionBackend] Composition visual created");
         
         // Set the swap chain as the content of the visual
-        // We need to call SetContent with the swap chain pointer
-        // IDCompositionVisual.SetContent takes an IUnknown pointer
-        var swapChainUnknown = Marshal.GetIUnknownForObject(_swapChain);
-        try
+        // IDCompositionVisual.SetContent takes an IUnknown pointer to the swap chain
+        // The swap chain handle is already a COM interface pointer
+        hr = _dcompVisual.SetContent((nint)_swapChain.Handle);
+        if (hr < 0)
         {
-            // Use reflection or direct interface call to set content
-            // The SetContent method expects an IUnknown pointer to the swap chain
-            hr = _dcompVisual.SetContent((nint)_swapChain.Handle);
-            if (hr < 0)
-            {
-                throw new Exception($"Failed to set visual content: HRESULT 0x{hr:X8}");
-            }
-        }
-        finally
-        {
-            Marshal.Release(swapChainUnknown);
+            throw new Exception($"Failed to set visual content: HRESULT 0x{hr:X8}");
         }
         Console.WriteLine("[D3D11CompositionBackend] Swap chain bound to visual");
         
