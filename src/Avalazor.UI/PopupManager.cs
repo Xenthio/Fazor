@@ -68,7 +68,7 @@ public class PopupManager : IPopupService, IDisposable
             );
 
             popupWindow.SetContent(popup, opener);
-            popupWindow.OnCloseRequested += OnPopupCloseRequested;
+            // Note: We don't subscribe to OnCloseRequested anymore - we check IsClosing in ProcessPopups()
 
             _openPopups.Add(popupWindow);
             
@@ -175,26 +175,31 @@ public class PopupManager : IPopupService, IDisposable
         return new UIVector2(size.X, size.Y);
     }
 
-    private void OnPopupCloseRequested(PopupWindow window)
-    {
-        ClosePopupWindow(window);
-    }
-
     private void ClosePopupWindow(PopupWindow window)
     {
-        window.OnCloseRequested -= OnPopupCloseRequested;
+        // Remove from list first to prevent re-processing
         _openPopups.Remove(window);
         
         // Notify the popup content that it's being closed
         if (window.PopupContent != null && !window.PopupContent.IsDeleting)
         {
-            // Don't call popup.Close() as that would recurse
-            window.PopupContent.Delete();
+            try
+            {
+                // Don't call popup.Close() as that would recurse
+                window.PopupContent.Delete();
+            }
+            catch { }
         }
         
-        // Clean up and dispose the window
-        window.Reset();
-        window.Dispose();
+        // Clean up and dispose the window - wrap in try/catch for safety
+        try
+        {
+            window.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PopupManager] Error disposing popup window: {ex.Message}");
+        }
     }
 
     /// <summary>

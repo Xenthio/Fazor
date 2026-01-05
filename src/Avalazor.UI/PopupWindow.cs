@@ -19,12 +19,13 @@ namespace Avalazor.UI;
 public class PopupWindow : IDisposable
 {
     private readonly IWindow _window;
-    private IGraphicsBackend _backend;
+    private IGraphicsBackend? _backend;
     private IInputContext? _input;
     private IMouse? _mouse;
     private bool _disposed = false;
     private bool _initialized = false;
     private bool _closeRequested = false;
+    private bool _resourcesDisposed = false;
 
     /// <summary>
     /// The root panel containing the popup content
@@ -150,16 +151,55 @@ public class PopupWindow : IDisposable
 
     private void OnClosing()
     {
-        _backend?.Dispose();
-        _input?.Dispose();
+        // Only dispose resources once - prevent double disposal
+        if (_resourcesDisposed) return;
+        _resourcesDisposed = true;
+        
+        // Unsubscribe mouse events first to prevent callbacks during disposal
+        if (_mouse != null)
+        {
+            try
+            {
+                _mouse.MouseDown -= OnMouseDown;
+                _mouse.MouseUp -= OnMouseUp;
+            }
+            catch { }
+            _mouse = null;
+        }
+        
+        // Dispose input context
+        if (_input != null)
+        {
+            try
+            {
+                _input.Dispose();
+            }
+            catch { }
+            _input = null;
+        }
+        
+        // Dispose backend
+        if (_backend != null)
+        {
+            try
+            {
+                _backend.Dispose();
+            }
+            catch { }
+            _backend = null;
+        }
     }
 
     private void OnFocusChanged(bool focused)
     {
+        // When focus is lost, mark for closing - but don't invoke the callback
+        // directly from within this event handler to avoid disposing resources
+        // while GLFW is still processing events
         if (!focused && PopupContent?.CloseOnFocusLoss == true)
         {
             _closeRequested = true;
-            OnCloseRequested?.Invoke(this);
+            // The OnCloseRequested event will be fired during the next ProcessPopups() call
+            // when IsClosing is checked - this avoids disposing during callback
         }
     }
 
@@ -176,8 +216,8 @@ public class PopupWindow : IDisposable
         }
         else if (PopupContent?.CloseOnClickOutside == true)
         {
+            // Mark for closing - don't invoke callback during event processing
             _closeRequested = true;
-            OnCloseRequested?.Invoke(this);
         }
     }
 
@@ -344,20 +384,35 @@ public class PopupWindow : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _closeRequested = true;
 
+        // Dispose our resources first (input, backend)
         OnClosing();
         
+        // Then dispose the window itself
         if (_initialized)
         {
             try
             {
+                // Unsubscribe from window events to prevent callbacks during disposal
+                _window.Load -= OnLoad;
+                _window.Render -= OnRender;
+                _window.Closing -= OnClosing;
+                _window.FocusChanged -= OnFocusChanged;
+            }
+            catch { }
+            
+            try
+            {
                 _window.Reset();
+            }
+            catch { }
+            
+            try
+            {
                 _window.Dispose();
             }
-            catch
-            {
-                // Ignore disposal errors
-            }
+            catch { }
         }
     }
 }
