@@ -153,6 +153,16 @@ public class Window : Panel
     private float _dragOffsetX = 0;
     private float _dragOffsetY = 0;
 
+    // Resize state tracking
+    internal bool _resizingRight = false;
+    internal bool _resizingLeft = false;
+    internal bool _resizingTop = false;
+    internal bool _resizingBottom = false;
+    internal float _resizeOffsetX1 = 0;
+    internal float _resizeOffsetY1 = 0;
+    internal float _resizeOffsetX2 = 0;
+    internal float _resizeOffsetY2 = 0;
+
     public Window()
     {
         AddClass("panel");
@@ -643,6 +653,157 @@ public class Window : Panel
         );
     }
 
+    // -------------
+    // Resizing (ported from XGUI-3)
+    // -------------
+    
+    /// <summary>
+    /// Start resizing from mouse position. Determines which edges to resize based on proximity.
+    /// </summary>
+    public void StartResize(Vector2 mousePos)
+    {
+        if (!IsResizable) return;
+        
+        const float Distance = 5;
+        
+        if (mousePos.y.AlmostEqual(Box.Rect.Bottom, Distance)) _resizingBottom = true;
+        if (mousePos.x.AlmostEqual(Box.Rect.Right, Distance)) _resizingRight = true;
+        if (mousePos.y.AlmostEqual(Box.Rect.Top, Distance)) _resizingTop = true;
+        if (mousePos.x.AlmostEqual(Box.Rect.Left, Distance)) _resizingLeft = true;
+        
+        _resizeOffsetX1 = mousePos.x - Box.Rect.Right;
+        _resizeOffsetY1 = mousePos.y - Box.Rect.Bottom;
+        _resizeOffsetX2 = mousePos.x - Box.Rect.Left;
+        _resizeOffsetY2 = mousePos.y - Box.Rect.Top;
+    }
+    
+    /// <summary>
+    /// Stop resizing
+    /// </summary>
+    public void StopResize()
+    {
+        _resizingBottom = false;
+        _resizingRight = false;
+        _resizingTop = false;
+        _resizingLeft = false;
+    }
+    
+    /// <summary>
+    /// Update resize based on mouse position
+    /// </summary>
+    public void UpdateResize(Vector2 mousePos, Vector2 localMousePos)
+    {
+        if (!IsResizable) return;
+        
+        // Update cursor based on position
+        const float Distance = 5;
+        
+        var almostBottom = mousePos.y.AlmostEqual(Box.Rect.Bottom, Distance);
+        var almostRight = mousePos.x.AlmostEqual(Box.Rect.Right, Distance);
+        var almostTop = mousePos.y.AlmostEqual(Box.Rect.Top, Distance);
+        var almostLeft = mousePos.x.AlmostEqual(Box.Rect.Left, Distance);
+        
+        // Set cursor based on resize position
+        if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
+        else if ((almostRight && almostTop) || (_resizingRight && _resizingTop)) Style.Cursor = "nesw-resize";
+        else if ((almostRight && almostBottom) || (_resizingRight && _resizingBottom)) Style.Cursor = "nwse-resize";
+        else if ((almostLeft && almostTop) || (_resizingLeft && _resizingTop)) Style.Cursor = "nwse-resize";
+        else if (almostBottom || _resizingBottom) Style.Cursor = "ns-resize";
+        else if (almostRight || _resizingRight) Style.Cursor = "ew-resize";
+        else if (almostTop || _resizingTop) Style.Cursor = "ns-resize";
+        else if (almostLeft || _resizingLeft) Style.Cursor = "ew-resize";
+        else Style.Cursor = "unset";
+        
+        // Apply resize
+        if (_resizingBottom)
+        {
+            var newHeight = (mousePos.y - Box.Rect.Top) - _resizeOffsetY1;
+            if (newHeight > MinSize.y)
+            {
+                Style.Height = newHeight;
+                Size = new Vector2(Size.x, newHeight);
+            }
+        }
+        
+        if (_resizingRight)
+        {
+            var newWidth = (mousePos.x - Box.Rect.Left) - _resizeOffsetX1;
+            if (newWidth > MinSize.x)
+            {
+                Style.Width = newWidth;
+                Size = new Vector2(newWidth, Size.y);
+            }
+        }
+        
+        if (_resizingTop)
+        {
+            var newHeight = Box.Rect.Height - ((mousePos.y - _resizeOffsetY2) - Box.Rect.Top);
+            if (newHeight > MinSize.y)
+            {
+                Style.Height = newHeight;
+                Size = new Vector2(Size.x, newHeight);
+                Position = new Vector2(Position.x, localMousePos.y - _resizeOffsetY2);
+            }
+        }
+        
+        if (_resizingLeft)
+        {
+            var newWidth = Box.Rect.Width - ((mousePos.x - _resizeOffsetX2) - Box.Rect.Left);
+            if (newWidth > MinSize.x)
+            {
+                Style.Width = newWidth;
+                Size = new Vector2(newWidth, Size.y);
+                Position = new Vector2(localMousePos.x - _resizeOffsetX2, Position.y);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Whether any resize is in progress
+    /// </summary>
+    public bool IsResizing => _resizingRight || _resizingLeft || _resizingTop || _resizingBottom;
+
+    // -------------
+    // Mouse Event Handlers
+    // -------------
+    
+    /// <summary>
+    /// Handle mouse down - focus window and start resize
+    /// </summary>
+    protected override void OnMouseDown(MousePanelEvent e)
+    {
+        base.OnMouseDown(e);
+        
+        // Focus the window when clicked
+        FocusWindow();
+        
+        // Start resize if applicable
+        var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
+        StartResize(mousePos);
+    }
+    
+    /// <summary>
+    /// Handle mouse up - stop resize
+    /// </summary>
+    protected override void OnMouseUp(MousePanelEvent e)
+    {
+        base.OnMouseUp(e);
+        StopResize();
+        StopDrag();
+    }
+    
+    /// <summary>
+    /// Handle mouse move - update resize
+    /// </summary>
+    protected override void OnMouseMove(MousePanelEvent e)
+    {
+        base.OnMouseMove(e);
+        
+        var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
+        var localMousePos = Parent?.MousePosition ?? Vector2.Zero;
+        UpdateResize(mousePos, localMousePos);
+    }
+
     public override void Tick()
     {
         base.Tick();
@@ -674,7 +835,10 @@ public class Window : Panel
         // Update classes
         SetClass("minimised", IsMinimised);
         SetClass("maximised", IsMaximised);
-        SetClass("unfocused", !HasFocus);
+        
+        // Check focus state - use native window's focus if available, otherwise use panel focus
+        bool isFocused = _nativeWindow?.IsFocused ?? HasFocus;
+        SetClass("unfocused", !isFocused);
     }
 
     /// <summary>

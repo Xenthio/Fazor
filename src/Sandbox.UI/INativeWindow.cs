@@ -45,4 +45,14 @@ public interface INativeWindow
     /// Default is true to support themes with transparency (e.g., ThinGrey).
     /// </summary>
     bool HasTransparentFramebuffer { get; }
+
+    /// <summary>
+    /// Get whether the native window currently has focus.
+    /// </summary>
+    bool IsFocused { get; }
+
+    /// <summary>
+    /// Request focus for the native window.
+    /// </summary>
+    void Focus();
 }

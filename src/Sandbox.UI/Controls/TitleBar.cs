@@ -59,4 +59,43 @@ public class TitleBar : Panel
         if (TitleLabel != null)
             TitleLabel.Text = title;
     }
+
+    /// <summary>
+    /// Handle mouse down on the title bar to start dragging the window
+    /// </summary>
+    protected override void OnMouseDown(MousePanelEvent e)
+    {
+        base.OnMouseDown(e);
+        
+        if (ParentWindow != null && ParentWindow.IsDraggable)
+        {
+            // Get mouse position from the root panel
+            var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
+            ParentWindow.StartDrag(mousePos);
+        }
+    }
+
+    /// <summary>
+    /// Handle mouse up to stop dragging
+    /// </summary>
+    protected override void OnMouseUp(MousePanelEvent e)
+    {
+        base.OnMouseUp(e);
+        ParentWindow?.StopDrag();
+    }
+
+    /// <summary>
+    /// Handle mouse move to update drag position
+    /// </summary>
+    protected override void OnMouseMove(MousePanelEvent e)
+    {
+        base.OnMouseMove(e);
+        
+        if (ParentWindow != null)
+        {
+            // Get mouse position from the parent (for local coordinates)
+            var mousePos = ParentWindow.Parent?.MousePosition ?? Vector2.Zero;
+            ParentWindow.UpdateDrag(mousePos);
+        }
+    }
 }

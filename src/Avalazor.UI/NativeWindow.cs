@@ -109,6 +109,7 @@ public class NativeWindow : INativeWindow, IDisposable
         _window.Render += OnRender;
         _window.Closing += OnClosing;
         _window.FramebufferResize += OnFramebufferResize;
+        _window.FocusChanged += OnFocusChanged;
     }
 
     public void Run() => _window.Run();
@@ -138,6 +139,11 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Initialize popup manager
         _popupManager = new PopupManager(this);
+    }
+
+    private void OnFocusChanged(bool focused)
+    {
+        _isFocused = focused;
     }
 
     private void UpdateDpiScale()
@@ -302,6 +308,20 @@ public class NativeWindow : INativeWindow, IDisposable
     /// Default is true to support themes with transparency (e.g., ThinGrey).
     /// </summary>
     public bool HasTransparentFramebuffer => _hasTransparentFramebuffer;
+
+    /// <summary>
+    /// Get whether the native window currently has focus.
+    /// </summary>
+    public bool IsFocused => _isFocused;
+    private bool _isFocused = true; // Assume focused on start
+
+    /// <summary>
+    /// Request focus for the native window.
+    /// </summary>
+    public void Focus()
+    {
+        _window.Focus();
+    }
 
     // --- Input Helpers ---
     private void OnMouseDown(IMouse mouse, MouseButton button) 
