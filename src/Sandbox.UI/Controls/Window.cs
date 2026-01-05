@@ -155,6 +155,11 @@ public class Window : Panel
     private int _dragStartWindowX = 0;
     private int _dragStartWindowY = 0;
 
+    /// <summary>
+    /// Whether the window is currently being dragged
+    /// </summary>
+    public bool IsDragging => _dragging;
+
     // Resize state tracking
     internal bool _resizingRight = false;
     internal bool _resizingLeft = false;
@@ -675,15 +680,27 @@ public class Window : Panel
             var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
             var newX = screenMouseX - (int)_dragOffsetX;
             var newY = screenMouseY - (int)_dragOffsetY;
-            _nativeWindow.SetPosition(newX, newY);
+            
+            // Only update if position actually changed (reduces redundant API calls)
+            var (currentX, currentY) = _nativeWindow.GetPosition();
+            if (newX != currentX || newY != currentY)
+            {
+                _nativeWindow.SetPosition(newX, newY);
+            }
         }
         else
         {
             // For in-panel windows, use local mouse position
-            Position = new Vector2(
+            var newPosition = new Vector2(
                 mousePos.x - _dragOffsetX,
                 mousePos.y - _dragOffsetY
             );
+            
+            // Only update if position actually changed
+            if (Position != newPosition)
+            {
+                Position = newPosition;
+            }
         }
     }
 
@@ -698,7 +715,9 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        const float Distance = 8; // Increased from 5 for easier edge grabbing
+        // Use larger padding for custom chrome windows (borderless) where edge detection is harder
+        // Standard windows with OS decorations use smaller distance
+        float Distance = (HasCustomChrome || HasTitleBar) ? 12 : 8;
         
         // Use panel rect for edge detection
         var rect = Box.Rect;
@@ -754,7 +773,8 @@ public class Window : Panel
         if (!IsResizable) return;
         
         // Update cursor based on position - use panel rect for edge detection
-        const float Distance = 8;
+        // Use larger padding for custom chrome windows (borderless) where edge detection is harder
+        float Distance = (HasCustomChrome || HasTitleBar) ? 12 : 8;
         var rect = Box.Rect;
         
         var almostBottom = mousePos.y >= rect.Bottom - Distance;
