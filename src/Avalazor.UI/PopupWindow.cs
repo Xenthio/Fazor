@@ -158,7 +158,10 @@ public class PopupWindow : IDisposable
                 _mouse.MouseDown -= OnMouseDown;
                 _mouse.MouseUp -= OnMouseUp;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to unsubscribe mouse events: {ex.Message}");
+            }
             _mouse = null;
         }
         
@@ -169,7 +172,10 @@ public class PopupWindow : IDisposable
             {
                 _input.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to dispose input context: {ex.Message}");
+            }
             _input = null;
         }
         
@@ -180,7 +186,10 @@ public class PopupWindow : IDisposable
             {
                 _backend.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to dispose backend: {ex.Message}");
+            }
             _backend = null;
         }
     }
@@ -395,19 +404,28 @@ public class PopupWindow : IDisposable
                 _window.Closing -= OnClosing;
                 _window.FocusChanged -= OnFocusChanged;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to unsubscribe window events during Dispose: {ex.Message}");
+            }
             
             try
             {
                 _window.Reset();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to reset window during Dispose: {ex.Message}");
+            }
             
             try
             {
                 _window.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PopupWindow] Failed to dispose window during Dispose: {ex.Message}");
+            }
         }
     }
 }

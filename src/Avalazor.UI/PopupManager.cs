@@ -261,7 +261,10 @@ public class PopupManager : IPopupService, IDisposable
                         {
                             popup.PopupContent.Close();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[PopupManager] Error closing popup content: {ex.Message}");
+                        }
                     }
                     closedPopups.Add(popup);
                 }
@@ -363,13 +366,10 @@ public class PopupManager : IPopupService, IDisposable
         }
         _openPopups.Clear();
 
-        // Close overlay popups
-        foreach (var popup in _overlayPopups.ToList())
+        // Close overlay popups - filter for popups that need deletion
+        foreach (var popup in _overlayPopups.ToList().Where(p => !p.IsDeleting))
         {
-            if (!popup.IsDeleting)
-            {
-                popup.Delete();
-            }
+            popup.Delete();
         }
         _overlayPopups.Clear();
 
