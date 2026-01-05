@@ -185,6 +185,9 @@ public class NativeWindow : INativeWindow, IDisposable
         UpdateCursor();
 
         _backend.Render(RootPanel);
+
+        // Process popup windows
+        _popupManager?.ProcessPopups();
     }
 
     /// <summary>

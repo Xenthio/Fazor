@@ -64,17 +64,20 @@ public class BasePopup : Panel
     {
         Opener = opener;
 
-        // Calculate screen position based on opener's bounds
+        // Get the opener's bounds - Box.Rect is already in root panel coordinates
         var openerRect = opener.Box?.Rect ?? new Rect(0, 0, 100, 20);
         
-        // Get the opener's screen position by walking up the panel tree
-        var screenPos = GetScreenPosition(opener, new Vector2(openerRect.Left, preferBelow ? openerRect.Bottom : openerRect.Top));
+        // Position the popup directly below (or above) the opener
+        var popupX = openerRect.Left;
+        var popupY = preferBelow ? openerRect.Bottom : openerRect.Top;
         
-        PopupPosition = screenPos;
+        PopupPosition = new Vector2(popupX, popupY);
         
-        // Use popup service if available, otherwise fall back to root panel placement
+        // Use popup service if available and supports native popups
         if (PopupService != null && PopupService.SupportsNativePopups)
         {
+            // For native popups, convert to actual screen coordinates
+            var screenPos = PopupService.ConvertToScreenCoordinates(PopupPosition, opener.FindRootPanel());
             PopupService.OpenPopup(this, screenPos, opener);
         }
         else
@@ -143,14 +146,16 @@ public class BasePopup : Panel
     }
 
     /// <summary>
-    /// Get the screen position of a point relative to a panel
+    /// Get the screen position of a point relative to a panel.
+    /// Returns coordinates in root panel space (not actual screen coordinates).
     /// </summary>
-    protected Vector2 GetScreenPosition(Panel panel, Vector2 localPos)
+    protected Vector2 GetRootPanelPosition(Panel panel, Vector2 localPos)
     {
-        // Start with the local position
+        // Start with the local position relative to the panel
         var pos = localPos;
 
         // Walk up the panel tree to convert to root panel coordinates
+        // We add the box position of each parent since localPos is already in the panel's coordinate space
         var current = panel.Parent;
         while (current != null && current is not RootPanel)
         {
@@ -164,8 +169,19 @@ public class BasePopup : Panel
             current = current.Parent;
         }
 
-        // If we have a popup service, it can convert to actual screen coordinates
-        if (PopupService != null)
+        return pos;
+    }
+
+    /// <summary>
+    /// Get the screen position of a point relative to a panel
+    /// </summary>
+    protected Vector2 GetScreenPosition(Panel panel, Vector2 localPos)
+    {
+        // First get position in root panel coordinates
+        var pos = GetRootPanelPosition(panel, localPos);
+
+        // If we have a popup service and native popups, convert to actual screen coordinates
+        if (PopupService != null && PopupService.SupportsNativePopups)
         {
             pos = PopupService.ConvertToScreenCoordinates(pos, panel.FindRootPanel());
         }

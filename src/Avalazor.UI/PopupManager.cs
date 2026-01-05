@@ -4,21 +4,27 @@ using UIVector2 = Sandbox.UI.Vector2;
 namespace Avalazor.UI;
 
 /// <summary>
-/// Manages popup panels within the application.
-/// Uses an overlay-based approach where popups are rendered at the root level with high z-index.
-/// This provides consistent behavior across platforms without the complexity of multiple windows.
+/// Manages popup windows for the desktop application.
+/// Creates actual native OS windows for popups, allowing them to extend beyond
+/// the main application window bounds - proper behavior for desktop applications.
 /// </summary>
 public class PopupManager : IPopupService, IDisposable
 {
-    private readonly List<BasePopup> _openPopups = new();
+    private readonly List<PopupWindow> _openPopups = new();
     private readonly NativeWindow _mainWindow;
     private bool _disposed = false;
 
     /// <summary>
     /// Whether native popup windows are supported.
-    /// Currently returns false to use the overlay approach which is more reliable.
+    /// For desktop applications, this should be true to allow proper popup behavior.
     /// </summary>
-    public bool SupportsNativePopups => false;
+    public bool SupportsNativePopups { get; set; } = true;
+
+    /// <summary>
+    /// If true, use overlay-based fallback instead of native popup windows.
+    /// Set to true if native popups cause issues on certain platforms.
+    /// </summary>
+    public bool UseOverlayFallback { get; set; } = false;
 
     public PopupManager(NativeWindow mainWindow)
     {
@@ -33,11 +39,43 @@ public class PopupManager : IPopupService, IDisposable
     /// </summary>
     public void OpenPopup(BasePopup popup, UIVector2 screenPosition, Panel? opener = null)
     {
-        // Track this popup
-        _openPopups.Add(popup);
-        popup.OnPopupClosed += () => OnPopupClosed(popup);
+        if (UseOverlayFallback || !SupportsNativePopups)
+        {
+            // Track popup for click-outside handling even in overlay mode
+            TrackPopupForOverlay(popup);
+            return;
+        }
 
-        // The popup will handle its own placement via OpenInRootPanel fallback
+        // Calculate popup size - start with a reasonable default
+        var width = 200;
+        var height = 200;
+
+        // If opener has a width, match it for dropdowns
+        if (opener?.Box != null)
+        {
+            width = Math.Max(width, (int)opener.Box.Rect.Width);
+        }
+
+        // Create native popup window
+        var popupWindow = new PopupWindow(
+            width, height,
+            (int)screenPosition.x, (int)screenPosition.y,
+            _mainWindow
+        );
+
+        popupWindow.SetContent(popup, opener);
+        popupWindow.OnCloseRequested += OnPopupCloseRequested;
+
+        _openPopups.Add(popupWindow);
+        popupWindow.Show();
+    }
+
+    private readonly List<BasePopup> _overlayPopups = new();
+
+    private void TrackPopupForOverlay(BasePopup popup)
+    {
+        _overlayPopups.Add(popup);
+        popup.OnPopupClosed += () => _overlayPopups.Remove(popup);
     }
 
     /// <summary>
@@ -45,14 +83,15 @@ public class PopupManager : IPopupService, IDisposable
     /// </summary>
     public void ClosePopup(BasePopup popup)
     {
-        if (_openPopups.Contains(popup))
+        // Find and close native popup window
+        var window = _openPopups.FirstOrDefault(w => w.PopupContent == popup);
+        if (window != null)
         {
-            _openPopups.Remove(popup);
-            if (!popup.IsDeleting)
-            {
-                popup.Delete();
-            }
+            ClosePopupWindow(window);
         }
+
+        // Also remove from overlay tracking
+        _overlayPopups.Remove(popup);
     }
 
     /// <summary>
@@ -60,10 +99,18 @@ public class PopupManager : IPopupService, IDisposable
     /// </summary>
     public void CloseAllPopups(BasePopup? except = null)
     {
-        var toClose = _openPopups.Where(p => p != except).ToList();
-        foreach (var popup in toClose)
+        // Close native popup windows
+        var toClose = _openPopups.Where(w => w.PopupContent != except).ToList();
+        foreach (var window in toClose)
         {
-            _openPopups.Remove(popup);
+            ClosePopupWindow(window);
+        }
+
+        // Close overlay popups
+        var overlayToClose = _overlayPopups.Where(p => p != except).ToList();
+        foreach (var popup in overlayToClose)
+        {
+            _overlayPopups.Remove(popup);
             if (!popup.IsDeleting)
             {
                 popup.Delete();
@@ -113,20 +160,62 @@ public class PopupManager : IPopupService, IDisposable
         return new UIVector2(size.X, size.Y);
     }
 
-    private void OnPopupClosed(BasePopup popup)
+    private void OnPopupCloseRequested(PopupWindow window)
     {
-        _openPopups.Remove(popup);
+        ClosePopupWindow(window);
+    }
+
+    private void ClosePopupWindow(PopupWindow window)
+    {
+        window.OnCloseRequested -= OnPopupCloseRequested;
+        _openPopups.Remove(window);
+        
+        // Notify the popup content that it's being closed
+        if (window.PopupContent != null && !window.PopupContent.IsDeleting)
+        {
+            // Don't call popup.Close() as that would recurse
+            window.PopupContent.Delete();
+        }
+        
+        window.Dispose();
     }
 
     /// <summary>
-    /// Check if a click at the given position should close open popups
+    /// Process all popup windows. Call this from the main render loop.
+    /// </summary>
+    public void ProcessPopups()
+    {
+        // Process each native popup window
+        var closedPopups = new List<PopupWindow>();
+        
+        foreach (var popup in _openPopups.ToList())
+        {
+            if (popup.IsClosing)
+            {
+                closedPopups.Add(popup);
+            }
+            else
+            {
+                popup.DoFrame();
+            }
+        }
+
+        // Clean up closed popups
+        foreach (var popup in closedPopups)
+        {
+            ClosePopupWindow(popup);
+        }
+    }
+
+    /// <summary>
+    /// Handle global click for overlay popups (click outside to close)
     /// </summary>
     public void HandleGlobalClick(UIVector2 position, RootPanel rootPanel)
     {
-        // Check each open popup to see if the click is outside
+        // For overlay-based popups, check if click is outside
         var popupsToClose = new List<BasePopup>();
         
-        foreach (var popup in _openPopups.ToList())
+        foreach (var popup in _overlayPopups.ToList())
         {
             if (!popup.IsValid() || popup.IsDeleting)
             {
@@ -162,6 +251,7 @@ public class PopupManager : IPopupService, IDisposable
 
         foreach (var popup in popupsToClose)
         {
+            _overlayPopups.Remove(popup);
             popup.Close();
         }
     }
@@ -169,27 +259,34 @@ public class PopupManager : IPopupService, IDisposable
     /// <summary>
     /// Check if any popups are currently open
     /// </summary>
-    public bool HasOpenPopups => _openPopups.Count > 0;
+    public bool HasOpenPopups => _openPopups.Count > 0 || _overlayPopups.Count > 0;
 
     /// <summary>
-    /// Get all currently open popups
+    /// Get all currently open native popup windows
     /// </summary>
-    public IReadOnlyList<BasePopup> OpenPopups => _openPopups;
+    public IReadOnlyList<PopupWindow> OpenPopupWindows => _openPopups;
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
-        // Close all popups
+        // Close all native popup windows
         foreach (var popup in _openPopups.ToList())
+        {
+            popup.Dispose();
+        }
+        _openPopups.Clear();
+
+        // Close overlay popups
+        foreach (var popup in _overlayPopups.ToList())
         {
             if (!popup.IsDeleting)
             {
                 popup.Delete();
             }
         }
-        _openPopups.Clear();
+        _overlayPopups.Clear();
 
         // Unregister as popup service
         if (PopupServiceProvider.Current == this)
