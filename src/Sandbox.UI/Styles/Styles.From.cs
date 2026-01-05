@@ -21,6 +21,12 @@ namespace Sandbox.UI
 			TextShadow.AddFrom( a.TextShadow );
 			FilterDropShadow.AddFrom( a.FilterDropShadow );
 
+			// Merge CSS custom properties (variables starting with --)
+			foreach ( var kvp in a.RawValues )
+			{
+				RawValues[kvp.Key] = kvp.Value;
+			}
+
 			if ( a.TextGradient.HasValue )
 			{
 				TextGradient = a.TextGradient;
@@ -34,6 +40,13 @@ namespace Sandbox.UI
 			if ( bs is not Styles a ) return;
 
 			CopyShadows( bs );
+
+			// Copy CSS custom properties (variables starting with --)
+			RawValues.Clear();
+			foreach ( var kvp in a.RawValues )
+			{
+				RawValues[kvp.Key] = kvp.Value;
+			}
 
 			Transitions?.Clear();
 
