@@ -728,13 +728,29 @@ public class Window : Panel
         // Use consistent distance now that borderless windows have physical padding
         const float Distance = EDGE_DETECTION_DISTANCE;
         
-        // Use panel rect for edge detection
+        // Use panel rect for edge detection, but extend it to include padding area for borderless windows
         var rect = Box.Rect;
         
-        if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
-        if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
-        if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
-        if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
+        // For borderless windows with custom chrome, extend the detection area to include the padding zone
+        // The RootPanel has padding, so mouse coordinates outside our Box.Rect but within the padding should still trigger resize
+        float padding = 0;
+        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
+        {
+            padding = 8; // Match CUSTOM_CHROME_PADDING from NativeWindow
+        }
+        
+        // Extend rect by padding to include the invisible border area
+        var extendedRect = new Rect(
+            rect.Left - padding,
+            rect.Top - padding,
+            rect.Width + (padding * 2),
+            rect.Height + (padding * 2)
+        );
+        
+        if (mousePos.y >= extendedRect.Bottom - Distance) _resizingBottom = true;
+        if (mousePos.x >= extendedRect.Right - Distance) _resizingRight = true;
+        if (mousePos.y <= extendedRect.Top + Distance) _resizingTop = true;
+        if (mousePos.x <= extendedRect.Left + Distance) _resizingLeft = true;
         
         if (_nativeWindow != null)
         {
@@ -786,10 +802,25 @@ public class Window : Panel
         const float Distance = EDGE_DETECTION_DISTANCE;
         var rect = Box.Rect;
         
-        var almostBottom = mousePos.y >= rect.Bottom - Distance;
-        var almostRight = mousePos.x >= rect.Right - Distance;
-        var almostTop = mousePos.y <= rect.Top + Distance;
-        var almostLeft = mousePos.x <= rect.Left + Distance;
+        // For borderless windows with custom chrome, extend the detection area to include the padding zone
+        float padding = 0;
+        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
+        {
+            padding = 8; // Match CUSTOM_CHROME_PADDING from NativeWindow
+        }
+        
+        // Extend rect by padding to include the invisible border area
+        var extendedRect = new Rect(
+            rect.Left - padding,
+            rect.Top - padding,
+            rect.Width + (padding * 2),
+            rect.Height + (padding * 2)
+        );
+        
+        var almostBottom = mousePos.y >= extendedRect.Bottom - Distance;
+        var almostRight = mousePos.x >= extendedRect.Right - Distance;
+        var almostTop = mousePos.y <= extendedRect.Top + Distance;
+        var almostLeft = mousePos.x <= extendedRect.Left + Distance;
         
         // Set cursor based on resize position
         if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
