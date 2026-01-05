@@ -36,7 +36,7 @@ public class NativeWindow : INativeWindow, IDisposable
     /// Padding around the window for edge detection when borderless.
     /// This creates an invisible border that captures mouse events for resizing.
     /// </summary>
-    private const int CUSTOM_CHROME_PADDING = 8;
+    private const int CUSTOM_CHROME_PADDING = 5; // Match XGUI-3
     private int _windowPadding = 0; // Actual padding applied (0 for normal windows, CUSTOM_CHROME_PADDING for borderless)
 
     public RootPanel? RootPanel { get; set; }
@@ -201,9 +201,9 @@ public class NativeWindow : INativeWindow, IDisposable
 
         if (RootPanel != null)
         {
-            // Inset the panel bounds by padding amount to create space for edge detection
-            var padding = _windowPadding;
-            RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
+            // RootPanel fills the entire framebuffer
+            // The Window panel will handle visual padding internally
+            RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
             RootPanel.InvalidateLayout();
             RootPanel.Layout();
         }
@@ -218,11 +218,11 @@ public class NativeWindow : INativeWindow, IDisposable
         RealTime.Update(delta);
 
         var size = _window.FramebufferSize;
-        // Inset the panel bounds by padding amount to create space for edge detection
-        var padding = _windowPadding;
-        RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
+        // RootPanel fills the entire framebuffer
+        // The Window panel will handle visual padding internally
+        RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
 
-        // Mouse position is already in framebuffer coordinates (includes padding area)
+        // Mouse position is in framebuffer coordinates
         var mousePos = _mouse != null ? new UIVector2(_mouse.Position.X, _mouse.Position.Y) : UIVector2.Zero;
         RootPanel.UpdateInput(mousePos, _mouse != null);
         RootPanel.Layout();
@@ -324,12 +324,11 @@ public class NativeWindow : INativeWindow, IDisposable
             var paddingDelta = (_windowPadding - oldPadding) * 2; // Both sides
             _window.Size = new Vector2D<int>(currentSize.X + paddingDelta, currentSize.Y + paddingDelta);
             
-            // Trigger layout update with new padding
+            // Trigger layout update - RootPanel now fills entire framebuffer
             if (RootPanel != null)
             {
                 var size = _window.FramebufferSize;
-                var padding = _windowPadding;
-                RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
+                RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
                 RootPanel.InvalidateLayout();
                 RootPanel.Layout();
             }
