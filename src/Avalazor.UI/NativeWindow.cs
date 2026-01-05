@@ -31,6 +31,12 @@ public class NativeWindow : INativeWindow, IDisposable
     private PopupManager? _popupManager;
     private bool _hasNativeBorder = true;
     private bool _hasTransparentFramebuffer = false;
+    
+    /// <summary>
+    /// Padding for borderless windows to enable edge resize from outside visible bounds
+    /// </summary>
+    private const int BORDERLESS_PADDING = 5;
+    private int _windowPadding = 0;
 
     public RootPanel? RootPanel { get; set; }
 
@@ -55,8 +61,12 @@ public class NativeWindow : INativeWindow, IDisposable
         _hasTransparentFramebuffer = transparentFramebuffer;
         _hasNativeBorder = !borderless;
         
+        // Add padding for borderless windows to enable resize from outside visible bounds
+        _windowPadding = borderless ? BORDERLESS_PADDING : 0;
+        
         var options = WindowOptions.Default;
-        options.Size = new Vector2D<int>(width, height);
+        // Increase window size by padding to create invisible border for edge detection
+        options.Size = new Vector2D<int>(width + (_windowPadding * 2), height + (_windowPadding * 2));
         options.Title = title;
         options.VSync = true;
         options.IsEventDriven = false;
@@ -292,10 +302,21 @@ public class NativeWindow : INativeWindow, IDisposable
     public void SetWindowBorder(bool hasNativeBorder)
     {
         if (_hasNativeBorder == hasNativeBorder) return;
+        
+        var oldPadding = _windowPadding;
         _hasNativeBorder = hasNativeBorder;
+        _windowPadding = hasNativeBorder ? 0 : BORDERLESS_PADDING;
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        
+        // Adjust window size when padding changes
+        if (oldPadding != _windowPadding)
+        {
+            var currentSize = _window.Size;
+            var paddingDelta = (_windowPadding - oldPadding) * 2;
+            _window.Size = new Vector2D<int>(currentSize.X + paddingDelta, currentSize.Y + paddingDelta);
+        }
     }
 
     /// <summary>
