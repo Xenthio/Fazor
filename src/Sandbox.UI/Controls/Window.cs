@@ -11,6 +11,7 @@ public class Window : Panel
 {
     private string _title = "Window";
     private INativeWindow? _nativeWindow; // Reference to the native window interface
+    private bool _lastCustomChromeFromCss = false; // Track last CSS value for change detection
 
     /// <summary>
     /// The window title displayed in the native window title bar and optional in-window title bar
@@ -194,9 +195,25 @@ public class Window : Panel
     {
         _nativeWindow = nativeWindow;
         
+        // Check if custom chrome is requested (either by property or CSS)
+        bool customChromeRequested = HasCustomChrome || HasTitleBar;
+        if (!customChromeRequested && ComputedStyle != null)
+        {
+            var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
+            customChromeRequested = customChromeVar == "true" || customChromeVar == "1";
+        }
+        
         // Add osdecorated class when using native window (OS handles window chrome)
-        // This allows themes to hide borders when the OS is providing window decoration
-        AddClass("osdecorated");
+        // BUT only if custom chrome is not requested
+        if (!customChromeRequested)
+        {
+            AddClass("osdecorated");
+        }
+        else
+        {
+            // If custom chrome is requested, make the native window borderless
+            _nativeWindow.SetWindowBorder(false);
+        }
         
         // When native window is set, clear any panel positioning that was applied during initial layout
         // (since position/size should control native window, not panel styles)
@@ -630,6 +647,9 @@ public class Window : Panel
     {
         base.Tick();
 
+        // Monitor CSS --custom-chrome property for dynamic theme changes
+        UpdateCustomChromeFromCss();
+
         // Only apply position/size override if explicitly set (non-zero)
         // Apply position and size to style for floating window behavior
         // BUT only if there's no native window (for window-in-window scenarios)
@@ -655,6 +675,57 @@ public class Window : Panel
         SetClass("minimised", IsMinimised);
         SetClass("maximised", IsMaximised);
         SetClass("unfocused", !HasFocus);
+    }
+
+    /// <summary>
+    /// Check the CSS --custom-chrome property and update the title bar accordingly.
+    /// This allows themes to dynamically switch between native and custom chrome.
+    /// </summary>
+    private void UpdateCustomChromeFromCss()
+    {
+        if (ComputedStyle == null) return;
+
+        // Check for --custom-chrome CSS variable
+        var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
+        bool cssRequestsCustomChrome = customChromeVar == "true" || customChromeVar == "1";
+
+        // Only update if the CSS value has changed (avoid repeated processing)
+        if (cssRequestsCustomChrome != _lastCustomChromeFromCss)
+        {
+            _lastCustomChromeFromCss = cssRequestsCustomChrome;
+            
+            // Determine if custom chrome should be shown (from property OR CSS)
+            bool shouldHaveCustomChrome = HasCustomChrome || cssRequestsCustomChrome;
+            bool currentlyHasCustomChrome = TitleBar != null && TitleBar.IsValid();
+
+            if (shouldHaveCustomChrome && !currentlyHasCustomChrome)
+            {
+                // Need to create title bar
+                Console.WriteLine("[Window] CSS --custom-chrome changed to true, creating title bar");
+                CreateTitleBar();
+                
+                // Update native window to be borderless when using custom chrome
+                if (_nativeWindow != null)
+                {
+                    _nativeWindow.SetWindowBorder(false);
+                    RemoveClass("osdecorated");
+                }
+            }
+            else if (!shouldHaveCustomChrome && currentlyHasCustomChrome && !HasCustomChrome && !HasTitleBar)
+            {
+                // Need to remove title bar (only if not explicitly set via property)
+                Console.WriteLine("[Window] CSS --custom-chrome changed to false, removing title bar");
+                TitleBar?.Delete();
+                TitleBar = null;
+                
+                // Update native window to have native border
+                if (_nativeWindow != null)
+                {
+                    _nativeWindow.SetWindowBorder(true);
+                    AddClass("osdecorated");
+                }
+            }
+        }
     }
 
     /// <summary>

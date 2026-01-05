@@ -20,4 +20,29 @@ public interface INativeWindow
     /// Set the native window size
     /// </summary>
     void SetSize(int width, int height);
+
+    /// <summary>
+    /// Set whether the window should use native window decorations (title bar, borders).
+    /// When false, the window is borderless and custom chrome can be drawn by the UI.
+    /// </summary>
+    void SetWindowBorder(bool hasNativeBorder);
+
+    /// <summary>
+    /// Get whether the window currently has native window decorations.
+    /// </summary>
+    bool HasNativeBorder { get; }
+
+    /// <summary>
+    /// Set whether the window should have a transparent framebuffer.
+    /// This allows transparency in themes that use semi-transparent backgrounds.
+    /// Note: Transparent framebuffer is enabled by default. Runtime changes may not
+    /// be supported on all platforms as they can require recreating the window.
+    /// </summary>
+    void SetTransparentFramebuffer(bool transparent);
+
+    /// <summary>
+    /// Get whether the window currently has a transparent framebuffer.
+    /// Default is true to support themes with transparency (e.g., ThinGrey).
+    /// </summary>
+    bool HasTransparentFramebuffer { get; }
 }

@@ -7,6 +7,10 @@
 	border-bottom: 1px solid $border-colour-bottom;
 	border-right: 1px solid $border-colour-right;
 	background-color: $base-colour;
+	
+	// Enable custom window chrome for all VGUI themes
+	// This tells the Window control to use in-window title bar instead of native
+	--custom-chrome: true;
 
 	&.unfocused {
 		.TitleBar {
