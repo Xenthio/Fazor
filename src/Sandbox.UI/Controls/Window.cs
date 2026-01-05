@@ -937,7 +937,15 @@ public class Window : Panel
         // Focus the window when clicked
         FocusWindow();
         
-        // Start resize if applicable
+        // For borderless windows, WM_NCHITTEST handles resize natively on Windows
+        // Only do manual resize handling for windows with native borders or on non-Windows platforms
+        if (HasCustomChrome || HasTitleBar)
+        {
+            // Skip manual resize - OS handles it via WM_NCHITTEST
+            return;
+        }
+        
+        // Start resize if applicable (only for windows with native borders)
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         StartResize(mousePos);
     }
@@ -958,6 +966,14 @@ public class Window : Panel
     protected override void OnMouseMove(MousePanelEvent e)
     {
         base.OnMouseMove(e);
+        
+        // For borderless windows, WM_NCHITTEST handles resize natively on Windows
+        // Only do manual resize handling for windows with native borders or on non-Windows platforms
+        if (HasCustomChrome || HasTitleBar)
+        {
+            // Skip manual resize - OS handles it via WM_NCHITTEST
+            return;
+        }
         
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         var localMousePos = Parent?.MousePosition ?? Vector2.Zero;
