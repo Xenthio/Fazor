@@ -482,44 +482,39 @@ public class SkiaPanelRenderer : IPanelRenderer
             canvas.ClipPath(clipPath, SKClipOperation.Intersect, true);
         }
         
-        // Calculate destination rect based on background-size (default is cover-like behavior)
-        var srcRect = new SKRect(0, 0, image.Width, image.Height);
-        var dstRect = CalculateBackgroundImageRect(skRect, image.Width, image.Height, style);
+        // Calculate destination rect based on background-size and background-position CSS properties
+        // Using ImageRect utility ported from s&box for proper size/position handling
+        var panelRect = new Rect(skRect.Left, skRect.Top, skRect.Width, skRect.Height);
+        var imageRectInput = new ImageRect.Input
+        {
+            Image = texture,
+            PanelRect = panelRect,
+            ImagePositionX = style.BackgroundPositionX,
+            ImagePositionY = style.BackgroundPositionY,
+            ImageSizeX = style.BackgroundSizeX,
+            ImageSizeY = style.BackgroundSizeY,
+            ScaleToScreen = 1.0f, // TODO: get actual DPI scale if needed
+            DefaultSize = Length.Auto
+        };
         
+        var imageCalc = ImageRect.Calculate(imageRectInput);
+        var bgRect = imageCalc.Rect;
+        
+        // Convert to SKRect - bgRect.X/Y are position, bgRect.Z/W are width/height
+        var dstRect = new SKRect(
+            skRect.Left + bgRect.X,
+            skRect.Top + bgRect.Y,
+            skRect.Left + bgRect.X + bgRect.Z,
+            skRect.Top + bgRect.Y + bgRect.W
+        );
+        
+        var srcRect = new SKRect(0, 0, image.Width, image.Height);
         canvas.DrawImage(image, srcRect, dstRect, sampling, paint);
         
         if (hasRadius)
         {
             canvas.Restore();
         }
-    }
-    
-    private SKRect CalculateBackgroundImageRect(SKRect container, int imageWidth, int imageHeight, Styles style)
-    {
-        // Default: scale to fit container while maintaining aspect ratio (cover)
-        float containerAspect = container.Width / container.Height;
-        float imageAspect = (float)imageWidth / imageHeight;
-        
-        float destWidth, destHeight;
-        
-        if (imageAspect > containerAspect)
-        {
-            // Image is wider - fit height
-            destHeight = container.Height;
-            destWidth = destHeight * imageAspect;
-        }
-        else
-        {
-            // Image is taller - fit width
-            destWidth = container.Width;
-            destHeight = destWidth / imageAspect;
-        }
-        
-        // Center the image
-        float x = container.Left + (container.Width - destWidth) / 2;
-        float y = container.Top + (container.Height - destHeight) / 2;
-        
-        return new SKRect(x, y, x + destWidth, y + destHeight);
     }
     
     // Cache for loaded texture images
