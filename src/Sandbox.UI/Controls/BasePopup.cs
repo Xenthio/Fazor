@@ -187,10 +187,11 @@ public class BasePopup : Panel
         var wasOpen = IsPopupOpen;
         IsPopupOpen = false;
 
-        // Notify popup service to clean up native window (if applicable)
+        // Mark popup for closing (deferred) - the PopupManager will handle actual cleanup
+        // on the next frame, which is safe since we won't be in the middle of event processing
         if (PopupService != null && PopupService.SupportsNativePopups)
         {
-            PopupService.ClosePopup(this);
+            PopupService.MarkPopupForClose(this);
         }
         
         // Fire the closed event so owners (like ComboBox) can update their state
@@ -199,7 +200,7 @@ public class BasePopup : Panel
             OnPopupClosed?.Invoke();
         }
         
-        // Delete this panel
+        // Delete this panel (safe to do immediately since it just removes from panel tree)
         if (!IsDeleting)
         {
             Delete();

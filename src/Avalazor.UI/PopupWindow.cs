@@ -62,11 +62,6 @@ public class PopupWindow : IDisposable
     /// </summary>
     public bool IsInitialized => _initialized;
 
-    /// <summary>
-    /// Event fired when this popup should be closed (e.g., clicked outside)
-    /// </summary>
-    public event Action<PopupWindow>? OnCloseRequested;
-
     public PopupWindow(int width, int height, int x, int y, NativeWindow? parent = null)
     {
         Size = new UIVector2(width, height);

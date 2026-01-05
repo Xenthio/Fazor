@@ -11,6 +11,7 @@ namespace Avalazor.UI;
 public class PopupManager : IPopupService, IDisposable
 {
     private readonly List<PopupWindow> _openPopups = new();
+    private readonly HashSet<BasePopup> _popupsMarkedForClose = new();
     private readonly NativeWindow _mainWindow;
     private bool _disposed = false;
 
@@ -94,7 +95,27 @@ public class PopupManager : IPopupService, IDisposable
     }
 
     /// <summary>
-    /// Close a specific popup
+    /// Mark a popup for closing (deferred). The actual close will happen on the next frame.
+    /// This is safe to call from within event handlers.
+    /// </summary>
+    public void MarkPopupForClose(BasePopup popup)
+    {
+        _popupsMarkedForClose.Add(popup);
+        
+        // Also mark the native window for closing
+        var window = _openPopups.FirstOrDefault(w => w.PopupContent == popup);
+        if (window != null)
+        {
+            // Set the window's close requested flag - it will be cleaned up in ProcessPopups()
+            window.Close();
+        }
+        
+        // Also remove from overlay tracking
+        _overlayPopups.Remove(popup);
+    }
+
+    /// <summary>
+    /// Close a specific popup immediately (for cleanup during shutdown)
     /// </summary>
     public void ClosePopup(BasePopup popup)
     {
@@ -104,6 +125,9 @@ public class PopupManager : IPopupService, IDisposable
         {
             ClosePopupWindow(window);
         }
+
+        // Remove from marked list
+        _popupsMarkedForClose.Remove(popup);
 
         // Also remove from overlay tracking
         _overlayPopups.Remove(popup);
@@ -131,6 +155,9 @@ public class PopupManager : IPopupService, IDisposable
                 popup.Delete();
             }
         }
+        
+        // Clear marked list
+        _popupsMarkedForClose.Clear();
     }
 
     /// <summary>
@@ -180,18 +207,21 @@ public class PopupManager : IPopupService, IDisposable
         // Remove from list first to prevent re-processing
         _openPopups.Remove(window);
         
-        // Trigger Close() on the popup content to fire OnPopupClosed event
-        // This ensures ComboBox.OnDropdownClosed() is called
-        // Note: BasePopup.Close() now uses _closeInitiated flag to prevent double-close,
-        // so it's safe to call even if Close() was already triggered by button click
-        if (window.PopupContent != null && !window.PopupContent.IsDeleting)
+        // Remove from marked-for-close set
+        if (window.PopupContent != null)
         {
-            try
-            {
-                window.PopupContent.Close();
-            }
-            catch { }
+            _popupsMarkedForClose.Remove(window.PopupContent);
         }
+        
+        // Note: We don't call window.PopupContent.Close() here anymore.
+        // The close chain is:
+        // 1. User action triggers BasePopup.Close()
+        // 2. BasePopup.Close() fires OnPopupClosed, calls MarkPopupForClose()
+        // 3. MarkPopupForClose() sets window._closeRequested = true
+        // 4. ProcessPopups() sees IsClosing=true and calls ClosePopupWindow()
+        // 5. ClosePopupWindow() just disposes the native window resources
+        //
+        // This ensures we never dispose resources while still in event callbacks.
         
         // Clean up and dispose the window - wrap in try/catch for safety
         try
@@ -220,6 +250,18 @@ public class PopupManager : IPopupService, IDisposable
             {
                 if (popup.IsClosing)
                 {
+                    // If this popup is closing but wasn't marked via BasePopup.Close(),
+                    // we need to call Close() on the content to fire OnPopupClosed
+                    if (popup.PopupContent != null && 
+                        !_popupsMarkedForClose.Contains(popup.PopupContent) &&
+                        !popup.PopupContent.IsDeleting)
+                    {
+                        try
+                        {
+                            popup.PopupContent.Close();
+                        }
+                        catch { }
+                    }
                     closedPopups.Add(popup);
                 }
                 else

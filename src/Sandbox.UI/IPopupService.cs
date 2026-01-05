@@ -21,7 +21,13 @@ public interface IPopupService
     void OpenPopup(BasePopup popup, Vector2 screenPosition, Panel? opener = null);
 
     /// <summary>
-    /// Close a specific popup
+    /// Mark a popup for closing. The actual close will happen on the next frame.
+    /// This is safe to call from within event handlers.
+    /// </summary>
+    void MarkPopupForClose(BasePopup popup);
+
+    /// <summary>
+    /// Close a specific popup immediately (for cleanup during shutdown)
     /// </summary>
     void ClosePopup(BasePopup popup);
 

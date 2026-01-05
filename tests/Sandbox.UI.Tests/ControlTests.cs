@@ -355,6 +355,7 @@ public class PopupTests
         public bool SupportsNativePopups => false;
 
         public void OpenPopup(BasePopup popup, Vector2 screenPosition, Panel? opener = null) { }
+        public void MarkPopupForClose(BasePopup popup) { }
         public void ClosePopup(BasePopup popup) { }
         public void CloseAllPopups(BasePopup? except = null) { }
         public Vector2 ConvertToScreenCoordinates(Vector2 panelPos, RootPanel? rootPanel) => panelPos;
