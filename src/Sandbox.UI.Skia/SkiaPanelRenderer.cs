@@ -55,6 +55,9 @@ public class SkiaPanelRenderer : IPanelRenderer
         // Register extended text measurement function with overflow support (matches s&box)
         Label.TextMeasureFuncEx = (text, fontFamily, fontSize, fontWeight, maxWidth, allowWrapping, textOverflow, wordBreak, whiteSpace) =>
             MeasureTextStaticEx(text, fontFamily, fontSize, fontWeight, maxWidth, allowWrapping, textOverflow, wordBreak, whiteSpace);
+        
+        // Register texture size function for Image layout calculations
+        Image.TextureSizeFunc = GetTextureSizeStatic;
     }
 
     /// <summary>
@@ -591,6 +594,25 @@ public class SkiaPanelRenderer : IPanelRenderer
         // Cache result (even if null to avoid repeated load attempts)
         _textureCache[path] = image;
         return image;
+    }
+    
+    /// <summary>
+    /// Get texture dimensions for layout calculations
+    /// </summary>
+    private static (int width, int height)? GetTextureSizeStatic(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        
+        // Try to load the texture (will use cache if already loaded)
+        var tempRenderer = new SkiaPanelRenderer();
+        var image = tempRenderer.LoadTextureFromPath(path);
+        
+        if (image != null)
+        {
+            return (image.Width, image.Height);
+        }
+        
+        return null;
     }
 
     private void DrawGradientBackground(SKCanvas canvas, SKRect rect, GradientInfo gradient, float opacity, float radiusTL, float radiusTR, float radiusBR, float radiusBL)
@@ -1323,20 +1345,158 @@ public class SkiaPanelRenderer : IPanelRenderer
     {
         if (string.IsNullOrEmpty(image.TexturePath)) return;
 
-        // Image loading would be handled by a texture system
-        // For now, draw a placeholder or skip
         var rect = image.Box.Rect;
         var skRect = ToSKRect(rect);
+        var opacity = image.Opacity * state.RenderOpacity;
 
-        // Draw placeholder border
+        // Load the texture
+        SKImage? skImage = LoadTextureFromPath(image.TexturePath);
+        
+        // If loading failed, use missing texture fallback
+        if (skImage == null)
+        {
+            skImage = GetMissingTexture();
+        }
+        
+        if (skImage == null) return; // Should never happen since we have fallback
+
         using var paint = new SKPaint
         {
-            Color = SKColors.Gray,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1,
+            Color = new SKColor(255, 255, 255, (byte)(255 * opacity)),
             IsAntialias = true
         };
-        canvas.DrawRect(skRect, paint);
+
+        // Use high-quality sampling for smooth image rendering
+        var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+
+        // Get image rendering style (pixelated vs smooth)
+        var style = image.ComputedStyle;
+        if (style?.ImageRendering == ImageRendering.Pixelated || style?.ImageRendering == ImageRendering.Point)
+        {
+            // Use nearest-neighbor filtering for pixelated look
+            sampling = new SKSamplingOptions(SKFilterMode.Nearest);
+        }
+
+        // Draw the image to fit the panel bounds
+        // Use object-fit behavior if specified, otherwise default to fill
+        var objectFit = style?.ObjectFit ?? ObjectFit.Fill;
+        var destRect = CalculateObjectFitRect(skRect, skImage.Width, skImage.Height, objectFit);
+
+        canvas.DrawImage(skImage, destRect, sampling, paint);
+    }
+
+    private SKRect CalculateObjectFitRect(SKRect container, int imageWidth, int imageHeight, ObjectFit objectFit)
+    {
+        switch (objectFit)
+        {
+            case ObjectFit.Contain:
+                {
+                    // Scale to fit inside container, maintaining aspect ratio
+                    float containerAspect = container.Width / container.Height;
+                    float imageAspect = (float)imageWidth / imageHeight;
+                    float scale = imageAspect > containerAspect 
+                        ? container.Width / imageWidth 
+                        : container.Height / imageHeight;
+                    float width = imageWidth * scale;
+                    float height = imageHeight * scale;
+                    float x = container.Left + (container.Width - width) / 2;
+                    float y = container.Top + (container.Height - height) / 2;
+                    return new SKRect(x, y, x + width, y + height);
+                }
+            case ObjectFit.Cover:
+                {
+                    // Scale to cover container, maintaining aspect ratio (may crop)
+                    float containerAspect = container.Width / container.Height;
+                    float imageAspect = (float)imageWidth / imageHeight;
+                    float scale = imageAspect > containerAspect 
+                        ? container.Height / imageHeight 
+                        : container.Width / imageWidth;
+                    float width = imageWidth * scale;
+                    float height = imageHeight * scale;
+                    float x = container.Left + (container.Width - width) / 2;
+                    float y = container.Top + (container.Height - height) / 2;
+                    return new SKRect(x, y, x + width, y + height);
+                }
+            case ObjectFit.ScaleDown:
+                {
+                    // Like contain, but never scale up
+                    if (imageWidth <= container.Width && imageHeight <= container.Height)
+                    {
+                        // Image fits, center it at original size
+                        float x = container.Left + (container.Width - imageWidth) / 2;
+                        float y = container.Top + (container.Height - imageHeight) / 2;
+                        return new SKRect(x, y, x + imageWidth, y + imageHeight);
+                    }
+                    else
+                    {
+                        // Image too big, scale down using contain logic
+                        return CalculateObjectFitRect(container, imageWidth, imageHeight, ObjectFit.Contain);
+                    }
+                }
+            case ObjectFit.None:
+                {
+                    // No scaling, center at original size (may overflow)
+                    float x = container.Left + (container.Width - imageWidth) / 2;
+                    float y = container.Top + (container.Height - imageHeight) / 2;
+                    return new SKRect(x, y, x + imageWidth, y + imageHeight);
+                }
+            case ObjectFit.Fill:
+            default:
+                // Stretch to fill container (default)
+                return container;
+        }
+    }
+
+    // Lazy-initialized missing texture
+    private static SKImage? _missingTexture = null;
+    
+    /// <summary>
+    /// Get or create the pink and black checkerboard missing texture fallback
+    /// </summary>
+    private static SKImage? GetMissingTexture()
+    {
+        if (_missingTexture != null) return _missingTexture;
+        
+        try
+        {
+            // Create a 64x64 pink and black checkerboard pattern
+            const int size = 64;
+            const int checkSize = 8; // 8x8 pixel checks = 8x8 grid of checks
+            
+            using var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
+            using var canvas = new SKCanvas(bitmap);
+            
+            // Fill with pink
+            canvas.Clear(new SKColor(255, 0, 255)); // Magenta/Pink
+            
+            // Draw black checks in checkerboard pattern
+            using var blackPaint = new SKPaint { Color = SKColors.Black };
+            for (int y = 0; y < size / checkSize; y++)
+            {
+                for (int x = 0; x < size / checkSize; x++)
+                {
+                    // Checkerboard: alternate based on (x + y) % 2
+                    if ((x + y) % 2 == 1)
+                    {
+                        var rect = new SKRect(
+                            x * checkSize, 
+                            y * checkSize, 
+                            (x + 1) * checkSize, 
+                            (y + 1) * checkSize
+                        );
+                        canvas.DrawRect(rect, blackPaint);
+                    }
+                }
+            }
+            
+            _missingTexture = SKImage.FromBitmap(bitmap);
+            return _missingTexture;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning($"Failed to create missing texture: {ex.Message}");
+            return null;
+        }
     }
 
     #region Conversion Helpers

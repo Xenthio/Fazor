@@ -50,19 +50,59 @@ public partial class Image : Panel
 
         oldScaleToScreen = ScaleToScreen;
 
-        // Return a reasonable default size - actual measurement depends on loaded texture
-        var defaultSize = new Vector2(100 * ScaleToScreen, 100 * ScaleToScreen);
+        // Try to get actual texture dimensions if available
+        var textureSize = GetTextureSize(TexturePath);
+        var defaultSize = textureSize.HasValue 
+            ? new Vector2(textureSize.Value.width * ScaleToScreen, textureSize.Value.height * ScaleToScreen)
+            : new Vector2(100 * ScaleToScreen, 100 * ScaleToScreen);
 
         var exact = YGMeasureMode.Exactly;
         var atMost = YGMeasureMode.AtMost;
 
-        if (widthMode == exact) return new Vector2(width, width);
-        if (heightMode == exact) return new Vector2(height, height);
+        if (widthMode == exact && heightMode == exact)
+            return new Vector2(width, height);
 
-        if (widthMode == atMost && width < defaultSize.x) return new Vector2(width, width);
-        if (heightMode == atMost && height < defaultSize.y) return new Vector2(height, height);
+        if (widthMode == exact)
+        {
+            // Width fixed, scale height proportionally
+            float aspectRatio = defaultSize.y / defaultSize.x;
+            return new Vector2(width, width * aspectRatio);
+        }
+
+        if (heightMode == exact)
+        {
+            // Height fixed, scale width proportionally
+            float aspectRatio = defaultSize.x / defaultSize.y;
+            return new Vector2(height * aspectRatio, height);
+        }
+
+        if (widthMode == atMost && width < defaultSize.x)
+        {
+            float aspectRatio = defaultSize.y / defaultSize.x;
+            return new Vector2(width, width * aspectRatio);
+        }
+
+        if (heightMode == atMost && height < defaultSize.y)
+        {
+            float aspectRatio = defaultSize.x / defaultSize.y;
+            return new Vector2(height * aspectRatio, height);
+        }
 
         return defaultSize;
+    }
+
+    /// <summary>
+    /// Delegate to get texture dimensions - set by renderer
+    /// </summary>
+    public static Func<string, (int width, int height)?> TextureSizeFunc { get; set; }
+
+    private (int width, int height)? GetTextureSize(string path)
+    {
+        if (TextureSizeFunc != null)
+        {
+            return TextureSizeFunc(path);
+        }
+        return null;
     }
 
     public override void DrawContent(ref RenderState state)

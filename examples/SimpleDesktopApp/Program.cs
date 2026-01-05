@@ -7,6 +7,9 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Generate test images if they don't exist
+        Tools.TestImageGenerator.GenerateTestImages();
+        
         // The framework now automatically detects if a display is available
         // and uses the AI renderer when running in headless environments (CI, SSH, etc.)
         // 
@@ -31,7 +34,10 @@ class Program
 
 
         //Avalazor.UI.AvalazorApplication.RunPanel<RefOnClickDemo>();
-        Avalazor.UI.AvalazorApplication.RunPanel<About>();
+        
+        // Run About with test images
+        Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");
+        
         //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
         
         // Run the Scrolling Demo
