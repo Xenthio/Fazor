@@ -179,19 +179,22 @@ public class D3D11Backend : IGraphicsBackend
         var hwnd = (nint)nativeWindow.Value.Hwnd;
         
         // Enable DWM composition for transparent windows
-        bool dwmEnabled = false;
+        // Note: Even with DWM enabled, CreateSwapChainForHwnd does NOT support AlphaMode.Premultiplied
+        // Premultiplied alpha requires CreateSwapChainForComposition or CreateSwapChainForCoreWindow
+        // We still enable DWM composition as it may help with some transparency scenarios
         if (DwmApi.DwmIsCompositionEnabled(out int compositionEnabled) >= 0 && compositionEnabled != 0)
         {
             // Extend DWM frame into entire client area for transparency
             var margins = new DwmApi.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
             if (DwmApi.DwmExtendFrameIntoClientArea(hwnd, ref margins) >= 0)
             {
-                dwmEnabled = true;
-                Console.WriteLine("[D3D11Backend] DWM composition enabled for transparency");
+                Console.WriteLine("[D3D11Backend] DWM composition enabled");
             }
         }
         
-        // Create swap chain - use Premultiplied alpha for transparency support
+        // Create swap chain
+        // Note: AlphaMode.Premultiplied is NOT supported with CreateSwapChainForHwnd
+        // Using Unspecified which is the only reliable option for HWND-based windows
         var swapChainDesc = new SwapChainDesc1
         {
             Width = (uint)_width,
@@ -203,7 +206,7 @@ public class D3D11Backend : IGraphicsBackend
             BufferCount = 2,
             Scaling = Scaling.None, // Don't stretch - maintain 1:1 pixel mapping
             SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = dwmEnabled ? AlphaMode.Premultiplied : AlphaMode.Unspecified,
+            AlphaMode = AlphaMode.Unspecified, // Premultiplied requires CreateSwapChainForComposition
             Flags = 0
         };
         
