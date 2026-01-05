@@ -35,7 +35,7 @@ internal static class ImageRect
 		var sizeX = input.ImageSizeX ?? input.DefaultSize;
 		var aspect = h / w;
 
-		if ( input.ImageSizeX.Value.Unit == LengthUnit.Undefined )
+		if ( input.ImageSizeX.HasValue && input.ImageSizeX.Value.Unit == LengthUnit.Undefined )
 			sizeX = input.DefaultSize;
 
 		bool cover = false;
