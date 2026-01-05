@@ -3,6 +3,7 @@ using Silk.NET.Maths;
 using Silk.NET.Input;
 using SkiaSharp;
 using Sandbox.UI;
+using Avalazor.UI.Native;
 using UIVector2 = Sandbox.UI.Vector2;
 
 namespace Avalazor.UI;
@@ -264,6 +265,13 @@ public class NativeWindow : INativeWindow, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+        
+        // Uninstall hit test handler
+        if (!_hasNativeBorder)
+        {
+            Win32HitTestHelper.UninstallHitTestHandler(_window);
+        }
+        
         OnClosing();
         _window?.Dispose();
         _disposed = true;
@@ -309,6 +317,16 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        
+        // Install or uninstall hit test handler
+        if (!hasNativeBorder && Win32HitTestHelper.IsSupported)
+        {
+            Win32HitTestHelper.InstallHitTestHandler(_window, true);
+        }
+        else if (hasNativeBorder)
+        {
+            Win32HitTestHelper.UninstallHitTestHandler(_window);
+        }
         
         // Adjust window size when padding changes
         if (oldPadding != _windowPadding)
