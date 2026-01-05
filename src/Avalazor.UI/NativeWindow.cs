@@ -11,7 +11,12 @@ public enum GraphicsBackendType
 {
     OpenGL,
     Vulkan,
-    DirectX11
+    DirectX11,
+    /// <summary>
+    /// DirectX 11 with DirectComposition for full per-pixel transparency support.
+    /// This backend properly supports transparent windows on Windows.
+    /// </summary>
+    DirectX11Composition
 }
 
 public class NativeWindow : INativeWindow, IDisposable
@@ -97,6 +102,17 @@ public class NativeWindow : INativeWindow, IDisposable
                 }
                 options.API = GraphicsAPI.None; // D3D11 handles its own context
                 _backend = new D3D11Backend();
+                break;
+
+            case GraphicsBackendType.DirectX11Composition:
+                Console.WriteLine("Starting DirectX11 Composition backend (with transparency support)...");
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new PlatformNotSupportedException("DirectX11 Composition backend is only available on Windows");
+                }
+                options.API = GraphicsAPI.None; // D3D11 handles its own context
+                options.TransparentFramebuffer = true; // Required for composition transparency
+                _backend = new D3D11CompositionBackend();
                 break;
 
             default:
