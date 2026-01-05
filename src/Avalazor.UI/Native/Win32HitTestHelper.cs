@@ -12,6 +12,7 @@ public static partial class Win32HitTestHelper
 {
     // Win32 message constants
     private const int WM_NCHITTEST = 0x0084;
+    private const int WM_NCCALCSIZE = 0x0083;
     
     // Win32 constants for WM_NCHITTEST return values
     private const int HTLEFT = 10;
@@ -67,10 +68,19 @@ public static partial class Win32HitTestHelper
     }
     
     /// <summary>
-    /// Window procedure that intercepts WM_NCHITTEST for custom hit testing
+    /// Window procedure that intercepts WM_NCHITTEST and WM_NCCALCSIZE for custom hit testing
     /// </summary>
     private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        // Handle WM_NCCALCSIZE to remove the white bar at top and rounded corners
+        // Returning 0 tells Windows to treat the entire window as client area
+        if (msg == WM_NCCALCSIZE && wParam.ToInt32() == 1 && _hasCustomChrome)
+        {
+            // Return 0 to remove all non-client area (removes white bar, rounded corners)
+            // This gives us full control over the window appearance
+            return IntPtr.Zero;
+        }
+        
         if (msg == WM_NCHITTEST && _currentWindow != null && _hasCustomChrome)
         {
             var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, 120, true);
