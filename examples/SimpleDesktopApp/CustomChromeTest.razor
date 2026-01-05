@@ -4,30 +4,39 @@
 @attribute [StyleSheet("/XGUI/DefaultStyles/Computer11.scss")]
 @inherits Window
 
-<root title="Custom Chrome Test" hasminimise="true" hasmaximise="true" hasclose="true" 
+<root title="Custom Chrome Test - Physical Padding" hasminimise="true" hasmaximise="true" hasclose="true" 
       windowwidth="600" windowheight="400">
     <div class="window-content" style="padding: 20px;">
-        <h2>Custom Chrome Window Test</h2>
+        <h2>Custom Chrome Window with Physical Padding</h2>
         
         <section style="margin-top: 20px;">
-            <h3>Edge Resizing Test</h3>
+            <h3>✨ Physical Padding Solution</h3>
             <p>This window has custom chrome (borderless with UI titlebar).</p>
-            <p>With the improvements:</p>
+            <p><strong>New approach:</strong></p>
             <ul>
-                <li>✅ Edge detection distance increased to 12px (was 8px)</li>
-                <li>✅ Easier to grab window edges for resizing</li>
-                <li>✅ Try resizing from all edges and corners</li>
+                <li>✅ Native window is 8px larger on all sides</li>
+                <li>✅ Content is inset by 8px, creating invisible border</li>
+                <li>✅ Mouse can interact with edges even when outside visible area</li>
+                <li>✅ Edge detection works at original 5px distance</li>
             </ul>
         </section>
         
         <section style="margin-top: 20px;">
-            <h3>Dragging Performance Test</h3>
-            <p>Try dragging the window by its titlebar.</p>
-            <p>Performance improvements:</p>
+            <h3>🎯 How to Test</h3>
+            <p><strong>Try resizing from the edges:</strong></p>
             <ul>
-                <li>✅ Drag only updates when actively dragging (not on every mouse move)</li>
-                <li>✅ Redundant position updates eliminated</li>
-                <li>✅ Should feel smoother and more responsive</li>
+                <li>Move mouse slightly outside the visible window edge</li>
+                <li>You should still be able to grab and resize</li>
+                <li>The invisible 8px padding captures mouse events</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>⚡ Performance Improvements</h3>
+            <ul>
+                <li>✅ Drag only updates when actively dragging</li>
+                <li>✅ Position changes cached to reduce API calls</li>
+                <li>✅ No redundant updates when position unchanged</li>
             </ul>
         </section>
         
@@ -45,9 +54,9 @@
         
         if (firstTime)
         {
-            Console.WriteLine("CustomChromeTest initialized");
+            Console.WriteLine("CustomChromeTest initialized with physical padding");
             Console.WriteLine($"HasCustomChrome: {HasCustomChrome}");
-            Console.WriteLine($"Window is borderless with custom chrome");
+            Console.WriteLine($"Window has 8px invisible padding around edges for resize detection");
         }
     }
 }

@@ -31,6 +31,13 @@ public class NativeWindow : INativeWindow, IDisposable
     private PopupManager? _popupManager;
     private bool _hasNativeBorder = true;
     private bool _hasTransparentFramebuffer = false;
+    
+    /// <summary>
+    /// Padding around the window for edge detection when borderless.
+    /// This creates an invisible border that captures mouse events for resizing.
+    /// </summary>
+    private const int CUSTOM_CHROME_PADDING = 8;
+    private int _windowPadding = 0; // Actual padding applied (0 for normal windows, CUSTOM_CHROME_PADDING for borderless)
 
     public RootPanel? RootPanel { get; set; }
 
@@ -55,8 +62,12 @@ public class NativeWindow : INativeWindow, IDisposable
         _hasTransparentFramebuffer = transparentFramebuffer;
         _hasNativeBorder = !borderless;
         
+        // Add padding for borderless windows to capture edge mouse events
+        _windowPadding = borderless ? CUSTOM_CHROME_PADDING : 0;
+        
         var options = WindowOptions.Default;
-        options.Size = new Vector2D<int>(width, height);
+        // Increase window size by padding to create invisible border for edge detection
+        options.Size = new Vector2D<int>(width + (_windowPadding * 2), height + (_windowPadding * 2));
         options.Title = title;
         options.VSync = true;
         options.IsEventDriven = false;
@@ -190,7 +201,9 @@ public class NativeWindow : INativeWindow, IDisposable
 
         if (RootPanel != null)
         {
-            RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
+            // Inset the panel bounds by padding amount to create space for edge detection
+            var padding = _windowPadding;
+            RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
             RootPanel.InvalidateLayout();
             RootPanel.Layout();
         }
@@ -205,8 +218,11 @@ public class NativeWindow : INativeWindow, IDisposable
         RealTime.Update(delta);
 
         var size = _window.FramebufferSize;
-        RootPanel.PanelBounds = new Rect(0, 0, size.X, size.Y);
+        // Inset the panel bounds by padding amount to create space for edge detection
+        var padding = _windowPadding;
+        RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
 
+        // Mouse position is already in framebuffer coordinates (includes padding area)
         var mousePos = _mouse != null ? new UIVector2(_mouse.Position.X, _mouse.Position.Y) : UIVector2.Zero;
         RootPanel.UpdateInput(mousePos, _mouse != null);
         RootPanel.Layout();
@@ -288,14 +304,36 @@ public class NativeWindow : INativeWindow, IDisposable
     /// <summary>
     /// Set whether the window should use native window decorations (title bar, borders).
     /// When false, the window is borderless and custom chrome can be drawn by the UI.
+    /// This will also add physical padding for edge detection.
     /// </summary>
     public void SetWindowBorder(bool hasNativeBorder)
     {
         if (_hasNativeBorder == hasNativeBorder) return;
+        
+        var oldPadding = _windowPadding;
         _hasNativeBorder = hasNativeBorder;
+        _windowPadding = hasNativeBorder ? 0 : CUSTOM_CHROME_PADDING;
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        
+        // Adjust window size to account for padding change
+        if (oldPadding != _windowPadding)
+        {
+            var currentSize = _window.Size;
+            var paddingDelta = (_windowPadding - oldPadding) * 2; // Both sides
+            _window.Size = new Vector2D<int>(currentSize.X + paddingDelta, currentSize.Y + paddingDelta);
+            
+            // Trigger layout update with new padding
+            if (RootPanel != null)
+            {
+                var size = _window.FramebufferSize;
+                var padding = _windowPadding;
+                RootPanel.PanelBounds = new Rect(padding, padding, size.X - (padding * 2), size.Y - (padding * 2));
+                RootPanel.InvalidateLayout();
+                RootPanel.Layout();
+            }
+        }
     }
 
     /// <summary>

@@ -163,8 +163,8 @@ public class Window : Panel
     public bool IsDragging => _dragging;
 
     // Edge detection distances for resizing
-    private const float CUSTOM_CHROME_EDGE_DISTANCE = 12; // Larger distance for borderless windows
-    private const float STANDARD_EDGE_DISTANCE = 8; // Standard distance for windows with OS decorations
+    // With physical padding on borderless windows, we can use a smaller distance
+    private const float EDGE_DETECTION_DISTANCE = 5; // Works for both window types now with physical padding
 
     // Resize state tracking
     internal bool _resizingRight = false;
@@ -725,9 +725,8 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        // Use larger padding for custom chrome windows (borderless) where edge detection is harder
-        // Standard windows with OS decorations use smaller distance
-        float Distance = (HasCustomChrome || HasTitleBar) ? CUSTOM_CHROME_EDGE_DISTANCE : STANDARD_EDGE_DISTANCE;
+        // Use consistent distance now that borderless windows have physical padding
+        const float Distance = EDGE_DETECTION_DISTANCE;
         
         // Use panel rect for edge detection
         var rect = Box.Rect;
@@ -783,8 +782,8 @@ public class Window : Panel
         if (!IsResizable) return;
         
         // Update cursor based on position - use panel rect for edge detection
-        // Use larger padding for custom chrome windows (borderless) where edge detection is harder
-        float Distance = (HasCustomChrome || HasTitleBar) ? CUSTOM_CHROME_EDGE_DISTANCE : STANDARD_EDGE_DISTANCE;
+        // Use consistent distance now that borderless windows have physical padding
+        const float Distance = EDGE_DETECTION_DISTANCE;
         var rect = Box.Rect;
         
         var almostBottom = mousePos.y >= rect.Bottom - Distance;
