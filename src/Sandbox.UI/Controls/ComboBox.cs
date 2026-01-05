@@ -7,14 +7,21 @@ namespace Sandbox.UI;
 /// <summary>
 /// A UI control which provides multiple options via a dropdown box.
 /// Based on XGUI-3's ComboBox.
+/// Now uses BasePopup for proper popup window support.
 /// </summary>
 [Library("combobox"), Alias("selector")]
 public class ComboBox : Button
 {
     /// <summary>
-    /// The dropdown panel that shows options
+    /// The dropdown popup that shows options
     /// </summary>
-    protected Panel? DropdownPane;
+    protected ComboBoxDropdown? DropdownPopup;
+
+    /// <summary>
+    /// Legacy: The dropdown panel (for backward compatibility with root panel fallback)
+    /// </summary>
+    [Obsolete("Use DropdownPopup instead")]
+    protected Panel? DropdownPane => DropdownPopup;
 
     /// <summary>
     /// The icon of an arrow pointing down on the right of the element.
@@ -157,43 +164,44 @@ public class ComboBox : Button
     {
         IsOpen = true;
         
-        // Create dropdown pane
-        DropdownPane = FindRootPanel()?.AddChild(new Panel());
-        if (DropdownPane == null) return;
-        
-        DropdownPane.AddClass("dropdown-panel");
-        DropdownPane.AddClass("flat-top");
-        DropdownPane.Style.Position = PositionMode.Absolute;
-        
-        // Position below this element
-        var rect = Box.Rect;
-        DropdownPane.Style.Left = rect.Left;
-        DropdownPane.Style.Top = rect.Bottom;
-        DropdownPane.Style.Width = rect.Width;
-        DropdownPane.Style.ZIndex = 1000;
-        DropdownPane.Style.FlexDirection = FlexDirection.Column;
-        
-        // Copy stylesheets for consistent styling
-        foreach (var stylesheet in AllStyleSheets)
-        {
-            DropdownPane.StyleSheet.Add(stylesheet);
-        }
+        // Create dropdown popup
+        DropdownPopup = new ComboBoxDropdown();
+        DropdownPopup.OwnerComboBox = this;
+        DropdownPopup.SelectedOption = Selected;
+        DropdownPopup.OnOptionSelected += OnDropdownOptionSelected;
+        DropdownPopup.OnPopupClosed += OnDropdownClosed;
 
         if (BuildOptions != null)
         {
             Options = BuildOptions.Invoke();
         }
 
-        foreach (var option in Options)
+        DropdownPopup.Options = Options;
+
+        // Copy stylesheets for consistent styling
+        foreach (var stylesheet in AllStyleSheets)
         {
-            var optionButton = DropdownPane.AddChild(new Button(option.Title ?? "", () => Select(option)));
-            if (option.Icon != null) optionButton.Icon = option.Icon;
-            
-            if (Selected != null && option.Value?.Equals(Selected.Value) == true)
-            {
-                optionButton.AddClass("active");
-            }
+            DropdownPopup.StyleSheet.Add(stylesheet);
         }
+
+        // Open the popup below this element
+        DropdownPopup.Open(this, preferBelow: true);
+    }
+
+    private void OnDropdownOptionSelected(Option option)
+    {
+        Select(option);
+    }
+
+    private void OnDropdownClosed()
+    {
+        if (DropdownPopup != null)
+        {
+            DropdownPopup.OnOptionSelected -= OnDropdownOptionSelected;
+            DropdownPopup.OnPopupClosed -= OnDropdownClosed;
+            DropdownPopup = null;
+        }
+        IsOpen = false;
     }
 
     /// <summary>
@@ -201,9 +209,8 @@ public class ComboBox : Button
     /// </summary>
     public void Close()
     {
-        DropdownPane?.Delete();
-        DropdownPane = null;
-        IsOpen = false;
+        DropdownPopup?.Close();
+        // OnDropdownClosed will handle the rest
     }
 
     /// <summary>
@@ -245,17 +252,10 @@ public class ComboBox : Button
     {
         base.Tick();
 
-        SetClass("open", DropdownPane != null && !DropdownPane.IsDeleting);
-        SetClass("active", DropdownPane != null && !DropdownPane.IsDeleting);
+        SetClass("open", DropdownPopup != null && DropdownPopup.IsPopupOpen);
+        SetClass("active", DropdownPopup != null && DropdownPopup.IsPopupOpen);
 
-        // Update dropdown position if open
-        if (DropdownPane != null)
-        {
-            var rect = Box.Rect;
-            DropdownPane.Style.Left = rect.Left;
-            DropdownPane.Style.Top = rect.Bottom;
-            DropdownPane.Style.Width = rect.Width;
-        }
+        // Note: Position updates are now handled by the popup system
     }
 
     public override void SetProperty(string name, string value)

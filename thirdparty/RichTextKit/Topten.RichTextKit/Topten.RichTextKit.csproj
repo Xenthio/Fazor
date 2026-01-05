@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Sandbox.UI\Sandbox.UI.csproj" />
+    <ProjectReference Include="..\..\..\src\Sandbox.UI\Sandbox.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
-    <ProjectReference Include="..\..\thirdparty\Topten.RichTextKit\Topten.RichTextKit.csproj" />
+    <ProjectReference Include="..\..\thirdparty\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj" />
   </ItemGroup>
 
 </Project>
