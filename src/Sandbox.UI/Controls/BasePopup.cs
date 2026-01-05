@@ -19,6 +19,11 @@ public class BasePopup : Panel
     public bool IsPopupOpen { get; private set; }
 
     /// <summary>
+    /// Whether Close() has been called (prevents double-close)
+    /// </summary>
+    private bool _closeInitiated = false;
+
+    /// <summary>
     /// The position in screen coordinates where this popup should appear
     /// </summary>
     public Vector2 PopupPosition { get; set; }
@@ -63,6 +68,7 @@ public class BasePopup : Panel
     public virtual void Open(Panel opener, bool preferBelow = true)
     {
         Opener = opener;
+        _closeInitiated = false; // Reset close state when opening
 
         // Get the opener's bounds - Box.Rect is already in root panel coordinates
         var openerRect = opener.Box?.Rect ?? new Rect(0, 0, 100, 20);
@@ -97,6 +103,7 @@ public class BasePopup : Panel
     {
         Opener = opener;
         PopupPosition = screenPosition;
+        _closeInitiated = false; // Reset close state when opening
 
         if (PopupService != null && PopupService.SupportsNativePopups)
         {
@@ -172,17 +179,31 @@ public class BasePopup : Panel
     /// </summary>
     public virtual void Close()
     {
-        if (!IsPopupOpen) return;
-
+        // Prevent double-close - only proceed if we haven't started closing yet
+        if (_closeInitiated) return;
+        _closeInitiated = true;
+        
+        // Mark as not open
+        var wasOpen = IsPopupOpen;
         IsPopupOpen = false;
 
+        // Notify popup service to clean up native window (if applicable)
         if (PopupService != null && PopupService.SupportsNativePopups)
         {
             PopupService.ClosePopup(this);
         }
         
-        OnPopupClosed?.Invoke();
-        Delete();
+        // Fire the closed event so owners (like ComboBox) can update their state
+        if (wasOpen)
+        {
+            OnPopupClosed?.Invoke();
+        }
+        
+        // Delete this panel
+        if (!IsDeleting)
+        {
+            Delete();
+        }
     }
 
     /// <summary>

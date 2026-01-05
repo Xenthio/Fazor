@@ -182,7 +182,9 @@ public class PopupManager : IPopupService, IDisposable
         
         // Trigger Close() on the popup content to fire OnPopupClosed event
         // This ensures ComboBox.OnDropdownClosed() is called
-        if (window.PopupContent != null && window.PopupContent.IsPopupOpen)
+        // Note: BasePopup.Close() now uses _closeInitiated flag to prevent double-close,
+        // so it's safe to call even if Close() was already triggered by button click
+        if (window.PopupContent != null && !window.PopupContent.IsDeleting)
         {
             try
             {
