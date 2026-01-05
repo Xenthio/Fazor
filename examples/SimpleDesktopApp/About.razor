@@ -4,7 +4,7 @@
 @using System.Collections.Generic;
 @* @using XGUI;  *@
 @inherits Window
-@attribute [StyleSheet( "/themes/XGUI/DefaultStyles/OliveGreen.scss" )]
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
 
 <root title="About XGUI" hasminimise="true" hasmaximise="true" x="540" y="240">
 	<div class="window-content">
@@ -119,7 +119,7 @@
 	}
 	public void LoadStyle(string styleName)
 	{
-		SetTheme($"/themes/XGUI/DefaultStyles/{styleName}.scss");
+		SetTheme($"/XGUI/DefaultStyles/{styleName}.scss");
 	}
 	protected override int BuildHash()
 	{
