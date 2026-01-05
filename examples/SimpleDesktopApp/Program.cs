@@ -34,11 +34,11 @@ class Program
 
 
         //Avalazor.UI.AvalazorApplication.RunPanel<RefOnClickDemo>();
-        
-        // Run About with test images
-        Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");
-        
+        Avalazor.UI.AvalazorApplication.RunPanel<About>();
         //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
+        
+        // Run the Image Test to demonstrate texture rendering
+        //Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");
         
         // Run the Scrolling Demo
         //Avalazor.UI.AvalazorApplication.RunPanel<ScrollingDemo>(title: "Avalazor - Scrolling Demo");
