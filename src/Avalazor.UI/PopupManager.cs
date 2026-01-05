@@ -180,13 +180,13 @@ public class PopupManager : IPopupService, IDisposable
         // Remove from list first to prevent re-processing
         _openPopups.Remove(window);
         
-        // Notify the popup content that it's being closed
-        if (window.PopupContent != null && !window.PopupContent.IsDeleting)
+        // Trigger Close() on the popup content to fire OnPopupClosed event
+        // This ensures ComboBox.OnDropdownClosed() is called
+        if (window.PopupContent != null && window.PopupContent.IsPopupOpen)
         {
             try
             {
-                // Don't call popup.Close() as that would recurse
-                window.PopupContent.Delete();
+                window.PopupContent.Close();
             }
             catch { }
         }
