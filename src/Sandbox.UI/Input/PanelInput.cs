@@ -266,6 +266,10 @@ internal class PanelInput
 			Active.CreateEvent(mouseDownEvent);
 			Active.ProcessPendingEvents();
 
+			// Check if Active is still valid after processing events (panel could have been deleted)
+			if (Active == null || !Active.IsValid())
+				return;
+
 			Active.OnButtonEvent(new ButtonEvent(ButtonName, true));
 		}
 
@@ -291,7 +295,19 @@ internal class PanelInput
 				// Just send onmouseup and remove hover from active
 				Active.CreateEvent(new MousePanelEvent("onmouseup", Active, ButtonName));
 				Active.ProcessPendingEvents(); // FIX: Process mouse up events even when not clicking
-				Panel.Switch(PseudoClass.Hover, false, Active, hovered);
+				
+				// Check if Active is still valid after processing events
+				if (Active != null && Active.IsValid())
+				{
+					Panel.Switch(PseudoClass.Hover, false, Active, hovered);
+				}
+			}
+
+			// Check if Active is still valid before final cleanup
+			if (Active == null || !Active.IsValid())
+			{
+				Active = null;
+				return;
 			}
 
 			// Use static Switch to propagate :active removal to ancestors
