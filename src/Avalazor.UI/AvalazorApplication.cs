@@ -30,10 +30,10 @@ public static class AvalazorApplication
     public static Action<RootPanel>? AIModeCallback { get; set; }
     
     /// <summary>
-    /// The main root panel, available for adding child windows.
-    /// Only available after RunPanel has been called.
+    /// The window manager for opening additional native windows.
+    /// Only available in GUI mode after RunPanel has been called.
     /// </summary>
-    private static RootPanel? _mainRootPanel;
+    private static WindowManager? _windowManager;
 
     /// <summary>
     /// Static constructor to ensure text measurement is available before any panels are created
@@ -103,7 +103,6 @@ public static class AvalazorApplication
             
             // Wrap in RootPanel
             var rootPanel = new RootPanel();
-            _mainRootPanel = rootPanel;
             rootPanel.PanelBounds = new Rect(0, 0, width, height);
             rootPanel.AddChild(panel);
             
@@ -234,6 +233,10 @@ public static class AvalazorApplication
             }
             
             nativeWindow.RootPanel = rootPanel;
+            
+            // Initialize window manager for multi-window support
+            _windowManager = nativeWindow.WindowManager;
+            
             nativeWindow.Run();
         }
         catch (Exception ex)
@@ -528,28 +531,19 @@ public static class AvalazorApplication
     }
 
     /// <summary>
-    /// Open a new window panel within the existing application.
-    /// This creates a Window panel as a child of the root panel, not a separate native OS window.
-    /// Similar to how windows work in XGUI-3.
+    /// Open a new native window with the specified panel type.
+    /// The window will run in its own thread with its own event loop.
+    /// Only available in GUI mode. Call this after RunPanel has been called.
     /// </summary>
-    public static T? OpenWindow<T>() where T : Panel, new()
+    public static void OpenWindow<T>(int width = 1280, int height = 720, string? title = null) where T : Panel, new()
     {
-        if (_mainRootPanel == null)
+        if (_windowManager == null)
         {
-            Console.WriteLine("[AvalazorApplication] Cannot open window: No root panel available. Call RunPanel first.");
-            return null;
+            Console.WriteLine("[AvalazorApplication] Cannot open window: WindowManager not available (not in GUI mode or RunPanel not called yet)");
+            return;
         }
         
-        // Create the window panel
-        var window = new T();
-        
-        // Add to root panel
-        _mainRootPanel.AddChild(window);
-        
-        // Trigger layout and render tree processing
-        window.StateHasChanged();
-        
-        return window;
+        _windowManager.OpenWindow<T>(width, height, title);
     }
 
     /// <summary>
