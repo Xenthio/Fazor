@@ -34,13 +34,30 @@ public static partial class Win32HitTestHelper
     private const uint WS_THICKFRAME = 0x00040000;
     private const uint WS_CAPTION = 0x00C00000;
     
-    // Window subclassing
+    // Window subclassing - per-window tracking
     private const int GWLP_WNDPROC = -4;
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-    private static WndProcDelegate? _wndProcDelegate;
-    private static IntPtr _oldWndProc = IntPtr.Zero;
-    private static IWindow? _currentWindow;
-    private static bool _hasCustomChrome = false;
+    
+    // Store per-window state
+    private class WindowState
+    {
+        public IWindow Window { get; set; }
+        public IntPtr OldWndProc { get; set; }
+        public WndProcDelegate WndProcDelegate { get; set; }
+        public bool HasCustomChrome { get; set; }
+
+        public WindowState(IWindow window, IntPtr oldWndProc, WndProcDelegate wndProcDelegate, bool hasCustomChrome)
+        {
+            Window = window;
+            OldWndProc = oldWndProc;
+            WndProcDelegate = wndProcDelegate;
+            HasCustomChrome = hasCustomChrome;
+        }
+    }
+    
+    // Dictionary to track state for multiple windows
+    private static readonly Dictionary<IntPtr, WindowState> _windowStates = new Dictionary<IntPtr, WindowState>();
+    private static readonly object _lock = new object();
 
     [DllImport("user32.dll")]
     private static extern bool GetCursorPos(out POINT lpPoint);
@@ -89,9 +106,21 @@ public static partial class Win32HitTestHelper
     /// </summary>
     private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        WindowState? state = null;
+        lock (_lock)
+        {
+            _windowStates.TryGetValue(hWnd, out state);
+        }
+        
+        if (state == null)
+        {
+            // Window not found, this shouldn't happen
+            return IntPtr.Zero;
+        }
+        
         // Handle WM_NCCALCSIZE to remove visible frame while preserving resize border
         // This removes the white bar and rounded corners while keeping outside-window resize working
-        if (msg == WM_NCCALCSIZE && wParam.ToInt32() == 1 && _hasCustomChrome)
+        if (msg == WM_NCCALCSIZE && wParam.ToInt32() == 1 && state.HasCustomChrome)
         {
             // wParam == 1 means lParam points to NCCALCSIZE_PARAMS structure
             // We need to modify rgrc[0] (the new client rect) to remove the visible frame
@@ -135,9 +164,9 @@ public static partial class Win32HitTestHelper
             }
         }
         
-        if (msg == WM_NCHITTEST && _currentWindow != null && _hasCustomChrome)
+        if (msg == WM_NCHITTEST && state.HasCustomChrome)
         {
-            var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, 120, true);
+            var result = PerformHitTest(state.Window, state.Window.Size.X, state.Window.Size.Y, 30, 120, true);
             if (result != HTCLIENT)
             {
                 return new IntPtr(result);
@@ -145,7 +174,7 @@ public static partial class Win32HitTestHelper
         }
         
         // Call original window procedure
-        return CallWindowProc(_oldWndProc, hWnd, msg, wParam, lParam);
+        return CallWindowProc(state.OldWndProc, hWnd, msg, wParam, lParam);
     }
     
     /// <summary>
@@ -161,8 +190,16 @@ public static partial class Win32HitTestHelper
         try
         {
             var hwnd = window.Native!.Win32!.Value.Hwnd;
-            _currentWindow = window;
-            _hasCustomChrome = hasCustomChrome;
+            
+            // Check if already installed
+            lock (_lock)
+            {
+                if (_windowStates.ContainsKey(hwnd))
+                {
+                    Console.WriteLine($"[Win32HitTest] Handler already installed for window {hwnd}");
+                    return;
+                }
+            }
             
             // CRITICAL: Add WS_THICKFRAME to window style for resize to work
             // Without this style, Windows ignores WM_NCHITTEST resize codes
@@ -170,11 +207,21 @@ public static partial class Win32HitTestHelper
             uint newStyle = currentStyle | WS_THICKFRAME;
             SetWindowLong(hwnd, GWL_STYLE, newStyle);
             
-            // Create delegate and keep it alive
-            _wndProcDelegate = WndProc;
+            // Create delegate for this window
+            WndProcDelegate wndProcDelegate = WndProc;
             
             // Subclass the window
-            _oldWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
+            IntPtr oldWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(wndProcDelegate));
+            
+            // Store state for this window
+            var state = new WindowState(window, oldWndProc, wndProcDelegate, hasCustomChrome);
+            
+            lock (_lock)
+            {
+                _windowStates[hwnd] = state;
+            }
+            
+            Console.WriteLine($"[Win32HitTest] Handler installed for window {hwnd}");
         }
         catch (Exception ex)
         {
@@ -187,7 +234,7 @@ public static partial class Win32HitTestHelper
     /// </summary>
     public static void UninstallHitTestHandler(IWindow window)
     {
-        if (!OperatingSystem.IsWindows() || _oldWndProc == IntPtr.Zero)
+        if (!OperatingSystem.IsWindows())
         {
             return;
         }
@@ -196,13 +243,24 @@ public static partial class Win32HitTestHelper
         {
             var hwnd = window.Native!.Win32!.Value.Hwnd;
             
-            // Restore the original window procedure
-            SetWindowLongPtr(hwnd, GWLP_WNDPROC, _oldWndProc);
+            WindowState? state = null;
+            lock (_lock)
+            {
+                if (_windowStates.TryGetValue(hwnd, out state))
+                {
+                    _windowStates.Remove(hwnd);
+                }
+            }
             
-            _oldWndProc = IntPtr.Zero;
-            _currentWindow = null;
-            _hasCustomChrome = false;
-            _wndProcDelegate = null;
+            if (state == null || state.OldWndProc == IntPtr.Zero)
+            {
+                return;
+            }
+            
+            // Restore the original window procedure
+            SetWindowLongPtr(hwnd, GWLP_WNDPROC, state.OldWndProc);
+            
+            Console.WriteLine($"[Win32HitTest] Handler uninstalled for window {hwnd}");
         }
         catch (Exception ex)
         {
