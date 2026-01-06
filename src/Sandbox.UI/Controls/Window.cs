@@ -1,5 +1,3 @@
-using Avalazor.UI.Native;
-
 namespace Sandbox.UI;
 
 /// <summary>
@@ -902,15 +900,16 @@ public class Window : Panel
         // Focus the window when clicked
         FocusWindow();
         
-        // For borderless windows on Windows, WM_NCHITTEST handles resize natively
-        // Skip manual resize only when Win32 hit testing is available
-        if ((HasCustomChrome || HasTitleBar) && Win32HitTestHelper.IsSupported)
+        // For borderless windows with custom chrome, native hit testing may handle resize
+        // On Windows with WM_NCHITTEST, the OS handles resize automatically
+        // On other platforms, fallback to manual resize if needed
+        if (HasCustomChrome || HasTitleBar)
         {
-            // Skip manual resize - OS handles it via WM_NCHITTEST on Windows
+            // Skip manual resize - may be handled by native hit testing
             return;
         }
         
-        // Start resize if applicable (for native borders or non-Windows platforms)
+        // Start resize if applicable (for windows with native borders)
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         StartResize(mousePos);
     }
@@ -932,11 +931,12 @@ public class Window : Panel
     {
         base.OnMouseMove(e);
         
-        // For borderless windows on Windows, WM_NCHITTEST handles resize natively
-        // Skip manual resize only when Win32 hit testing is available
-        if ((HasCustomChrome || HasTitleBar) && Win32HitTestHelper.IsSupported)
+        // For borderless windows with custom chrome, native hit testing may handle resize
+        // On Windows with WM_NCHITTEST, the OS handles resize automatically
+        // On other platforms, fallback to manual resize if needed
+        if (HasCustomChrome || HasTitleBar)
         {
-            // Skip manual resize - OS handles it via WM_NCHITTEST on Windows
+            // Skip manual resize - may be handled by native hit testing
             return;
         }
         
