@@ -131,7 +131,7 @@ public static partial class Win32HitTestHelper
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Win32HitTest] WM_NCCALCSIZE error: {ex.Message}");
+                // Silently handle errors - don't spam console in production
             }
         }
         
@@ -140,7 +140,6 @@ public static partial class Win32HitTestHelper
             var result = PerformHitTest(_currentWindow, _currentWindow.Size.X, _currentWindow.Size.Y, 30, 120, true);
             if (result != HTCLIENT)
             {
-                Console.WriteLine($"[Win32HitTest] Hit test returned: {result} at window size {_currentWindow.Size.X}x{_currentWindow.Size.Y}");
                 return new IntPtr(result);
             }
         }
@@ -170,15 +169,12 @@ public static partial class Win32HitTestHelper
             uint currentStyle = GetWindowLong(hwnd, GWL_STYLE);
             uint newStyle = currentStyle | WS_THICKFRAME;
             SetWindowLong(hwnd, GWL_STYLE, newStyle);
-            Console.WriteLine($"[Win32HitTest] Added WS_THICKFRAME to window style (0x{currentStyle:X} -> 0x{newStyle:X})");
             
             // Create delegate and keep it alive
             _wndProcDelegate = WndProc;
             
             // Subclass the window
             _oldWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
-            
-            Console.WriteLine("[Win32HitTest] Installed hit test handler for borderless window");
         }
         catch (Exception ex)
         {
@@ -203,8 +199,6 @@ public static partial class Win32HitTestHelper
             _oldWndProc = IntPtr.Zero;
             _currentWindow = null;
             _wndProcDelegate = null;
-            
-            Console.WriteLine("[Win32HitTest] Uninstalled hit test handler");
         }
         catch (Exception ex)
         {
@@ -240,8 +234,6 @@ public static partial class Win32HitTestHelper
 
             int x = cursorPos.X;
             int y = cursorPos.Y;
-            
-            Console.WriteLine($"[Win32HitTest] Mouse at client coords ({x},{y}), window size ({windowWidth},{windowHeight})");
 
             // Extend detection zone slightly outside window bounds to catch edges/corners
             // This allows grabbing from just outside the visible window

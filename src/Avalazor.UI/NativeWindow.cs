@@ -32,12 +32,6 @@ public class NativeWindow : INativeWindow, IDisposable
     private PopupManager? _popupManager;
     private bool _hasNativeBorder = true;
     private bool _hasTransparentFramebuffer = false;
-    
-    /// <summary>
-    /// Padding for borderless windows to enable edge resize from outside visible bounds
-    /// </summary>
-    private const int BORDERLESS_PADDING = 5;
-    private int _windowPadding = 0;
 
     public RootPanel? RootPanel { get; set; }
 
@@ -62,12 +56,8 @@ public class NativeWindow : INativeWindow, IDisposable
         _hasTransparentFramebuffer = transparentFramebuffer;
         _hasNativeBorder = !borderless;
         
-        // Add padding for borderless windows to enable resize from outside visible bounds
-        _windowPadding = borderless ? BORDERLESS_PADDING : 0;
-        
         var options = WindowOptions.Default;
-        // Increase window size by padding to create invisible border for edge detection
-        options.Size = new Vector2D<int>(width + (_windowPadding * 2), height + (_windowPadding * 2));
+        options.Size = new Vector2D<int>(width, height);
         options.Title = title;
         options.VSync = true;
         options.IsEventDriven = false;

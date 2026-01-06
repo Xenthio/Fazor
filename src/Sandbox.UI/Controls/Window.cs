@@ -1,3 +1,5 @@
+using Avalazor.UI.Native;
+
 namespace Sandbox.UI;
 
 /// <summary>
@@ -158,14 +160,9 @@ public class Window : Panel
     private int _lastDragWindowY = 0;
 
     /// <summary>
-    /// Whether the window is currently being dragging
+    /// Whether the window is currently being dragged
     /// </summary>
     public bool IsDragging => _dragging;
-    
-    /// <summary>
-    /// Padding for borderless windows - creates invisible border for edge detection
-    /// </summary>
-    private const float BORDERLESS_EDGE_PADDING = 5;
 
     // Resize state tracking
     internal bool _resizingRight = false;
@@ -730,30 +727,11 @@ public class Window : Panel
         var rect = Box.Rect;
         const float Distance = 5; // Match XGUI-3
         
-        // For borderless windows with custom chrome, check in the padding area (outside content)
-        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
-        {
-            var padding = BORDERLESS_EDGE_PADDING;
-            
-            // Check if mouse is in the outer padding area or inner edge area
-            var inBottomPadding = mousePos.y >= rect.Bottom - Distance || mousePos.y >= rect.Bottom + padding;
-            var inRightPadding = mousePos.x >= rect.Right - Distance || mousePos.x >= rect.Right + padding;
-            var inTopPadding = mousePos.y <= rect.Top + Distance || mousePos.y <= rect.Top - padding;
-            var inLeftPadding = mousePos.x <= rect.Left + Distance || mousePos.x <= rect.Left - padding;
-            
-            if (inBottomPadding) _resizingBottom = true;
-            if (inRightPadding) _resizingRight = true;
-            if (inTopPadding) _resizingTop = true;
-            if (inLeftPadding) _resizingLeft = true;
-        }
-        else
-        {
-            // Standard windows - just check inner distance
-            if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
-            if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
-            if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
-            if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
-        }
+        // Standard resize detection - check if mouse is within Distance pixels of edges
+        if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
+        if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
+        if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
+        if (mousePos.x <= rect.Left + Distance) _resizingLeft = true;
         
         if (_nativeWindow != null)
         {
@@ -803,24 +781,11 @@ public class Window : Panel
         var rect = Box.Rect;
         const float Distance = 5; // Match XGUI-3
         
-        // For borderless windows with custom chrome, check in the padding area
-        bool almostBottom, almostRight, almostTop, almostLeft;
-        
-        if ((HasCustomChrome || HasTitleBar) && _nativeWindow != null && !_nativeWindow.HasNativeBorder)
-        {
-            var padding = BORDERLESS_EDGE_PADDING;
-            almostBottom = mousePos.y >= rect.Bottom - Distance || mousePos.y >= rect.Bottom + padding;
-            almostRight = mousePos.x >= rect.Right - Distance || mousePos.x >= rect.Right + padding;
-            almostTop = mousePos.y <= rect.Top + Distance || mousePos.y <= rect.Top - padding;
-            almostLeft = mousePos.x <= rect.Left + Distance || mousePos.x <= rect.Left - padding;
-        }
-        else
-        {
-            almostBottom = mousePos.y >= rect.Bottom - Distance;
-            almostRight = mousePos.x >= rect.Right - Distance;
-            almostTop = mousePos.y <= rect.Top + Distance;
-            almostLeft = mousePos.x <= rect.Left + Distance;
-        }
+        // Standard cursor detection - check if mouse is near edges
+        bool almostBottom = mousePos.y >= rect.Bottom - Distance;
+        bool almostRight = mousePos.x >= rect.Right - Distance;
+        bool almostTop = mousePos.y <= rect.Top + Distance;
+        bool almostLeft = mousePos.x <= rect.Left + Distance;
         
         // Set cursor based on resize position
         if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
@@ -937,15 +902,15 @@ public class Window : Panel
         // Focus the window when clicked
         FocusWindow();
         
-        // For borderless windows, WM_NCHITTEST handles resize natively on Windows
-        // Only do manual resize handling for windows with native borders or on non-Windows platforms
-        if (HasCustomChrome || HasTitleBar)
+        // For borderless windows on Windows, WM_NCHITTEST handles resize natively
+        // Skip manual resize only when Win32 hit testing is available
+        if ((HasCustomChrome || HasTitleBar) && Win32HitTestHelper.IsSupported)
         {
-            // Skip manual resize - OS handles it via WM_NCHITTEST
+            // Skip manual resize - OS handles it via WM_NCHITTEST on Windows
             return;
         }
         
-        // Start resize if applicable (only for windows with native borders)
+        // Start resize if applicable (for native borders or non-Windows platforms)
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         StartResize(mousePos);
     }
@@ -967,11 +932,11 @@ public class Window : Panel
     {
         base.OnMouseMove(e);
         
-        // For borderless windows, WM_NCHITTEST handles resize natively on Windows
-        // Only do manual resize handling for windows with native borders or on non-Windows platforms
-        if (HasCustomChrome || HasTitleBar)
+        // For borderless windows on Windows, WM_NCHITTEST handles resize natively
+        // Skip manual resize only when Win32 hit testing is available
+        if ((HasCustomChrome || HasTitleBar) && Win32HitTestHelper.IsSupported)
         {
-            // Skip manual resize - OS handles it via WM_NCHITTEST
+            // Skip manual resize - OS handles it via WM_NCHITTEST on Windows
             return;
         }
         
