@@ -2,7 +2,7 @@
 # Publish SimpleDesktopApp as a single-file executable
 # This script creates an optimized single-file executable with all content packed in
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT="$SCRIPT_DIR/SimpleDesktopApp.csproj"

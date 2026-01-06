@@ -29,7 +29,8 @@
     <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
     <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
     <!-- Build-time only reference - ensures Avalazor.Build is compiled before this project -->
-    <!-- GeneratePathProperty prevents file locking by allowing MSBuild to use the output path without loading the assembly -->
+    <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
+    <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->
     <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" OutputItemType="AvalazorBuildReference" />
   </ItemGroup>
 
