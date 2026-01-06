@@ -1,0 +1,53 @@
+@namespace TestApp
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using System.Reflection;
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
+@inherits Window
+
+<root title="Test Panel Selector" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="500" windowheight="500">
+	<div class="window-content">
+		<label style="flex-shrink:0;">Select a test to run:</label>
+		
+		<scrollpanel>
+			<button @onclick=@(() => LaunchTest<MainApp>())>MainApp</button>
+			<button @onclick=@(() => LaunchTest<XGUIThemeShowcase>())>XGUI Theme Showcase</button>
+			<button @onclick=@(() => LaunchTest<XGUIPortTest>())>XGUI Port Test</button>
+			<button @onclick=@(() => LaunchTest<PanelInspectorTest>())>Panel Inspector Test</button>
+			<button @onclick=@(() => LaunchTest<FlexboxTest>())>Flexbox Test</button>
+			<button @onclick=@(() => LaunchTest<BorderImageTest>())>Border Image Test</button>
+			<button @onclick=@(() => LaunchTest<BorderRadiusTest>())>Border Radius Test</button>
+			<button @onclick=@(() => LaunchTest<CustomChromeTest>())>Custom Chrome Test</button>
+			<button @onclick=@(() => LaunchTest<CustomChromeToggleTest>())>Custom Chrome Toggle Test</button>
+			<button @onclick=@(() => LaunchTest<SimpleImageTest>())>Simple Image Test</button>
+			<button @onclick=@(() => LaunchTest<ImageTest>())>Image Test</button>
+			<button @onclick=@(() => LaunchTest<ScrollingDemo>())>Scrolling Demo</button>
+			<button @onclick=@(() => LaunchTest<RefOnClickDemo>())>Ref OnClick Demo</button>
+			<button @onclick=@(() => LaunchTest<TextEntryTest>())>Text Entry Test</button>
+			<button @onclick=@(() => LaunchTest<TextOverflowTest>())>Text Overflow Test</button>
+			<button @onclick=@(() => LaunchTest<AutoSizeTest>())>Auto Size Test</button>
+			<button @onclick=@(() => LaunchTest<CursorTest>())>Cursor Test</button>
+			<button @onclick=@(() => LaunchTest<ExampleWindow>())>Example Window</button>
+			<button @onclick=@(() => LaunchTest<PanelList>())>Panel List</button>
+		</scrollpanel>
+	</div>
+</root>
+
+@code {
+	void LaunchTest<T>() where T : Panel, new()
+	{
+		try
+		{
+			Avalazor.UI.AvalazorApplication.RunPanel<T>();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error launching test: {ex.Message}");
+		}
+	}
+}
+
+

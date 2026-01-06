@@ -2,7 +2,7 @@ using SkiaSharp;
 using System;
 using System.IO;
 
-namespace SimpleDesktopApp.Tools;
+namespace TestApp.Tools;
 
 /// <summary>
 /// Simple utility to create test images for the Image rendering test
