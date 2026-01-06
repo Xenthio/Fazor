@@ -38,29 +38,31 @@
     <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!--  Determine whether to exclude assets from single-file bundle -->
-  <PropertyGroup>
-    <_ExcludeAssetsFromSingleFile Condition="'$(PackAssets)' == 'true'">false</_ExcludeAssetsFromSingleFile>
-    <_ExcludeAssetsFromSingleFile Condition="'$(PackAssets)' != 'true'">true</_ExcludeAssetsFromSingleFile>
-  </PropertyGroup>
-
-  <!-- Project-specific Assets folder (overrides global assets if same path) -->
-  <ItemGroup>
-    <!-- Copy assets to output keeping Assets\ prefix -->
-    <!-- Use Content to ensure assets are included in publish process -->
-    <!-- ExcludeFromSingleFile controlled by PackAssets property (default: true = keep on disk) -->
-    <Content Include="Assets\**\*" Exclude="Assets\README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <!-- When PackAssets=true, copy to publish dir so they can be embedded, but set ExcludeFromSingleFile=false -->
-      <!-- When PackAssets=false, copy to publish dir and set ExcludeFromSingleFile=true (stay on disk) -->
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <!-- TargetPath ensures Assets\ prefix is preserved in both output and when extracted from single-file -->
-      <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
-      <!-- When PackAssets=false or unset (default), exclude from bundle (keep on disk) -->
-      <!-- When PackAssets=true, do NOT exclude (embed in exe and extract to temp at runtime) -->
-      <ExcludeFromSingleFile>$(_ExcludeAssetsFromSingleFile)</ExcludeFromSingleFile>
-    </Content>
-  </ItemGroup>
+  <!-- Project-specific Assets with conditional packaging -->
+  <Choose>
+    <When Condition="'$(PackAssets)' == 'true'">
+      <!-- PackAssets=true: Embed assets in exe, don't copy to publish folder -->
+      <ItemGroup>
+        <Content Include="Assets\**\*" Exclude="Assets\README.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+          <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+          <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
+        </Content>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <!-- PackAssets=false (default): Keep assets as separate files on disk -->
+      <ItemGroup>
+        <Content Include="Assets\**\*" Exclude="Assets\README.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+          <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        </Content>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <!-- Import Avalazor build targets for Razor and SCSS -->
   <Import Project="..\..\src\Avalazor.Build\build\Avalazor.Build.targets" />
