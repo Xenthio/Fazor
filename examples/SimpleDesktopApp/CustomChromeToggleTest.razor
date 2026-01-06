@@ -1,0 +1,80 @@
+@namespace SimpleDesktopApp
+@using Sandbox.UI
+@using System
+@attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
+@inherits Window
+
+<root title="Custom Chrome Toggle Test" hasminimise="true" hasmaximise="true" hasclose="true" 
+      windowwidth="600" windowheight="500">
+    <div class="window-content" style="padding: 20px;">
+        <h2>Custom Chrome Toggle Test</h2>
+        
+        <section style="margin-top: 20px;">
+            <h3>🧪 Test Instructions</h3>
+            <p>This test demonstrates the bug where native window controls don't come back when switching from custom chrome to native chrome.</p>
+            <ol style="margin-left: 20px;">
+                <li><strong>Initial State:</strong> OliveGreen theme with custom chrome (borderless window, in-window title bar)</li>
+                <li><strong>Action:</strong> Click the button below to switch to Simple theme (no custom chrome)</li>
+                <li><strong>Expected:</strong> Native window decorations (title bar with controls) should appear</li>
+                <li><strong>Bug:</strong> Native controls DON'T come back - window remains borderless</li>
+            </ol>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>📊 Current State</h3>
+            <p><strong>Current Theme:</strong> @CurrentTheme</p>
+            <p><strong>HasCustomChrome:</strong> @HasCustomChrome</p>
+            <p><strong>TitleBar Exists:</strong> @(TitleBar != null && TitleBar.IsValid())</p>
+            <p><strong>CSS Custom Chrome:</strong> @GetCssCustomChrome()</p>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>🔄 Theme Switching</h3>
+            <button onclick=@(() => SwitchToTheme("OliveGreen"))>Switch to OliveGreen (Custom Chrome)</button>
+            <button onclick=@(() => SwitchToTheme("Simple"))>Switch to Simple (Native Chrome)</button>
+            <button onclick=@(() => SwitchToTheme("Computer11"))>Switch to Computer11 (Custom Chrome)</button>
+            <button onclick=@(() => SwitchToTheme("SboxDark"))>Switch to SboxDark (Native Chrome)</button>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <p style="color: #888; font-size: 12px;">
+                💡 <strong>Tip:</strong> After clicking "Simple", the window should have native OS window controls (minimize, maximize, close buttons in the native title bar).
+                If they don't appear, that's the bug we're fixing!
+            </p>
+        </section>
+    </div>
+</root>
+
+@code {
+    private string _themeName = "OliveGreen";
+    
+    private void SwitchToTheme(string themeName)
+    {
+        _themeName = themeName;
+        SetTheme($"/XGUI/DefaultStyles/{themeName}.scss");
+        StateHasChanged();
+        Console.WriteLine($"[CustomChromeToggleTest] Switched to theme: {themeName}");
+        Console.WriteLine($"[CustomChromeToggleTest] HasCustomChrome: {HasCustomChrome}");
+        Console.WriteLine($"[CustomChromeToggleTest] TitleBar exists: {TitleBar != null && TitleBar.IsValid()}");
+        Console.WriteLine($"[CustomChromeToggleTest] CSS custom chrome: {GetCssCustomChrome()}");
+    }
+    
+    private string GetCssCustomChrome()
+    {
+        if (ComputedStyle == null) return "null";
+        var value = ComputedStyle.GetCustomProperty("--custom-chrome");
+        return string.IsNullOrEmpty(value) ? "not set" : value;
+    }
+    
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine("[CustomChromeToggleTest] Window initialized");
+            Console.WriteLine($"[CustomChromeToggleTest] Initial HasCustomChrome: {HasCustomChrome}");
+            Console.WriteLine($"[CustomChromeToggleTest] Initial CSS custom chrome: {GetCssCustomChrome()}");
+        }
+    }
+}

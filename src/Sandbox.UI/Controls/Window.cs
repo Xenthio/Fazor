@@ -284,9 +284,11 @@ public class Window : Panel
         
         // Add osdecorated class when using native window (OS handles window chrome)
         // BUT only if custom chrome is not requested
+        // Always explicitly set the window border to ensure state is synchronized
         if (!customChromeRequested)
         {
             AddClass("osdecorated");
+            _nativeWindow.SetWindowBorder(true);
         }
         else
         {

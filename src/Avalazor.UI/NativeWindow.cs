@@ -5,6 +5,7 @@ using SkiaSharp;
 using Sandbox.UI;
 using Avalazor.UI.Native;
 using UIVector2 = Sandbox.UI.Vector2;
+using System.Runtime.InteropServices;
 
 namespace Avalazor.UI;
 
@@ -32,6 +33,15 @@ public class NativeWindow : INativeWindow, IDisposable
     private PopupManager? _popupManager;
     private bool _hasNativeBorder = true;
     private bool _hasTransparentFramebuffer = false;
+
+    // Win32 interop for forcing window frame redraw
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+    
+    private const uint SWP_NOMOVE = 0x0002;
+    private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_FRAMECHANGED = 0x0020;
 
     public RootPanel? RootPanel { get; set; }
 
@@ -320,6 +330,27 @@ public class NativeWindow : INativeWindow, IDisposable
         else if (hasNativeBorder)
         {
             Win32HitTestHelper.UninstallHitTestHandler(_window);
+        }
+        
+        // Force window frame redraw on Windows
+        // This ensures the native window frame appears immediately when switching from borderless to bordered
+        if (OperatingSystem.IsWindows() && hasNativeBorder)
+        {
+            try
+            {
+                var hwnd = _window.Native?.Win32?.Hwnd ?? IntPtr.Zero;
+                if (hwnd != IntPtr.Zero)
+                {
+                    // SWP_FRAMECHANGED forces Windows to redraw the window frame
+                    // SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER means don't change position, size, or Z-order
+                    SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, 
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[NativeWindow] Failed to force frame redraw: {ex.Message}");
+            }
         }
     }
 
