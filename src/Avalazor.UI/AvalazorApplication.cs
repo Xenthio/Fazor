@@ -106,8 +106,80 @@ public static class AvalazorApplication
             // Re-read window properties AFTER layout (Razor attributes are now processed)
             if (panel is Sandbox.UI.Window windowPanel)
             {
-                width = windowPanel.WindowWidth > 0 ? windowPanel.WindowWidth : width;
-                height = windowPanel.WindowHeight > 0 ? windowPanel.WindowHeight : height;
+                // Check if width/height were explicitly set
+                bool needsAutoWidth = !windowPanel.IsWindowWidthExplicit;
+                bool needsAutoHeight = !windowPanel.IsWindowHeightExplicit;
+                
+                if (needsAutoWidth || needsAutoHeight)
+                {
+                    // For automatic sizing, we need to temporarily remove the 100% constraint
+                    // and let the content determine the size
+                    var originalWidthStyle = windowPanel.Style.Width;
+                    var originalHeightStyle = windowPanel.Style.Height;
+                    
+                    if (needsAutoWidth)
+                    {
+                        windowPanel.Style.Width = null; // Auto width
+                    }
+                    if (needsAutoHeight)
+                    {
+                        windowPanel.Style.Height = null; // Auto height
+                    }
+                    
+                    // Re-layout with auto sizing
+                    rootPanel.Layout();
+                    
+                    // Now grab the computed size from the layout
+                    int? computedWidth = null;
+                    int? computedHeight = null;
+                    
+                    // Cache MinSize to avoid multiple property accesses
+                    var minWidth = (int)windowPanel.MinSize.x;
+                    var minHeight = (int)windowPanel.MinSize.y;
+                    
+                    if (needsAutoWidth && windowPanel.Box != null)
+                    {
+                        // Use the outer rect width (includes margins and borders)
+                        int w = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
+                        // Enforce minimum size
+                        w = Math.Max(w, minWidth);
+                        if (w > 0)
+                        {
+                            computedWidth = w;
+                            width = w;
+                        }
+                    }
+                    if (needsAutoHeight && windowPanel.Box != null)
+                    {
+                        // Use the outer rect height (includes margins and borders)
+                        int h = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
+                        // Enforce minimum size
+                        h = Math.Max(h, minHeight);
+                        if (h > 0)
+                        {
+                            computedHeight = h;
+                            height = h;
+                        }
+                    }
+                    
+                    // Set the computed size without marking as explicitly set
+                    if (computedWidth.HasValue || computedHeight.HasValue)
+                    {
+                        windowPanel.SetAutoComputedSize(computedWidth, computedHeight);
+                    }
+                    
+                    // Restore the 100% sizing for native window rendering
+                    // (the native window will fill the RootPanel, which is sized to the computed dimensions)
+                    windowPanel.Style.Width = originalWidthStyle;
+                    windowPanel.Style.Height = originalHeightStyle;
+                }
+                else
+                {
+                    // Explicitly set dimensions - use them
+                    width = windowPanel.WindowWidth > 0 ? windowPanel.WindowWidth : width;
+                    height = windowPanel.WindowHeight > 0 ? windowPanel.WindowHeight : height;
+                }
+                
                 title = !string.IsNullOrEmpty(windowPanel.Title) ? windowPanel.Title : title;
             }
             

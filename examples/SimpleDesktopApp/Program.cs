@@ -34,14 +34,14 @@ class Program
 
 
         //Avalazor.UI.AvalazorApplication.RunPanel<RefOnClickDemo>();
-        //Avalazor.UI.AvalazorApplication.RunPanel<About>();
+        Avalazor.UI.AvalazorApplication.RunPanel<About>();
         //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
         
         // Test custom chrome improvements
         //Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeTest>(title: "Custom Chrome Test");
         
         // Test custom chrome toggle bug
-        Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeToggleTest>(title: "Custom Chrome Toggle Test");
+        //Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeToggleTest>(title: "Custom Chrome Toggle Test");
         
         // Run the Image Test to demonstrate texture rendering
         //Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");

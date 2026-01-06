@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Sandbox.UI.Skia" />
+    <InternalsVisibleTo Include="Avalazor.UI" />
   </ItemGroup>
 
   <ItemGroup>
