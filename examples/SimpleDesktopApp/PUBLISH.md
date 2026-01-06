@@ -18,10 +18,13 @@ This directory contains scripts to publish the SimpleDesktopApp as an optimized 
 
 The publish scripts create a **single-file executable** with:
 - ✅ All .NET assemblies bundled into one file
-- ✅ Native libraries (yoga, SkiaSharp, Silk.NET, etc.) embedded
 - ✅ ReadyToRun compilation for faster startup
 - ✅ Assets folder extracted alongside the executable
-- ✅ Small size (~68MB framework-dependent, ~80MB self-contained)
+- ⚠️ Native windowing libraries (SDL2, GLFW) extracted alongside the executable
+- ⚠️ Native yoga layout library extracted alongside the executable
+- ✅ Small size (~54MB exe + ~17MB native libs = ~71MB total)
+
+**Note:** Native libraries for windowing (SDL2.dll, glfw3.dll, libSDL2-2.0.so, etc.) cannot be embedded in the single-file bundle due to Silk.NET P/Invoke requirements. They must remain on disk alongside the executable. See [Silk.NET Issue #2157](https://github.com/dotnet/Silk.NET/issues/2157) for details.
 
 ## Output
 
@@ -29,24 +32,35 @@ Published files are created in:
 ```
 publish/
 ├── linux-x64/
-│   ├── SimpleDesktopApp      # Single executable
-│   ├── Assets/               # Themes, fonts, images
-│   └── *.pdb                 # Debug symbols (optional)
+│   ├── SimpleDesktopApp          # Single executable (~54MB)
+│   ├── libSDL2-2.0.so           # SDL windowing library
+│   ├── libglfw.so.3             # GLFW windowing library
+│   ├── libyoga.so               # Yoga layout library
+│   ├── Assets/                  # Themes, fonts, images
+│   └── *.pdb                    # Debug symbols (optional)
 ├── osx-x64/
+│   ├── SimpleDesktopApp
+│   ├── libSDL2-2.0.dylib
+│   ├── libglfw.3.dylib
+│   └── libyoga.dylib
 └── win-x64/
+    ├── SimpleDesktopApp.exe
+    ├── SDL2.dll
+    ├── glfw3.dll
+    └── yoga.dll
 ```
 
 ## Configuration Options
 
 ### Framework-Dependent (Default)
 - Requires .NET 8 Runtime installed
-- Smaller size (~68MB)
+- Smaller size (~54MB exe + ~17MB native libs = ~71MB total)
 - Faster to distribute
 - Default setting: `--self-contained false`
 
 ### Self-Contained
 - Includes .NET Runtime
-- Larger size (~80-90MB)
+- Larger size (~90-100MB total)
 - No runtime installation required
 - To enable: Edit script and change `--self-contained false` to `--self-contained true`
 
@@ -63,15 +77,17 @@ You can also publish manually with `dotnet publish`:
 # Framework-dependent (requires .NET 8 Runtime)
 dotnet publish -c Release -r linux-x64 --self-contained false \
   /p:PublishSingleFile=true \
-  /p:IncludeNativeLibrariesForSelfExtract=true \
+  /p:IncludeNativeLibrariesForSelfExtract=false \
   /p:PublishReadyToRun=true
 
 # Self-contained (includes .NET Runtime)
 dotnet publish -c Release -r linux-x64 --self-contained true \
   /p:PublishSingleFile=true \
-  /p:IncludeNativeLibrariesForSelfExtract=true \
+  /p:IncludeNativeLibrariesForSelfExtract=false \
   /p:PublishReadyToRun=true
 ```
+
+**Important:** `IncludeNativeLibrariesForSelfExtract` must be `false` for Silk.NET applications. Setting it to `true` causes `PlatformNotSupportedException` because SDL/GLFW libraries cannot be loaded from the extraction directory.
 
 ## Runtime Identifiers
 
@@ -84,6 +100,11 @@ Common runtime identifiers (RIDs):
 - `win-arm64` - ARM64 Windows
 
 ## Troubleshooting
+
+### "PlatformNotSupportedException: Couldn't find a suitable window platform"
+This error occurs when SDL2 or GLFW native libraries cannot be found. **Solution:** Ensure `IncludeNativeLibrariesForSelfExtract=false` in your project file. Silk.NET requires native windowing libraries (SDL2.dll, glfw3.dll, etc.) to be on disk alongside the executable, not embedded in the bundle.
+
+See: https://github.com/dotnet/Silk.NET/issues/2157
 
 ### "Could not copy ... The file is locked by MSBuild.exe"
 This is fixed in the current version. The issue occurred when MSBuild loaded the Avalazor.Build.dll multiple times. The fix uses `GenerateDependencyFile` and proper isolated loading.
@@ -99,9 +120,8 @@ Assets are extracted alongside the executable. The app looks for them in the `As
 | Configuration | Size | Requirements |
 |---------------|------|--------------|
 | Debug build (separate DLLs) | ~218MB | .NET 8 Runtime |
-| Release single-file (framework-dependent) | ~68MB | .NET 8 Runtime |
-| Release single-file (self-contained) | ~80-90MB | None |
-| Release single-file + trimmed | ~50-60MB | None (risky) |
+| Release single-file (framework-dependent) | ~71MB | .NET 8 Runtime |
+| Release single-file (self-contained) | ~90-100MB | None |
 
 ## CI/CD Integration
 
@@ -109,5 +129,5 @@ For automated builds, use:
 
 ```yaml
 - name: Publish SimpleDesktopApp
-  run: dotnet publish examples/SimpleDesktopApp/SimpleDesktopApp.csproj -c Release -r linux-x64 -o dist/ --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+  run: dotnet publish examples/SimpleDesktopApp/SimpleDesktopApp.csproj -c Release -r linux-x64 -o dist/ --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=false
 ```
