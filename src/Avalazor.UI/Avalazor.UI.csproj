@@ -52,4 +52,11 @@
 		<ProjectReference Include="..\Microsoft.AspNetCore.Components\Microsoft.AspNetCore.Components.csproj" />
 	</ItemGroup>
 
+	<!-- Include Yoga native libraries for all platforms -->
+	<ItemGroup>
+		<None Include="Native/yoga.dll" CopyToOutputDirectory="PreserveNewest" Link="yoga.dll" CopyToPublishDirectory="PreserveNewest" />
+		<None Include="Native/libyoga.so" CopyToOutputDirectory="PreserveNewest" Link="libyoga.so" CopyToPublishDirectory="PreserveNewest" />
+		<None Include="Native/libyoga.dylib" CopyToOutputDirectory="PreserveNewest" Link="libyoga.dylib" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+
 </Project>
