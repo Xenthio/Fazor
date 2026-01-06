@@ -39,13 +39,15 @@
   <!-- Project-specific Assets folder (overrides global assets if same path) -->
   <ItemGroup>
     <!-- Copy assets to output keeping Assets\ prefix -->
+    <!-- ExcludeFromSingleFile controlled by PackAssets property (default: true = keep on disk) -->
     <Content Include="Assets\**\*" Exclude="Assets\README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <!-- Keep Assets\ prefix: Assets\themes\file.scss -> Assets\themes\file.scss -->
       <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <!-- Exclude from single-file bundle - assets need to be extracted to disk for file system access -->
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <!-- When PackAssets=false (default), exclude from bundle -->
+      <!-- When PackAssets=true, embed in exe and extract to temp at runtime -->
+      <ExcludeFromSingleFile Condition="'$(PackAssets)' != 'true'">true</ExcludeFromSingleFile>
     </Content>
   </ItemGroup>
 

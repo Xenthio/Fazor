@@ -1,17 +1,63 @@
 # Publishing SimpleDesktopApp
 
-This directory contains scripts to publish the SimpleDesktopApp as an optimized single-file executable.
+This directory contains configurable scripts to publish SimpleDesktopApp as an optimized single-file executable with optional features.
 
 ## Quick Start
 
-### Linux/macOS
+### Default Build (Assets on disk, framework-dependent)
+
+**Linux/macOS:**
 ```bash
-./publish-single-file.sh
+./publish.sh
 ```
 
-### Windows
+**Windows:**
 ```powershell
-.\publish-single-file.ps1
+.\publish.ps1
+```
+
+### Advanced Options
+
+**Embed Assets (truly single-file):**
+```bash
+./publish.sh --pack-assets
+```
+
+**Self-Contained with Trimming (no runtime required):**
+```bash
+./publish.sh --self-contained --trimmed
+```
+
+**Everything Embedded (truly single-file, self-contained):**
+```bash
+./publish.sh --pack-assets --self-contained --trimmed
+```
+
+## Configuration Options
+
+The new `publish.sh` and `publish.ps1` scripts support the following options:
+
+| Option | Description | Impact |
+|--------|-------------|--------|
+| `--pack-assets` | Embed Assets in the executable | Assets extract to temp directory at runtime |
+| `--self-contained` | Include .NET runtime | +15-20MB, no runtime installation needed |
+| `--trimmed` | Enable assembly trimming | -5-10MB (requires `--self-contained`) |
+| `--runtime <RID>` | Target specific runtime | Override auto-detection |
+
+### Examples
+
+```bash
+# Default: Assets on disk, framework-dependent (~69MB exe + 2MB assets)
+./publish.sh
+
+# Embed assets: Truly single-file (~71MB exe only)
+./publish.sh --pack-assets
+
+# Self-contained: Includes .NET runtime (~85MB total)
+./publish.sh --self-contained --trimmed
+
+# Maximum optimization: Everything embedded, self-contained, trimmed (~80MB exe only)
+./publish.sh --pack-assets --self-contained --trimmed
 ```
 
 ## What Gets Published
@@ -20,19 +66,19 @@ The publish scripts create a **single-file executable** with:
 - ✅ All .NET assemblies bundled into one file
 - ✅ Native windowing libraries (SDL2, GLFW) embedded in the executable
 - ✅ ReadyToRun compilation for faster startup
-- ✅ Assets folder extracted alongside the executable (for file system access)
-- ✅ Small size (~69MB exe + ~2MB assets = ~71MB total)
+- ✅ Configurable: Assets on disk OR embedded in exe
+- ✅ Configurable: Framework-dependent OR self-contained
 
-**Note:** A PathResolver workaround enables SDL2/GLFW DLLs to be embedded by helping Silk.NET find them in the extraction directory. Assets remain on disk for file system access. See [Silk.NET Issue #2157](https://github.com/dotnet/Silk.NET/issues/2157) for technical details.
+**Note:** A PathResolver workaround enables SDL2/GLFW DLLs to be embedded by helping Silk.NET find them in the extraction directory. See [Silk.NET Issue #2157](https://github.com/dotnet/Silk.NET/issues/2157) for technical details.
 
-## Output
+## Output Structure
 
-Published files are created in:
+### Default Build (Assets on disk)
 ```
 publish/
 ├── linux-x64/
 │   ├── SimpleDesktopApp          # Single executable (~69MB, includes SDL/GLFW)
-│   ├── Assets/                  # Themes, fonts, images
+│   ├── Assets/                  # Themes, fonts, images (~2MB)
 │   └── *.pdb                    # Debug symbols (optional)
 ├── osx-x64/
 │   ├── SimpleDesktopApp
@@ -41,46 +87,61 @@ publish/
     ├── SimpleDesktopApp.exe
     └── Assets/
 ```
+
+### With --pack-assets (Truly single-file)
+```
+publish/
+├── linux-x64/
+│   ├── SimpleDesktopApp          # Single executable (~71MB, includes everything)
+│   └── *.pdb                    # Debug symbols (optional)
+├── osx-x64/
+│   └── SimpleDesktopApp
+└── win-x64/
+    └── SimpleDesktopApp.exe
 ```
 
-## Configuration Options
+## Size Comparison
 
-### Framework-Dependent (Default)
-- Requires .NET 8 Runtime installed
-- Smaller size (~69MB exe + ~2MB assets = ~71MB total)
-- Faster to distribute
-- Default setting: `--self-contained false`
+| Configuration | Exe Size | Total Size | Runtime Required |
+|---------------|----------|------------|------------------|
+| Default | 69MB | 71MB (exe + assets) | .NET 8 |
+| --pack-assets | 71MB | 71MB (exe only) | .NET 8 |
+| --self-contained | 85MB | 87MB (exe + assets) | None |
+| --self-contained --trimmed | 80MB | 82MB (exe + assets) | None |
+| --pack-assets --self-contained --trimmed | 80MB | 80MB (exe only) | None |
 
-### Self-Contained
-- Includes .NET Runtime
-- Larger size (~85-90MB total)
-- No runtime installation required
-- To enable: Edit script and change `--self-contained false` to `--self-contained true`
+## Legacy Scripts
 
-### Trimming (Advanced)
-- Can reduce size further by removing unused code
-- Currently disabled to avoid issues with reflection-heavy code
-- To enable: Add `/p:PublishTrimmed=true` to the publish command
-
+The original `publish-single-file.sh` and `publish-single-file.ps1` scripts are still available for compatibility but are deprecated in favor of the new configurable `publish.sh` and `publish.ps1` scripts.
 ## Manual Publishing
 
 You can also publish manually with `dotnet publish`:
 
 ```bash
-# Framework-dependent (requires .NET 8 Runtime)
+# Default: Framework-dependent, Assets on disk
 dotnet publish -c Release -r linux-x64 --self-contained false \
   /p:PublishSingleFile=true \
   /p:IncludeNativeLibrariesForSelfExtract=true \
-  /p:PublishReadyToRun=true
+  /p:PublishReadyToRun=true \
+  /p:PackAssets=false
 
-# Self-contained (includes .NET Runtime)
+# With packed assets
+dotnet publish -c Release -r linux-x64 --self-contained false \
+  /p:PublishSingleFile=true \
+  /p:IncludeNativeLibrariesForSelfExtract=true \
+  /p:PublishReadyToRun=true \
+  /p:PackAssets=true
+
+# Self-contained with trimming
 dotnet publish -c Release -r linux-x64 --self-contained true \
   /p:PublishSingleFile=true \
   /p:IncludeNativeLibrariesForSelfExtract=true \
-  /p:PublishReadyToRun=true
+  /p:PublishReadyToRun=true \
+  /p:PublishTrimmed=true \
+  /p:PackAssets=false
 ```
 
-**Note:** `IncludeNativeLibrariesForSelfExtract=true` is now supported thanks to a PathResolver workaround that helps Silk.NET find extracted DLLs. See NativeWindow.cs for implementation details.
+**Note:** `IncludeNativeLibrariesForSelfExtract=true` is supported thanks to a PathResolver workaround that helps Silk.NET find extracted DLLs. See NativeWindow.cs for implementation details.
 
 ## Runtime Identifiers
 
