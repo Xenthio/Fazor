@@ -32,7 +32,6 @@ public class NativeWindow : INativeWindow, IDisposable
     private IKeyboard? _keyboard;
     private bool _disposed = false;
     private PopupManager? _popupManager;
-    private WindowManager? _windowManager;
     private bool _hasNativeBorder = true;
     private bool _hasTransparentFramebuffer = false;
 
@@ -61,11 +60,6 @@ public class NativeWindow : INativeWindow, IDisposable
     /// The popup manager for this window
     /// </summary>
     public PopupManager? PopupManager => _popupManager;
-
-    /// <summary>
-    /// The window manager for opening additional native windows
-    /// </summary>
-    public WindowManager? WindowManager => _windowManager;
 
     public NativeWindow(int width = 1280, int height = 720, string title = "Avalazor App", GraphicsBackendType? backendType = null, bool transparentFramebuffer = true, bool borderless = false)
     {
@@ -184,9 +178,6 @@ public class NativeWindow : INativeWindow, IDisposable
         // Initialize popup manager
         _popupManager = new PopupManager(this);
         
-        // Initialize window manager
-        _windowManager = new WindowManager();
-        
         // Install Win32 hit test handler for borderless windows with custom chrome
         if (!_hasNativeBorder && Win32HitTestHelper.IsSupported)
         {
@@ -284,8 +275,6 @@ public class NativeWindow : INativeWindow, IDisposable
     {
         _popupManager?.Dispose();
         _popupManager = null;
-        _windowManager?.Dispose();
-        _windowManager = null;
         _backend.Dispose();
         _input?.Dispose();
     }

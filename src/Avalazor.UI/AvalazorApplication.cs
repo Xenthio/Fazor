@@ -31,7 +31,7 @@ public static class AvalazorApplication
     
     /// <summary>
     /// The window manager for opening additional native windows.
-    /// Only available in GUI mode after RunPanel has been called.
+    /// Shared across the entire application.
     /// </summary>
     private static WindowManager? _windowManager;
 
@@ -234,8 +234,11 @@ public static class AvalazorApplication
             
             nativeWindow.RootPanel = rootPanel;
             
-            // Initialize window manager for multi-window support
-            _windowManager = nativeWindow.WindowManager;
+            // Initialize window manager for multi-window support (create once globally)
+            if (_windowManager == null)
+            {
+                _windowManager = new WindowManager();
+            }
             
             nativeWindow.Run();
         }
@@ -533,14 +536,14 @@ public static class AvalazorApplication
     /// <summary>
     /// Open a new native window with the specified panel type.
     /// The window will run in its own thread with its own event loop.
-    /// Only available in GUI mode. Call this after RunPanel has been called.
+    /// Can be called from any thread after the application has started.
     /// </summary>
     public static void OpenWindow<T>(int width = 1280, int height = 720, string? title = null) where T : Panel, new()
     {
+        // Create WindowManager on first use if needed
         if (_windowManager == null)
         {
-            Console.WriteLine("[AvalazorApplication] Cannot open window: WindowManager not available (not in GUI mode or RunPanel not called yet)");
-            return;
+            _windowManager = new WindowManager();
         }
         
         _windowManager.OpenWindow<T>(width, height, title);
