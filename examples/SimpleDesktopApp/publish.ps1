@@ -219,15 +219,15 @@ Write-Host ""
 # Show deployment notes
 Write-Host "Deployment notes:" -ForegroundColor Yellow
 if ($PackAssets) {
-    Write-Host "  ✓ Assets embedded (extracts to temp at runtime)" -ForegroundColor Green
+    Write-Host "  [OK] Assets embedded (extracts to temp at runtime)" -ForegroundColor Green
 } else {
-    Write-Host "  ⓘ Assets folder must be deployed alongside executable" -ForegroundColor Cyan
+    Write-Host "  [INFO] Assets folder must be deployed alongside executable" -ForegroundColor Cyan
 }
 
 if ($SelfContained) {
-    Write-Host "  ✓ .NET runtime included (no installation required)" -ForegroundColor Green
+    Write-Host "  [OK] .NET runtime included (no installation required)" -ForegroundColor Green
 } else {
-    Write-Host "  ⓘ Requires .NET 8 runtime on target machine" -ForegroundColor Cyan
+    Write-Host "  [INFO] Requires .NET 8 runtime on target machine" -ForegroundColor Cyan
 }
 
 Write-Host ""

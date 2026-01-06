@@ -25,6 +25,8 @@
     <!-- Self-contained = false to use framework-dependent deployment (smaller) -->
     <!-- Set to true for fully self-contained deployment -->
     <SelfContained>false</SelfContained>
+    <!-- When trimming is enabled, use partial mode to preserve native interop -->
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
