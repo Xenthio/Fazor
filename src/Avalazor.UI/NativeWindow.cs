@@ -80,13 +80,8 @@ public class NativeWindow : INativeWindow, IDisposable
         {
             if (OperatingSystem.IsWindows())
             {
-#if INCLUDE_D3D11_BACKEND
                 backendType = GraphicsBackendType.DirectX11Composition; // Best for Windows
                 Console.WriteLine("Auto-selected DirectX11Composition backend for Windows");
-#else
-                backendType = GraphicsBackendType.OpenGL; // Fallback to OpenGL if D3D11 not included
-                Console.WriteLine("Auto-selected OpenGL backend (D3D11 not included in build)");
-#endif
             }
             else
             {
@@ -116,7 +111,6 @@ public class NativeWindow : INativeWindow, IDisposable
                 throw new NotSupportedException("Vulkan backend was not included in this build. Add INCLUDE_VULKAN_BACKEND to DefineConstants and rebuild.");
 #endif
 
-#if INCLUDE_D3D11_BACKEND
             case GraphicsBackendType.DirectX11:
                 Console.WriteLine("Starting DirectX11 backend...");
                 if (!OperatingSystem.IsWindows())
@@ -137,11 +131,6 @@ public class NativeWindow : INativeWindow, IDisposable
                 options.TransparentFramebuffer = true; // Required for composition transparency
                 _backend = new D3D11CompositionBackend();
                 break;
-#else
-            case GraphicsBackendType.DirectX11:
-            case GraphicsBackendType.DirectX11Composition:
-                throw new NotSupportedException("Direct3D11 backends were not included in this build. Add INCLUDE_D3D11_BACKEND to DefineConstants and rebuild.");
-#endif
 
             default:
                 throw new ArgumentException($"Unsupported backend type: {backendType}");

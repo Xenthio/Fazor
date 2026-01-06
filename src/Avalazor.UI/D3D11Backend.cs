@@ -1,4 +1,3 @@
-#if INCLUDE_D3D11_BACKEND
 using Silk.NET.Windowing;
 using Silk.NET.Maths;
 using Silk.NET.Core.Native;
@@ -556,4 +555,3 @@ public class D3D11Backend : IGraphicsBackend
         _d3d11?.Dispose();
     }
 }
-#endif

@@ -396,7 +396,7 @@ This IntelliSense implementation is ported from [s&box](https://github.com/Facep
 
 ### Publishing Applications
 
-Fazor applications can be published as self-contained executables. The framework has been optimized for small binary sizes:
+Fazor applications can be published as self-contained executables. The framework has been optimized for reasonable binary sizes:
 
 ```bash
 cd examples/SimpleDesktopApp
@@ -404,12 +404,13 @@ cd examples/SimpleDesktopApp
 ```
 
 **Binary Size:**
-- **37 MB** for self-contained builds (includes .NET runtime)
+- **~54 MB** for self-contained builds (includes .NET runtime)
 - Competitive with Avalonia (20-40 MB) and much smaller than Electron (80-150 MB)
-- 62% smaller than unoptimized builds through smart backend selection
+- 45% smaller than unoptimized builds through smart backend selection
 
 **What's included by default:**
-- OpenGL backend (works on all platforms)
+- OpenGL backend (Linux/macOS)
+- Direct3D11 backend (Windows - required as OpenGL is broken on Windows)
 - All dependencies bundled
 - Assets embedded in executable
 
@@ -420,9 +421,6 @@ cd examples/SimpleDesktopApp
 
 <!-- Enable Vulkan backend (adds ~15 MB) -->
 <DefineConstants>$(DefineConstants);INCLUDE_VULKAN_BACKEND</DefineConstants>
-
-<!-- Enable D3D11 backend for Windows transparency (adds ~17 MB) -->
-<DefineConstants>$(DefineConstants);INCLUDE_D3D11_BACKEND</DefineConstants>
 ```
 
 See [docs/OptimizingBinarySize.md](docs/OptimizingBinarySize.md) for more details on reducing binary size.
