@@ -229,12 +229,13 @@ public sealed class YogaWrapper : IDisposable
 
     public FlexDirection? FlexDirection
     {
-        set => YogaNative.YGNodeStyleSetFlexDirection(_native, value switch
+        set => YogaNative.YGNodeStyleSetFlexDirection(_native, (value ?? UI.FlexDirection.Row) switch
         {
             UI.FlexDirection.Row => YGFlexDirection.Row,
             UI.FlexDirection.RowReverse => YGFlexDirection.RowReverse,
+            UI.FlexDirection.Column => YGFlexDirection.Column,
             UI.FlexDirection.ColumnReverse => YGFlexDirection.ColumnReverse,
-            _ => YGFlexDirection.Column
+            _ => YGFlexDirection.Row
         });
     }
 
