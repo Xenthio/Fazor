@@ -195,9 +195,13 @@ public static partial class Win32HitTestHelper
         try
         {
             var hwnd = window.Native!.Win32!.Value.Hwnd;
+            
+            // Restore the original window procedure
             SetWindowLongPtr(hwnd, GWLP_WNDPROC, _oldWndProc);
+            
             _oldWndProc = IntPtr.Zero;
             _currentWindow = null;
+            _hasCustomChrome = false;
             _wndProcDelegate = null;
         }
         catch (Exception ex)
