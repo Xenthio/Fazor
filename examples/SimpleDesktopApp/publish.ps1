@@ -219,7 +219,7 @@ Write-Host ""
 # Show deployment notes
 Write-Host "Deployment notes:" -ForegroundColor Yellow
 if ($PackAssets) {
-    Write-Host "  ✓ Assets embedded (extract to temp at runtime)" -ForegroundColor Green
+    Write-Host "  ✓ Assets embedded (extracts to temp at runtime)" -ForegroundColor Green
 } else {
     Write-Host "  ⓘ Assets folder must be deployed alongside executable" -ForegroundColor Cyan
 }
