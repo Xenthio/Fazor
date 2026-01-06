@@ -111,6 +111,9 @@ public class NativeWindow : INativeWindow, IDisposable
                 options.ShouldSwapAutomatically = false; // We handle swapchain ourselves
                 _backend = new VulkanBackend();
                 break;
+#else
+            case GraphicsBackendType.Vulkan:
+                throw new NotSupportedException("Vulkan backend was not included in this build. Add INCLUDE_VULKAN_BACKEND to DefineConstants and rebuild.");
 #endif
 
 #if INCLUDE_D3D11_BACKEND
@@ -134,6 +137,10 @@ public class NativeWindow : INativeWindow, IDisposable
                 options.TransparentFramebuffer = true; // Required for composition transparency
                 _backend = new D3D11CompositionBackend();
                 break;
+#else
+            case GraphicsBackendType.DirectX11:
+            case GraphicsBackendType.DirectX11Composition:
+                throw new NotSupportedException("Direct3D11 backends were not included in this build. Add INCLUDE_D3D11_BACKEND to DefineConstants and rebuild.");
 #endif
 
             default:
