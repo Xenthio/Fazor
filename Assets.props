@@ -16,9 +16,10 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <!-- TargetPath ensures Assets\ prefix is preserved in both output and when extracted from single-file -->
       <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
-      <!-- When PackAssets=false (default), exclude from bundle (keep on disk) -->
-      <!-- When PackAssets=true, embed in exe (extract to temp at runtime) -->
-      <ExcludeFromSingleFile>$(PackAssets) != 'true'</ExcludeFromSingleFile>
+      <!-- When PackAssets=false or unset (default), exclude from bundle (keep on disk) -->
+      <!-- When PackAssets=true, do NOT exclude (embed in exe and extract to temp at runtime) -->
+      <ExcludeFromSingleFile Condition="'$(PackAssets)' != 'true'">true</ExcludeFromSingleFile>
+      <ExcludeFromSingleFile Condition="'$(PackAssets)' == 'true'">false</ExcludeFromSingleFile>
       <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <Visible>false</Visible> <!-- Hide from Solution Explorer to avoid clutter -->
     </Content>
