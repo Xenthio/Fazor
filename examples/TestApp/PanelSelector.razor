@@ -41,7 +41,9 @@
 	{
 		try
 		{
-			Avalazor.UI.AvalazorApplication.RunPanel<T>();
+			// Open the test as a window within the current application
+			// This creates a Window panel, not a separate native OS window
+			Avalazor.UI.AvalazorApplication.OpenWindow<T>();
 		}
 		catch (Exception ex)
 		{

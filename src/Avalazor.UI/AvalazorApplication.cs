@@ -28,6 +28,12 @@ public static class AvalazorApplication
     /// If not set, default AI output is printed to console.
     /// </summary>
     public static Action<RootPanel>? AIModeCallback { get; set; }
+    
+    /// <summary>
+    /// The main root panel, available for adding child windows.
+    /// Only available after RunPanel has been called.
+    /// </summary>
+    private static RootPanel? _mainRootPanel;
 
     /// <summary>
     /// Static constructor to ensure text measurement is available before any panels are created
@@ -97,6 +103,7 @@ public static class AvalazorApplication
             
             // Wrap in RootPanel
             var rootPanel = new RootPanel();
+            _mainRootPanel = rootPanel;
             rootPanel.PanelBounds = new Rect(0, 0, width, height);
             rootPanel.AddChild(panel);
             
@@ -518,6 +525,31 @@ public static class AvalazorApplication
                 Console.WriteLine($"Error: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>
+    /// Open a new window panel within the existing application.
+    /// This creates a Window panel as a child of the root panel, not a separate native OS window.
+    /// Similar to how windows work in XGUI-3.
+    /// </summary>
+    public static T? OpenWindow<T>() where T : Panel, new()
+    {
+        if (_mainRootPanel == null)
+        {
+            Console.WriteLine("[AvalazorApplication] Cannot open window: No root panel available. Call RunPanel first.");
+            return null;
+        }
+        
+        // Create the window panel
+        var window = new T();
+        
+        // Add to root panel
+        _mainRootPanel.AddChild(window);
+        
+        // Trigger layout and render tree processing
+        window.StateHasChanged();
+        
+        return window;
     }
 
     /// <summary>
