@@ -49,7 +49,7 @@ New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 # Publish with single-file settings
 # - PublishSingleFile: Creates a single executable
-# - IncludeNativeLibrariesForSelfExtract: Embeds native libraries (yoga, skia, etc.)
+# - IncludeNativeLibrariesForSelfExtract: false = keep native libs on disk (required for Silk.NET)
 # - PublishReadyToRun: Pre-compiles for better startup performance
 # - SelfContained: false = requires .NET 8 runtime (smaller), true = includes runtime (larger)
 dotnet publish $Project `
@@ -58,7 +58,7 @@ dotnet publish $Project `
     -o $OutputDir `
     --self-contained false `
     /p:PublishSingleFile=true `
-    /p:IncludeNativeLibrariesForSelfExtract=true `
+    /p:IncludeNativeLibrariesForSelfExtract=false `
     /p:PublishReadyToRun=true
 
 # Show results
