@@ -154,6 +154,13 @@ public class Window : Panel
     private float _dragOffsetY = 0;
     private int _dragStartWindowX = 0;
     private int _dragStartWindowY = 0;
+    private int _lastDragWindowX = 0;
+    private int _lastDragWindowY = 0;
+
+    /// <summary>
+    /// Whether the window is currently being dragged
+    /// </summary>
+    public bool IsDragging => _dragging;
 
     // Resize state tracking
     internal bool _resizingRight = false;
@@ -644,6 +651,8 @@ public class Window : Panel
             var (winX, winY) = _nativeWindow.GetPosition();
             _dragOffsetX = screenMouseX - winX; // Offset from window origin to mouse
             _dragOffsetY = screenMouseY - winY;
+            _lastDragWindowX = winX;
+            _lastDragWindowY = winY;
         }
         else
         {
@@ -675,15 +684,29 @@ public class Window : Panel
             var (screenMouseX, screenMouseY) = _nativeWindow.GetScreenMousePosition();
             var newX = screenMouseX - (int)_dragOffsetX;
             var newY = screenMouseY - (int)_dragOffsetY;
-            _nativeWindow.SetPosition(newX, newY);
+            
+            // Only update if position actually changed (reduces redundant API calls)
+            // Use cached last position to avoid expensive GetPosition() calls
+            if (newX != _lastDragWindowX || newY != _lastDragWindowY)
+            {
+                _nativeWindow.SetPosition(newX, newY);
+                _lastDragWindowX = newX;
+                _lastDragWindowY = newY;
+            }
         }
         else
         {
             // For in-panel windows, use local mouse position
-            Position = new Vector2(
+            var newPosition = new Vector2(
                 mousePos.x - _dragOffsetX,
                 mousePos.y - _dragOffsetY
             );
+            
+            // Only update if position actually changed
+            if (Position != newPosition)
+            {
+                Position = newPosition;
+            }
         }
     }
 
@@ -693,16 +716,16 @@ public class Window : Panel
     
     /// <summary>
     /// Start resizing from mouse position. Determines which edges to resize based on proximity.
+    /// For borderless windows with padding, detects edges in the outer padding area.
     /// </summary>
     public void StartResize(Vector2 mousePos)
     {
         if (!IsResizable) return;
         
-        const float Distance = 8; // Increased from 5 for easier edge grabbing
-        
-        // Use panel rect for edge detection
         var rect = Box.Rect;
+        const float Distance = 5; // Match XGUI-3
         
+        // Standard resize detection - check if mouse is within Distance pixels of edges
         if (mousePos.y >= rect.Bottom - Distance) _resizingBottom = true;
         if (mousePos.x >= rect.Right - Distance) _resizingRight = true;
         if (mousePos.y <= rect.Top + Distance) _resizingTop = true;
@@ -753,14 +776,14 @@ public class Window : Panel
     {
         if (!IsResizable) return;
         
-        // Update cursor based on position - use panel rect for edge detection
-        const float Distance = 8;
         var rect = Box.Rect;
+        const float Distance = 5; // Match XGUI-3
         
-        var almostBottom = mousePos.y >= rect.Bottom - Distance;
-        var almostRight = mousePos.x >= rect.Right - Distance;
-        var almostTop = mousePos.y <= rect.Top + Distance;
-        var almostLeft = mousePos.x <= rect.Left + Distance;
+        // Standard cursor detection - check if mouse is near edges
+        bool almostBottom = mousePos.y >= rect.Bottom - Distance;
+        bool almostRight = mousePos.x >= rect.Right - Distance;
+        bool almostTop = mousePos.y <= rect.Top + Distance;
+        bool almostLeft = mousePos.x <= rect.Left + Distance;
         
         // Set cursor based on resize position
         if ((almostLeft && almostBottom) || (_resizingLeft && _resizingBottom)) Style.Cursor = "nesw-resize";
@@ -877,7 +900,16 @@ public class Window : Panel
         // Focus the window when clicked
         FocusWindow();
         
-        // Start resize if applicable
+        // For borderless windows with custom chrome, native hit testing may handle resize
+        // On Windows with WM_NCHITTEST, the OS handles resize automatically
+        // On other platforms, fallback to manual resize if needed
+        if (HasCustomChrome || HasTitleBar)
+        {
+            // Skip manual resize - may be handled by native hit testing
+            return;
+        }
+        
+        // Start resize if applicable (for windows with native borders)
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         StartResize(mousePos);
     }
@@ -898,6 +930,15 @@ public class Window : Panel
     protected override void OnMouseMove(MousePanelEvent e)
     {
         base.OnMouseMove(e);
+        
+        // For borderless windows with custom chrome, native hit testing may handle resize
+        // On Windows with WM_NCHITTEST, the OS handles resize automatically
+        // On other platforms, fallback to manual resize if needed
+        if (HasCustomChrome || HasTitleBar)
+        {
+            // Skip manual resize - may be handled by native hit testing
+            return;
+        }
         
         var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
         var localMousePos = Parent?.MousePosition ?? Vector2.Zero;

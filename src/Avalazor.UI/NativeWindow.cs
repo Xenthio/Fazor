@@ -3,6 +3,7 @@ using Silk.NET.Maths;
 using Silk.NET.Input;
 using SkiaSharp;
 using Sandbox.UI;
+using Avalazor.UI.Native;
 using UIVector2 = Sandbox.UI.Vector2;
 
 namespace Avalazor.UI;
@@ -155,6 +156,12 @@ public class NativeWindow : INativeWindow, IDisposable
 
         // Initialize popup manager
         _popupManager = new PopupManager(this);
+        
+        // Install Win32 hit test handler for borderless windows with custom chrome
+        if (!_hasNativeBorder && Win32HitTestHelper.IsSupported)
+        {
+            Win32HitTestHelper.InstallHitTestHandler(_window, true);
+        }
     }
 
     private void OnFocusChanged(bool focused)
@@ -254,6 +261,13 @@ public class NativeWindow : INativeWindow, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+        
+        // Uninstall hit test handler
+        if (!_hasNativeBorder)
+        {
+            Win32HitTestHelper.UninstallHitTestHandler(_window);
+        }
+        
         OnClosing();
         _window?.Dispose();
         _disposed = true;
@@ -292,10 +306,21 @@ public class NativeWindow : INativeWindow, IDisposable
     public void SetWindowBorder(bool hasNativeBorder)
     {
         if (_hasNativeBorder == hasNativeBorder) return;
+        
         _hasNativeBorder = hasNativeBorder;
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        
+        // Install or uninstall hit test handler
+        if (!hasNativeBorder && Win32HitTestHelper.IsSupported)
+        {
+            Win32HitTestHelper.InstallHitTestHandler(_window, true);
+        }
+        else if (hasNativeBorder)
+        {
+            Win32HitTestHelper.UninstallHitTestHandler(_window);
+        }
     }
 
     /// <summary>

@@ -37,6 +37,9 @@ class Program
         Avalazor.UI.AvalazorApplication.RunPanel<About>();
         //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
         
+        // Test custom chrome improvements
+        //Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeTest>(title: "Custom Chrome Test");
+        
         // Run the Image Test to demonstrate texture rendering
         //Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");
         

@@ -1,0 +1,61 @@
+@namespace SimpleDesktopApp
+@using Sandbox.UI
+@using System
+@attribute [StyleSheet("/XGUI/DefaultStyles/Computer11.scss")]
+@inherits Window
+
+<root title="Custom Chrome Test - Native Windows Resize" hasminimise="true" hasmaximise="true" hasclose="true" 
+      windowwidth="600" windowheight="400">
+    <div class="window-content" style="padding: 20px;">
+        <h2>Custom Chrome Window with Native Windows Resize</h2>
+        
+        <section style="margin-top: 20px;">
+            <h3>✨ Native Windows Resize via WM_NCHITTEST</h3>
+            <p>This window has custom chrome (borderless with UI titlebar).</p>
+            <p><strong>New approach:</strong></p>
+            <ul>
+                <li>✅ Native window resizing via WM_NCHITTEST</li>
+                <li>✅ Fully borderless appearance</li>
+                <li>✅ Edge and corner detection works from inside window</li>
+                <li>✅ Standard 5px edge detection distance</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>🎯 How to Test</h3>
+            <p><strong>Try resizing from the edges:</strong></p>
+            <ul>
+                <li>Move mouse to the edges and corners</li>
+                <li>Resize cursor should appear within 5px of edges</li>
+                <li>Native Windows resize handles all operations</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <h3>⚡ Performance Improvements</h3>
+            <ul>
+                <li>✅ Drag only updates when actively dragging</li>
+                <li>✅ Position changes cached to reduce API calls</li>
+                <li>✅ No redundant updates when position unchanged</li>
+            </ul>
+        </section>
+        
+        <section style="margin-top: 20px;">
+            <p style="color: #888;">Drag State: @(IsDragging ? "DRAGGING" : "Idle")</p>
+            <p style="color: #888;">Resize State: @(IsResizing ? "RESIZING" : "Idle")</p>
+        </section>
+    </div>
+</root>
+
+@code {
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine("CustomChromeTest initialized");
+            Console.WriteLine($"HasCustomChrome: {HasCustomChrome}");
+        }
+    }
+}

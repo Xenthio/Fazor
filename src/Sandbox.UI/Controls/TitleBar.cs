@@ -91,10 +91,11 @@ public class TitleBar : Panel
     {
         base.OnMouseMove(e);
         
-        if (ParentWindow != null)
+        // Only update drag if we're actually dragging
+        if (ParentWindow != null && ParentWindow.IsDragging)
         {
-            // Get mouse position from the parent (for local coordinates)
-            var mousePos = ParentWindow.Parent?.MousePosition ?? Vector2.Zero;
+            // Get mouse position from the root panel for accurate coordinates
+            var mousePos = FindRootPanel()?.MousePosition ?? Vector2.Zero;
             ParentWindow.UpdateDrag(mousePos);
         }
     }
