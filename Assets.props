@@ -9,20 +9,28 @@
     <GlobalAssetsPath>$(MSBuildThisFileDirectory)</GlobalAssetsPath>
   </PropertyGroup>
 
+  <!--  Determine whether to exclude assets from single-file bundle -->
+  <PropertyGroup>
+    <_ExcludeAssetsFromSingleFile Condition="'$(PackAssets)' == 'true'">false</_ExcludeAssetsFromSingleFile>
+    <_ExcludeAssetsFromSingleFile Condition="'$(PackAssets)' != 'true'">true</_ExcludeAssetsFromSingleFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Include global Assets in build output, keeping Assets/ prefix -->
-    <Content Include="$(GlobalAssetsPath)Assets\**\*" Exclude="$(GlobalAssetsPath)Assets\README.md">
+    <!-- Use None instead of Content to allow ExcludeFromSingleFile to work -->
+    <None Include="$(GlobalAssetsPath)Assets\**\*" Exclude="$(GlobalAssetsPath)Assets\README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <!-- CopyToPublishDirectory: Only copy to publish when NOT packing (when packing, it gets embedded) -->
+      <CopyToPublishDirectory Condition="'$(PackAssets)' == 'true'">Never</CopyToPublishDirectory>
+      <CopyToPublishDirectory Condition="'$(PackAssets)' != 'true'">PreserveNewest</CopyToPublishDirectory>
       <!-- TargetPath ensures Assets\ prefix is preserved in both output and when extracted from single-file -->
       <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
       <!-- When PackAssets=false or unset (default), exclude from bundle (keep on disk) -->
       <!-- When PackAssets=true, do NOT exclude (embed in exe and extract to temp at runtime) -->
-      <ExcludeFromSingleFile Condition="'$(PackAssets)' != 'true'">true</ExcludeFromSingleFile>
-      <ExcludeFromSingleFile Condition="'$(PackAssets)' == 'true'">false</ExcludeFromSingleFile>
+      <ExcludeFromSingleFile>$(_ExcludeAssetsFromSingleFile)</ExcludeFromSingleFile>
       <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <Visible>false</Visible> <!-- Hide from Solution Explorer to avoid clutter -->
-    </Content>
+    </None>
   </ItemGroup>
 
 </Project>
