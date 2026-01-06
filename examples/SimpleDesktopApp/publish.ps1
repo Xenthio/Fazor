@@ -156,7 +156,7 @@ $publishArgs = @(
     "--self-contained", $SelfContained.ToString().ToLower(),
     "/p:PublishSingleFile=true",
     "/p:IncludeNativeLibrariesForSelfExtract=true",
-    "/p:PublishReadyToRun=true"
+    "/p:PublishReadyToRun=false"  # Disabled for smaller binary size (csproj default)
 )
 
 if ($Trimmed) {

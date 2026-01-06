@@ -20,8 +20,9 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <!-- Include all content files in self-extract when PackAssets=true -->
     <IncludeAllContentForSelfExtract Condition="'$(PackAssets)' == 'true'">true</IncludeAllContentForSelfExtract>
-    <!-- Enable ReadyToRun for better startup performance -->
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Disable ReadyToRun for smaller binary size -->
+    <!-- R2R precompiles code for faster startup but increases size significantly -->
+    <PublishReadyToRun>false</PublishReadyToRun>
     <!-- Trim unused assemblies to reduce size -->
     <PublishTrimmed>false</PublishTrimmed>
     <!-- Self-contained = false to use framework-dependent deployment (smaller) -->
@@ -29,6 +30,9 @@
     <SelfContained>false</SelfContained>
     <!-- When trimming is enabled, use partial mode to preserve native interop -->
     <TrimMode>partial</TrimMode>
+    <!-- Disable debug symbols in release builds to reduce size -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
