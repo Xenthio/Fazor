@@ -28,6 +28,12 @@ public static class AvalazorApplication
     /// If not set, default AI output is printed to console.
     /// </summary>
     public static Action<RootPanel>? AIModeCallback { get; set; }
+    
+    /// <summary>
+    /// The window manager for opening additional native windows.
+    /// Shared across the entire application.
+    /// </summary>
+    private static WindowManager? _windowManager;
 
     /// <summary>
     /// Static constructor to ensure text measurement is available before any panels are created
@@ -227,6 +233,13 @@ public static class AvalazorApplication
             }
             
             nativeWindow.RootPanel = rootPanel;
+            
+            // Initialize window manager for multi-window support (create once globally)
+            if (_windowManager == null)
+            {
+                _windowManager = new WindowManager();
+            }
+            
             nativeWindow.Run();
         }
         catch (Exception ex)
@@ -518,6 +531,22 @@ public static class AvalazorApplication
                 Console.WriteLine($"Error: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>
+    /// Open a new native window with the specified panel type.
+    /// The window will run in its own thread with its own event loop.
+    /// Can be called from any thread after the application has started.
+    /// </summary>
+    public static void OpenWindow<T>(int width = 1280, int height = 720, string? title = null) where T : Panel, new()
+    {
+        // Create WindowManager on first use if needed
+        if (_windowManager == null)
+        {
+            _windowManager = new WindowManager();
+        }
+        
+        _windowManager.OpenWindow<T>(width, height, title);
     }
 
     /// <summary>

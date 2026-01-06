@@ -12,8 +12,9 @@
 	<div class="window-content">
 		<label style="flex-shrink:0;">Select a test to run:</label>
 		
-		<scrollpanel>
+		<div style="flex-direction:column;">
 			<button @onclick=@(() => LaunchTest<MainApp>())>MainApp</button>
+			<button @onclick=@(() => LaunchTest<About>())>About</button>
 			<button @onclick=@(() => LaunchTest<XGUIThemeShowcase>())>XGUI Theme Showcase</button>
 			<button @onclick=@(() => LaunchTest<XGUIPortTest>())>XGUI Port Test</button>
 			<button @onclick=@(() => LaunchTest<PanelInspectorTest>())>Panel Inspector Test</button>
@@ -32,7 +33,7 @@
 			<button @onclick=@(() => LaunchTest<CursorTest>())>Cursor Test</button>
 			<button @onclick=@(() => LaunchTest<ExampleWindow>())>Example Window</button>
 			<button @onclick=@(() => LaunchTest<PanelList>())>Panel List</button>
-		</scrollpanel>
+		</div>
 	</div>
 </root>
 
@@ -41,7 +42,8 @@
 	{
 		try
 		{
-			Avalazor.UI.AvalazorApplication.RunPanel<T>();
+			// Open the test in a new native window with its own thread/event loop
+			Avalazor.UI.AvalazorApplication.OpenWindow<T>();
 		}
 		catch (Exception ex)
 		{

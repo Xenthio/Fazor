@@ -1,0 +1,128 @@
+﻿@namespace TestApp
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@* @using XGUI;  *@
+@inherits Window
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
+
+<root title="About XGUI" hasminimise="true" hasmaximise="true" x="540" y="240">
+	<div class="window-content">
+
+		<tabcontrol>
+			<tab tabName="controls" slot="tab" tabtext="Controls">
+				<div style="width:320px;height:300px;">
+					<div class="self-layout self-layout-row">
+						<check>CheckBox</check>
+					</div>
+					<div class="self-layout self-layout-row">
+						<button>Button</button>
+					</div>
+					<div class="self-layout self-layout-row">
+						<textentry></textentry>
+					</div>
+					<div class="self-layout self-layout-row">
+						<combobox default="ComboBox">
+							<option value="combo">ComboBox</option>
+							<option value="high">Option 1</option>
+							<option value="low">Option 2</option>
+						</combobox>
+					</div>
+					<div class="self-layout self-layout-row">
+						<radiobuttons>
+							<radiobutton>Option 1</radiobutton>
+							<radiobutton>Option 2</radiobutton>
+							<radiobutton>Option 3</radiobutton>
+						</radiobuttons>
+					</div>
+					<div class="self-layout self-layout-row">
+						<groupbox title="Group">
+							<div class="self-layout">
+								<button>Button</button>
+							</div>
+						</groupbox>
+					</div>
+					<div class="self-layout self-layout-row">
+						<sliderscaleentry style="margin-bottom:8px;" min=1 max=10 mintext="1.00" maxtext="10.0" step=1></sliderscaleentry>
+					</div>
+					<div class="self-layout self-layout-row">
+						<sliderscale min=1 max=10 mintext="1.00" maxtext="10.0" step=1></sliderscale>
+					</div>
+				</div>
+			</tab>
+			<tab tabName="about" slot="tab" tabtext="About">
+				<div style="width:320px;height:300px;">
+					<p>XGUI is a library that allows quick implementation of traditional desktop UI (and UI elements) in s&box games.</p>
+
+					<p>It's great for quickly creating simple but functional debugging and development UI and tools.</p>
+					<br />
+					<p>You can easily customise the look of XGUI, or choose between some pre-made styles (Check them out at the bottom)</p>
+				</div>
+			</tab>
+			<tab tabName="themes" slot="tab" tabtext="Themes">
+				<div style="width:320px;height:300px;">
+					s&box bug prevented me putting the buttons in here, so they're at the bottom instead.
+				</div>
+			</tab>
+		<tab tabName="mdi" slot="tab" tabtext="MDI">
+			<div style="width:320px;height:100vh;">
+				s&box bug prevented me putting the buttons in here, so they're at the bottom instead.
+				<steamreplica></steamreplica>
+				<editortest9></editortest9>
+			</div>
+		</tab>
+		</tabcontrol>
+
+		<div class="margin column">
+			<label>Select Theme:</label>
+			<combobox default="OliveGreen" @ref="ThemeComboBox"> 
+				@foreach (string i in GetThemes())
+				{
+					<option value="@i.Replace(".scss", "")">@i.Replace(".scss", "")</option>
+				}
+			</combobox>
+		</div>
+		<resizer>
+
+		</resizer>
+	</div>
+</root>
+
+@code {
+
+	private ComboBox ThemeComboBox; 
+	public TabContainer MainTabs { get; set; }
+	int Loaded = 0;
+	public override void Tick()
+	{
+		base.Tick();
+		if (ThemeComboBox != null && ThemeComboBox.ValueChanged == null)
+		{
+			ThemeComboBox.ValueChanged = LoadStyle;
+		}
+	} 
+	public List<string> GetThemes()
+	{
+		//FileSystem.Mounted.FindFile("/XGUI/DefaultStyles/", "*.scss")
+		return new List<string>
+		{
+			"OliveGreen.scss",
+			"Computer95.scss",
+			"ComputerXP.scss",
+			"Computer7.scss",
+			"Computer10.scss",
+			"Computer11.scss",
+			"Derma.scss",
+			"SboxDark.scss",
+			"ThinGrey.scss"
+		};
+	}
+	public void LoadStyle(string styleName)
+	{
+		SetTheme($"/XGUI/DefaultStyles/{styleName}.scss");
+	}
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(Loaded);
+	}
+}
