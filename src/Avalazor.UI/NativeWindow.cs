@@ -305,20 +305,30 @@ public class NativeWindow : INativeWindow, IDisposable
     /// </summary>
     public void SetWindowBorder(bool hasNativeBorder)
     {
-        if (_hasNativeBorder == hasNativeBorder) return;
+        Console.WriteLine($"[NativeWindow] SetWindowBorder called: hasNativeBorder={hasNativeBorder}, current _hasNativeBorder={_hasNativeBorder}");
+        
+        if (_hasNativeBorder == hasNativeBorder)
+        {
+            Console.WriteLine($"[NativeWindow] SetWindowBorder: Border state unchanged, returning early");
+            return;
+        }
         
         _hasNativeBorder = hasNativeBorder;
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
-        _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        var newBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
+        Console.WriteLine($"[NativeWindow] Setting _window.WindowBorder to {newBorder}");
+        _window.WindowBorder = newBorder;
         
         // Install or uninstall hit test handler
         if (!hasNativeBorder && Win32HitTestHelper.IsSupported)
         {
+            Console.WriteLine($"[NativeWindow] Installing Win32 hit test handler");
             Win32HitTestHelper.InstallHitTestHandler(_window, true);
         }
         else if (hasNativeBorder)
         {
+            Console.WriteLine($"[NativeWindow] Uninstalling Win32 hit test handler");
             Win32HitTestHelper.UninstallHitTestHandler(_window);
         }
     }
