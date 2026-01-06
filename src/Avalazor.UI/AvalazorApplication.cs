@@ -133,12 +133,16 @@ public static class AvalazorApplication
                     int? computedWidth = null;
                     int? computedHeight = null;
                     
+                    // Cache MinSize to avoid multiple property accesses
+                    var minWidth = (int)windowPanel.MinSize.x;
+                    var minHeight = (int)windowPanel.MinSize.y;
+                    
                     if (needsAutoWidth && windowPanel.Box != null)
                     {
                         // Use the outer rect width (includes margins and borders)
                         int w = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
                         // Enforce minimum size
-                        w = Math.Max(w, (int)windowPanel.MinSize.x);
+                        w = Math.Max(w, minWidth);
                         if (w > 0)
                         {
                             computedWidth = w;
@@ -150,7 +154,7 @@ public static class AvalazorApplication
                         // Use the outer rect height (includes margins and borders)
                         int h = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
                         // Enforce minimum size
-                        h = Math.Max(h, (int)windowPanel.MinSize.y);
+                        h = Math.Max(h, minHeight);
                         if (h > 0)
                         {
                             computedHeight = h;
