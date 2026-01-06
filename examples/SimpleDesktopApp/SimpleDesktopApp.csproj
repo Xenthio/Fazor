@@ -10,23 +10,63 @@
     <RootNamespace>SimpleDesktopApp</RootNamespace>
   </PropertyGroup>
 
+  <!-- Single-file publish configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Enable single-file publishing -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <!-- Include native libraries inside the single-file bundle -->
+    <!-- PathResolver workaround in NativeWindow.cs enables finding extracted DLLs -->
+    <!-- See: https://github.com/dotnet/Silk.NET/issues/2157 -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Include all content files in self-extract when PackAssets=true -->
+    <IncludeAllContentForSelfExtract Condition="'$(PackAssets)' == 'true'">true</IncludeAllContentForSelfExtract>
+    <!-- Enable ReadyToRun for better startup performance -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Trim unused assemblies to reduce size -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <!-- Self-contained = false to use framework-dependent deployment (smaller) -->
+    <!-- Set to true for fully self-contained deployment -->
+    <SelfContained>false</SelfContained>
+    <!-- When trimming is enabled, use partial mode to preserve native interop -->
+    <TrimMode>partial</TrimMode>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
     <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
     <!-- Build-time only reference - ensures Avalazor.Build is compiled before this project -->
+    <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
+    <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->
     <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- Project-specific Assets folder (overrides global assets if same path) -->
-  <ItemGroup>
-    <!-- Copy assets to output keeping Assets\ prefix -->
-    <Content Include="Assets\**\*" Exclude="Assets\README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <!-- Keep Assets\ prefix: Assets\themes\file.scss -> Assets\themes\file.scss -->
-      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Content>
-  </ItemGroup>
+  <!-- Project-specific Assets with conditional packaging -->
+  <Choose>
+    <When Condition="'$(PackAssets)' == 'true'">
+      <!-- PackAssets=true: Copy to publish, then embed in exe -->
+      <!-- Files must be in publish directory first for MSBuild to bundle them -->
+      <!-- MSBuild automatically removes bundled files from publish directory -->
+      <ItemGroup>
+        <Content Include="Assets\**\*" Exclude="Assets\README.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+          <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+          <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
+        </Content>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <!-- PackAssets=false (default): Keep assets as separate files on disk -->
+      <ItemGroup>
+        <Content Include="Assets\**\*" Exclude="Assets\README.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+          <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        </Content>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <!-- Import Avalazor build targets for Razor and SCSS -->
   <Import Project="..\..\src\Avalazor.Build\build\Avalazor.Build.targets" />
