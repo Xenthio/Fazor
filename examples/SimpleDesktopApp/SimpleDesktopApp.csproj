@@ -47,19 +47,19 @@
   <!-- Project-specific Assets folder (overrides global assets if same path) -->
   <ItemGroup>
     <!-- Copy assets to output keeping Assets\ prefix -->
-    <!-- Use None instead of Content to allow ExcludeFromSingleFile to work -->
+    <!-- Use Content to ensure assets are included in publish process -->
     <!-- ExcludeFromSingleFile controlled by PackAssets property (default: true = keep on disk) -->
-    <None Include="Assets\**\*" Exclude="Assets\README.md">
+    <Content Include="Assets\**\*" Exclude="Assets\README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <!-- CopyToPublishDirectory: Only copy to publish when NOT packing (when packing, it gets embedded) -->
-      <CopyToPublishDirectory Condition="'$(PackAssets)' == 'true'">Never</CopyToPublishDirectory>
-      <CopyToPublishDirectory Condition="'$(PackAssets)' != 'true'">PreserveNewest</CopyToPublishDirectory>
+      <!-- When PackAssets=true, copy to publish dir so they can be embedded, but set ExcludeFromSingleFile=false -->
+      <!-- When PackAssets=false, copy to publish dir and set ExcludeFromSingleFile=true (stay on disk) -->
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <!-- TargetPath ensures Assets\ prefix is preserved in both output and when extracted from single-file -->
       <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
       <!-- When PackAssets=false or unset (default), exclude from bundle (keep on disk) -->
       <!-- When PackAssets=true, do NOT exclude (embed in exe and extract to temp at runtime) -->
       <ExcludeFromSingleFile>$(_ExcludeAssetsFromSingleFile)</ExcludeFromSingleFile>
-    </None>
+    </Content>
   </ItemGroup>
 
   <!-- Import Avalazor build targets for Razor and SCSS -->

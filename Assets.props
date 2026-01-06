@@ -17,12 +17,12 @@
 
   <ItemGroup>
     <!-- Include global Assets in build output, keeping Assets/ prefix -->
-    <!-- Use None instead of Content to allow ExcludeFromSingleFile to work -->
-    <None Include="$(GlobalAssetsPath)Assets\**\*" Exclude="$(GlobalAssetsPath)Assets\README.md">
+    <!-- Use Content to ensure assets are included in publish process -->
+    <Content Include="$(GlobalAssetsPath)Assets\**\*" Exclude="$(GlobalAssetsPath)Assets\README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <!-- CopyToPublishDirectory: Only copy to publish when NOT packing (when packing, it gets embedded) -->
-      <CopyToPublishDirectory Condition="'$(PackAssets)' == 'true'">Never</CopyToPublishDirectory>
-      <CopyToPublishDirectory Condition="'$(PackAssets)' != 'true'">PreserveNewest</CopyToPublishDirectory>
+      <!-- When PackAssets=true, copy to publish dir so they can be embedded, but set ExcludeFromSingleFile=false -->
+      <!-- When PackAssets=false, copy to publish dir and set ExcludeFromSingleFile=true (stay on disk) -->
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <!-- TargetPath ensures Assets\ prefix is preserved in both output and when extracted from single-file -->
       <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
       <!-- When PackAssets=false or unset (default), exclude from bundle (keep on disk) -->
@@ -30,7 +30,7 @@
       <ExcludeFromSingleFile>$(_ExcludeAssetsFromSingleFile)</ExcludeFromSingleFile>
       <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <Visible>false</Visible> <!-- Hide from Solution Explorer to avoid clutter -->
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>
