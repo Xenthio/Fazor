@@ -31,7 +31,7 @@
     <!-- Build-time only reference - ensures Avalazor.Build is compiled before this project -->
     <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
     <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->
-    <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" OutputItemType="AvalazorBuildReference" />
+    <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!-- Project-specific Assets folder (overrides global assets if same path) -->

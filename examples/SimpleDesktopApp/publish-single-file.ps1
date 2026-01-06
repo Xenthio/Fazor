@@ -11,9 +11,29 @@ Write-Host "Publishing SimpleDesktopApp as single-file executable..." -Foregroun
 # Determine runtime identifier
 $Runtime = "win-x64"
 if ($IsMacOS) {
-    $Runtime = "osx-x64"
+    # Detect macOS architecture
+    $Arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+    if ($Arch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+        $Runtime = "osx-arm64"
+    } else {
+        $Runtime = "osx-x64"
+    }
 } elseif ($IsLinux) {
-    $Runtime = "linux-x64"
+    # Detect Linux architecture
+    $Arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+    if ($Arch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+        $Runtime = "linux-arm64"
+    } else {
+        $Runtime = "linux-x64"
+    }
+} else {
+    # Detect Windows architecture
+    $Arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+    if ($Arch -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+        $Runtime = "win-arm64"
+    } else {
+        $Runtime = "win-x64"
+    }
 }
 
 $OutputDir = Join-Path $ScriptDir "publish\$Runtime"

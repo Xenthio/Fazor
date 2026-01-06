@@ -12,9 +12,26 @@ echo "Publishing SimpleDesktopApp as single-file executable..."
 # Determine runtime identifier
 RUNTIME="linux-x64"
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    RUNTIME="osx-x64"
+    # Detect macOS architecture
+    if [[ $(uname -m) == "arm64" ]]; then
+        RUNTIME="osx-arm64"
+    else
+        RUNTIME="osx-x64"
+    fi
 elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    RUNTIME="win-x64"
+    # Detect Windows architecture
+    if [[ $(uname -m) == "aarch64" || $(uname -m) == "arm64" ]]; then
+        RUNTIME="win-arm64"
+    else
+        RUNTIME="win-x64"
+    fi
+else
+    # Detect Linux architecture
+    if [[ $(uname -m) == "aarch64" ]]; then
+        RUNTIME="linux-arm64"
+    else
+        RUNTIME="linux-x64"
+    fi
 fi
 
 OUTPUT_DIR="$SCRIPT_DIR/publish/$RUNTIME"
