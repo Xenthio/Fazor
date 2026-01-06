@@ -504,4 +504,56 @@ public class StyleApplicationTests
         // We should have successfully iterated without errors
         Assert.NotNull(remainingBlocks);
     }
+
+    [Fact]
+    public void Panel_DefaultFlexDirection_IsRow()
+    {
+        // Arrange
+        var rootPanel = new RootPanel();
+        var panel = new Panel();
+        rootPanel.AddChild(panel);
+
+        // Act - Run layout without any flex-direction styling
+        rootPanel.Layout();
+
+        // Assert - Default flex-direction should be Row (matching s&box)
+        Assert.NotNull(panel.ComputedStyle);
+        Assert.NotNull(panel.ComputedStyle.FlexDirection);
+        Assert.Equal(FlexDirection.Row, panel.ComputedStyle.FlexDirection.Value);
+    }
+
+    [Fact]
+    public void Panel_WindowContent_HasColumnFlexDirection()
+    {
+        // Arrange
+        var rootPanel = new RootPanel();
+        var windowPanel = new Panel();
+        windowPanel.AddClass("window");
+        var contentPanel = new Panel();
+        contentPanel.AddClass("window-content");
+        windowPanel.AddChild(contentPanel);
+        rootPanel.AddChild(windowPanel);
+
+        // Add XGUI Window.scss styles that set window-content to column
+        var css = @"
+            .window > .window-content {
+                flex-direction: column;
+                flex-grow: 1;
+            }
+        ";
+        var sheet = StyleSheet.FromString(css);
+        rootPanel.StyleSheet.Add(sheet);
+
+        // Act - Run layout with window-content styling
+        rootPanel.Layout();
+
+        // Assert - window-content should override default Row with Column from CSS
+        Assert.NotNull(contentPanel.ComputedStyle);
+        Assert.NotNull(contentPanel.ComputedStyle.FlexDirection);
+        Assert.Equal(FlexDirection.Column, contentPanel.ComputedStyle.FlexDirection.Value);
+        
+        // Also verify flex-grow is applied
+        Assert.NotNull(contentPanel.ComputedStyle.FlexGrow);
+        Assert.Equal(1f, contentPanel.ComputedStyle.FlexGrow.Value);
+    }
 }
