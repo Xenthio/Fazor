@@ -102,7 +102,26 @@ Common runtime identifiers (RIDs):
 ## Troubleshooting
 
 ### "PlatformNotSupportedException: Couldn't find a suitable window platform"
-This error occurs when SDL2 or GLFW native libraries cannot be found. **Solution:** Ensure `IncludeNativeLibrariesForSelfExtract=false` in your project file. Silk.NET requires native windowing libraries (SDL2.dll, glfw3.dll, etc.) to be on disk alongside the executable, not embedded in the bundle.
+This error occurs when SDL2 or GLFW native libraries cannot be found or loaded. 
+
+**Steps to fix:**
+
+1. **Republish the application** with the latest code:
+   ```bash
+   ./publish-single-file.sh  # or publish-single-file.ps1 on Windows
+   ```
+
+2. **Verify native libraries are present** alongside the executable:
+   - Windows: Check for `SDL2.dll`, `glfw3.dll`, and `yoga.dll` in the same folder as `SimpleDesktopApp.exe`
+   - Linux: Check for `libSDL2-2.0.so`, `libglfw.so.3`, and `libyoga.so`
+   - macOS: Check for `libSDL2-2.0.dylib`, `libglfw.3.dylib`, and `libyoga.dylib`
+
+3. **Install Visual C++ Redistributables (Windows only)**:
+   - SDL2.dll and glfw3.dll require the Microsoft Visual C++ Redistributables
+   - Download from: https://aka.ms/vs/17/release/vc_redist.x64.exe
+   - Install both x64 and x86 versions if unsure of your architecture
+
+4. **Verify the configuration**: Ensure `IncludeNativeLibrariesForSelfExtract=false` in SimpleDesktopApp.csproj (this is already set in the latest code)
 
 See: https://github.com/dotnet/Silk.NET/issues/2157
 
