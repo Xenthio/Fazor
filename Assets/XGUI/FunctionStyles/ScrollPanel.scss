@@ -1,7 +1,5 @@
 .scrollpanel {
-	// Don't set flex-direction here - let it inherit the default (row)
-	// or be set by explicit styles. Setting it to column forces all
-	// scrollpanels to have vertical layout, which is incorrect.
+	flex-direction: column;
 	overflow: scroll;
 	flex-grow: 1;
 
@@ -11,7 +9,7 @@
 
 	.scrollpanel_canvas {
 		flex-grow: 1;
-		// Don't set flex-direction here either - same reason
+		flex-direction: column;
 		overflow: scroll;
 
 		> * {
