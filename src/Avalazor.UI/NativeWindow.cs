@@ -1,6 +1,7 @@
 using Silk.NET.Windowing;
 using Silk.NET.Maths;
 using Silk.NET.Input;
+using Silk.NET.Core.Loader;
 using SkiaSharp;
 using Sandbox.UI;
 using Avalazor.UI.Native;
@@ -128,6 +129,16 @@ public class NativeWindow : INativeWindow, IDisposable
 
             default:
                 throw new ArgumentException($"Unsupported backend type: {backendType}");
+        }
+
+        // Configure path resolver to find native DLLs extracted from single-file bundle
+        // This enables IncludeNativeLibrariesForSelfExtract=true to work with Silk.NET
+        // See: https://github.com/dotnet/Silk.NET/issues/2157
+        if (AppContext.GetData("NATIVE_DLL_SEARCH_DIRECTORIES") is string nativeDllSearchDirectories)
+        {
+            ((DefaultPathResolver)PathResolver.Default).Resolvers.Add(file =>
+                nativeDllSearchDirectories.Split(';').Select(directory => Path.Combine(directory, file))
+            );
         }
 
         _window = Silk.NET.Windowing.Window.Create(options);

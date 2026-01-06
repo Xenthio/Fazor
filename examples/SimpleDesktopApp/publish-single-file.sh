@@ -45,7 +45,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Publish with single-file settings
 # - PublishSingleFile: Creates a single executable
-# - IncludeNativeLibrariesForSelfExtract: false = keep native libs on disk (required for Silk.NET)
+# - IncludeNativeLibrariesForSelfExtract: true = embed native libs (PathResolver workaround enables this)
 # - PublishReadyToRun: Pre-compiles for better startup performance
 # - SelfContained: false = requires .NET 8 runtime (smaller), true = includes runtime (larger)
 dotnet publish "$PROJECT" \
@@ -54,7 +54,7 @@ dotnet publish "$PROJECT" \
     -o "$OUTPUT_DIR" \
     --self-contained false \
     /p:PublishSingleFile=true \
-    /p:IncludeNativeLibrariesForSelfExtract=false \
+    /p:IncludeNativeLibrariesForSelfExtract=true \
     /p:PublishReadyToRun=true
 
 # Show results

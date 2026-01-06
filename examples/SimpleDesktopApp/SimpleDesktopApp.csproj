@@ -14,10 +14,10 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <!-- Enable single-file publishing -->
     <PublishSingleFile>true</PublishSingleFile>
-    <!-- DO NOT include native libraries inside the single-file bundle -->
-    <!-- Silk.NET native libraries (SDL, GLFW) must remain on disk for P/Invoke to work correctly -->
+    <!-- Include native libraries inside the single-file bundle -->
+    <!-- PathResolver workaround in NativeWindow.cs enables finding extracted DLLs -->
     <!-- See: https://github.com/dotnet/Silk.NET/issues/2157 -->
-    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <!-- Enable ReadyToRun for better startup performance -->
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Trim unused assemblies to reduce size -->
