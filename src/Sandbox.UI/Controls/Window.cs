@@ -999,19 +999,15 @@ public class Window : Panel
         // Only update if the CSS value has changed (avoid repeated processing)
         if (cssRequestsCustomChrome != _lastCustomChromeFromCss)
         {
-            Console.WriteLine($"[Window] Custom chrome CSS changed: {_lastCustomChromeFromCss} -> {cssRequestsCustomChrome}");
             _lastCustomChromeFromCss = cssRequestsCustomChrome;
             
             // Determine if custom chrome should be shown (from property OR CSS)
             bool shouldHaveCustomChrome = HasCustomChrome || HasTitleBar || cssRequestsCustomChrome;
             bool currentlyHasCustomChrome = TitleBar != null && TitleBar.IsValid();
 
-            Console.WriteLine($"[Window] shouldHaveCustomChrome={shouldHaveCustomChrome}, currentlyHasCustomChrome={currentlyHasCustomChrome}");
-
             if (shouldHaveCustomChrome && !currentlyHasCustomChrome)
             {
                 // Need to create title bar
-                Console.WriteLine("[Window] Creating title bar and setting window borderless");
                 CreateTitleBar();
                 
                 // Update native window to be borderless when using custom chrome
@@ -1024,14 +1020,12 @@ public class Window : Panel
             else if (!shouldHaveCustomChrome && currentlyHasCustomChrome)
             {
                 // Need to remove title bar (CSS no longer requests it and properties don't require it)
-                Console.WriteLine("[Window] Removing title bar and restoring native window border");
                 TitleBar?.Delete();
                 TitleBar = null;
                 
                 // Update native window to have native border
                 if (_nativeWindow != null)
                 {
-                    Console.WriteLine("[Window] Calling SetWindowBorder(true)");
                     _nativeWindow.SetWindowBorder(true);
                     AddClass("osdecorated");
                 }
