@@ -12,6 +12,7 @@ public class Window : Panel
     private string _title = "Window";
     private INativeWindow? _nativeWindow; // Reference to the native window interface
     private bool _lastCustomChromeFromCss = false; // Track last CSS value for change detection
+    private bool _hasCheckedInitialCustomChrome = false; // Track if we've done the initial CSS check
     
     // Track whether window size was explicitly set (vs using defaults)
     // This allows automatic sizing based on content when size is not specified
@@ -393,7 +394,12 @@ public class Window : Panel
             }
 
             // Create title bar after processing attributes
-            CreateTitleBar();
+            // Only if explicitly requested via properties (not CSS)
+            // CSS-requested titlebars are created later in UpdateCustomChromeFromCss()
+            if (HasCustomChrome || HasTitleBar)
+            {
+                CreateTitleBar();
+            }
 
             if (AutoFocus)
             {
@@ -1052,6 +1058,13 @@ public class Window : Panel
         var customChromeVar = ComputedStyle.GetCustomProperty("--custom-chrome");
         bool cssRequestsCustomChrome = customChromeVar == "true" || customChromeVar == "1";
 
+        // On first check, we need to handle the initial state
+        if (!_hasCheckedInitialCustomChrome)
+        {
+            _hasCheckedInitialCustomChrome = true;
+            _lastCustomChromeFromCss = false; // Force initial check to trigger if CSS requests chrome
+        }
+
         // Only update if the CSS value has changed (avoid repeated processing)
         if (cssRequestsCustomChrome != _lastCustomChromeFromCss)
         {
@@ -1066,12 +1079,21 @@ public class Window : Panel
                 // Need to create title bar
                 CreateTitleBar();
                 
+                // Ensure title bar is first child (above window-content)
+                if (TitleBar != null && TitleBar.IsValid())
+                {
+                    SetChildIndex(TitleBar, 0);
+                }
+                
                 // Update native window to be borderless when using custom chrome
                 if (_nativeWindow != null)
                 {
                     _nativeWindow.SetWindowBorder(false);
                     RemoveClass("osdecorated");
                 }
+                
+                // Request layout update to position titlebar correctly
+                SetNeedsPreLayout();
             }
             else if (!shouldHaveCustomChrome && currentlyHasCustomChrome)
             {
@@ -1085,6 +1107,9 @@ public class Window : Panel
                     _nativeWindow.SetWindowBorder(true);
                     AddClass("osdecorated");
                 }
+                
+                // Request layout update
+                SetNeedsPreLayout();
             }
         }
     }
