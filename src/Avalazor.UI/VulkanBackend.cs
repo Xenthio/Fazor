@@ -1,3 +1,4 @@
+#if INCLUDE_VULKAN_BACKEND
 using Silk.NET.Windowing;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
@@ -996,3 +997,4 @@ public class VulkanBackend : IGraphicsBackend
         _vk?.Dispose();
     }
 }
+#endif

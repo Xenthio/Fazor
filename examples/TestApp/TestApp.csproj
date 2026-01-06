@@ -33,7 +33,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
-    <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
+    <!-- Sandbox.UI.AI is optional - only needed for headless/AI debugging mode -->
+    <!-- <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" /> -->
     <!-- Build-time only reference - ensures Avalazor.Build is compiled before this project -->
     <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
     <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->

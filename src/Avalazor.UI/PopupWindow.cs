@@ -83,8 +83,14 @@ public class PopupWindow : IDisposable
         // Use same backend type as parent
         if (OperatingSystem.IsWindows())
         {
+#if INCLUDE_D3D11_BACKEND
             options.API = GraphicsAPI.None;
             _backend = new D3D11Backend();
+#else
+            // Fallback to OpenGL if D3D11 not included
+            options.API = new GraphicsAPI(ContextAPI.OpenGL, ContextProfile.Core, ContextFlags.ForwardCompatible, new APIVersion(3, 3));
+            _backend = new OpenGLBackend();
+#endif
         }
         else
         {

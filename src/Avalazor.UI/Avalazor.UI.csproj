@@ -15,16 +15,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Core rendering dependencies (ALL VERSIONS MUST MATCH 2.22.0) -->
-		<PackageReference Include="Silk.NET.Direct3D11" Version="2.22.0" />
-		<PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" />
+		<!-- Core windowing and input dependencies (ALL VERSIONS MUST MATCH 2.22.0) -->
 		<PackageReference Include="Silk.NET.Windowing.Sdl" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Input.Sdl" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Input" Version="2.22.0" />
+		<!-- OpenGL backend (used on all platforms) -->
 		<PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
-		<PackageReference Include="Silk.NET.Vulkan" Version="2.22.0" />
-		<PackageReference Include="Silk.NET.DXGI" Version="2.22.0" />
+		
+		<!-- Platform-specific graphics backends (conditionally included) -->
+		<!-- Direct3D11 and Vulkan add significant size (~15-20MB each) -->
+		<!-- Only include when explicitly building with these backends -->
+		<PackageReference Include="Silk.NET.Direct3D11" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_D3D11_BACKEND'))" />
+		<PackageReference Include="Silk.NET.DXGI" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_D3D11_BACKEND'))" />
+		<PackageReference Include="Silk.NET.Vulkan" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_VULKAN_BACKEND'))" />
+		<PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_VULKAN_BACKEND'))" />
 
 		<!-- Skia -->
 		<PackageReference Include="SkiaSharp" Version="3.119.1" />
@@ -48,7 +53,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
 		<ProjectReference Include="..\Sandbox.UI.Skia\Sandbox.UI.Skia.csproj" />
-		<ProjectReference Include="..\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
+		<!-- AI renderer is optional - only include if INCLUDE_AI_RENDERER is defined -->
+		<ProjectReference Include="..\Sandbox.UI.AI\Sandbox.UI.AI.csproj" Condition="'$(DefineConstants)' == '' Or $(DefineConstants.Contains('INCLUDE_AI_RENDERER'))" />
 		<ProjectReference Include="..\Microsoft.AspNetCore.Components\Microsoft.AspNetCore.Components.csproj" />
 	</ItemGroup>
 
