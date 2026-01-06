@@ -134,6 +134,8 @@ public static class AvalazorApplication
                     {
                         // Use the outer rect width (includes margins)
                         int computedWidth = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
+                        // Enforce minimum size
+                        computedWidth = Math.Max(computedWidth, (int)windowPanel.MinSize.x);
                         if (computedWidth > 0)
                         {
                             width = computedWidth;
@@ -145,6 +147,8 @@ public static class AvalazorApplication
                     {
                         // Use the outer rect height (includes margins)
                         int computedHeight = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
+                        // Enforce minimum size
+                        computedHeight = Math.Max(computedHeight, (int)windowPanel.MinSize.y);
                         if (computedHeight > 0)
                         {
                             height = computedHeight;
