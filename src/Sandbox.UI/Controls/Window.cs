@@ -12,6 +12,11 @@ public class Window : Panel
     private string _title = "Window";
     private INativeWindow? _nativeWindow; // Reference to the native window interface
     private bool _lastCustomChromeFromCss = false; // Track last CSS value for change detection
+    
+    // Track whether window size was explicitly set (vs using defaults)
+    // This allows automatic sizing based on content when size is not specified
+    private bool _windowWidthExplicitlySet = false;
+    private bool _windowHeightExplicitlySet = false;
 
     /// <summary>
     /// The window title displayed in the native window title bar and optional in-window title bar
@@ -32,15 +37,48 @@ public class Window : Panel
     /// </summary>
     public TitleBar? TitleBar { get; set; }
 
-    /// <summary>
-    /// Initial width of the native window (used when creating the window)
-    /// </summary>
-    public int WindowWidth { get; set; } = 1280;
+    private int _windowWidth = 1280;
+    private int _windowHeight = 720;
 
     /// <summary>
-    /// Initial height of the native window (used when creating the window)
+    /// Initial width of the native window (used when creating the window).
+    /// If not explicitly set, the window will auto-size to its content.
     /// </summary>
-    public int WindowHeight { get; set; } = 720;
+    public int WindowWidth 
+    { 
+        get => _windowWidth;
+        set 
+        { 
+            _windowWidth = value;
+            _windowWidthExplicitlySet = true;
+        }
+    }
+
+    /// <summary>
+    /// Initial height of the native window (used when creating the window).
+    /// If not explicitly set, the window will auto-size to its content.
+    /// </summary>
+    public int WindowHeight 
+    { 
+        get => _windowHeight;
+        set 
+        { 
+            _windowHeight = value;
+            _windowHeightExplicitlySet = true;
+        }
+    }
+    
+    /// <summary>
+    /// Returns true if the window width was explicitly set (via property or attribute).
+    /// When false, the window should auto-size to its content width.
+    /// </summary>
+    public bool IsWindowWidthExplicit => _windowWidthExplicitlySet;
+    
+    /// <summary>
+    /// Returns true if the window height was explicitly set (via property or attribute).
+    /// When false, the window should auto-size to its content height.
+    /// </summary>
+    public bool IsWindowHeightExplicit => _windowHeightExplicitlySet;
 
     /// <summary>
     /// Position of the in-window panel (for floating window UI elements)

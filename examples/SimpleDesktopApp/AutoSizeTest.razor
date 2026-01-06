@@ -1,0 +1,28 @@
+@namespace SimpleDesktopApp
+@using System
+@using Sandbox.UI
+@attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
+@inherits Window
+
+<root title="Auto-Size Test">
+    <div class="window-content" style="padding: 20px;">
+        <h2>Auto-Sized Window</h2>
+        <p>This window should auto-size to fit its content.</p>
+        <p>No explicit windowwidth or windowheight attributes set.</p>
+        <button onclick="@Close">Close</button>
+    </div>
+</root>
+
+@code {
+    protected override void OnAfterTreeRender(bool firstTime)
+    {
+        base.OnAfterTreeRender(firstTime);
+        
+        if (firstTime)
+        {
+            Console.WriteLine($"Auto-size window initialized");
+            Console.WriteLine($"IsWindowWidthExplicit: {IsWindowWidthExplicit}");
+            Console.WriteLine($"IsWindowHeightExplicit: {IsWindowHeightExplicit}");
+        }
+    }
+}

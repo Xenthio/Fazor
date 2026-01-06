@@ -35,6 +35,7 @@ class Program
 
         //Avalazor.UI.AvalazorApplication.RunPanel<RefOnClickDemo>();
         Avalazor.UI.AvalazorApplication.RunPanel<About>();
+        //Avalazor.UI.AvalazorApplication.RunPanel<AutoSizeTest>();
         //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
         
         // Test custom chrome improvements

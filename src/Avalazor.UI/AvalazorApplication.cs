@@ -106,8 +106,65 @@ public static class AvalazorApplication
             // Re-read window properties AFTER layout (Razor attributes are now processed)
             if (panel is Sandbox.UI.Window windowPanel)
             {
-                width = windowPanel.WindowWidth > 0 ? windowPanel.WindowWidth : width;
-                height = windowPanel.WindowHeight > 0 ? windowPanel.WindowHeight : height;
+                // Check if width/height were explicitly set
+                bool needsAutoWidth = !windowPanel.IsWindowWidthExplicit;
+                bool needsAutoHeight = !windowPanel.IsWindowHeightExplicit;
+                
+                if (needsAutoWidth || needsAutoHeight)
+                {
+                    // For automatic sizing, we need to temporarily remove the 100% constraint
+                    // and let the content determine the size
+                    var originalWidthStyle = windowPanel.Style.Width;
+                    var originalHeightStyle = windowPanel.Style.Height;
+                    
+                    if (needsAutoWidth)
+                    {
+                        windowPanel.Style.Width = null; // Auto width
+                    }
+                    if (needsAutoHeight)
+                    {
+                        windowPanel.Style.Height = null; // Auto height
+                    }
+                    
+                    // Re-layout with auto sizing
+                    rootPanel.Layout();
+                    
+                    // Now grab the computed size from the layout
+                    if (needsAutoWidth && windowPanel.Box != null)
+                    {
+                        // Use the outer rect width (includes margins)
+                        int computedWidth = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
+                        if (computedWidth > 0)
+                        {
+                            width = computedWidth;
+                            windowPanel.WindowWidth = computedWidth;
+                            Console.WriteLine($"[Avalazor] Auto-sized window width: {computedWidth}px");
+                        }
+                    }
+                    if (needsAutoHeight && windowPanel.Box != null)
+                    {
+                        // Use the outer rect height (includes margins)
+                        int computedHeight = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
+                        if (computedHeight > 0)
+                        {
+                            height = computedHeight;
+                            windowPanel.WindowHeight = computedHeight;
+                            Console.WriteLine($"[Avalazor] Auto-sized window height: {computedHeight}px");
+                        }
+                    }
+                    
+                    // Restore the 100% sizing for native window rendering
+                    // (the native window will fill the RootPanel, which is sized to the computed dimensions)
+                    windowPanel.Style.Width = originalWidthStyle;
+                    windowPanel.Style.Height = originalHeightStyle;
+                }
+                else
+                {
+                    // Explicitly set dimensions - use them
+                    width = windowPanel.WindowWidth > 0 ? windowPanel.WindowWidth : width;
+                    height = windowPanel.WindowHeight > 0 ? windowPanel.WindowHeight : height;
+                }
+                
                 title = !string.IsNullOrEmpty(windowPanel.Title) ? windowPanel.Title : title;
             }
             
