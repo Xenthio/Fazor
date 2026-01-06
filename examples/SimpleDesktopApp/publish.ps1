@@ -16,7 +16,10 @@
     # Default: Assets on disk, framework-dependent
 .EXAMPLE
     .\publish.ps1 -PackAssets
-    # Embed Assets in exe
+    # Embed Assets in exe (PowerShell style)
+.EXAMPLE
+    .\publish.ps1 --pack-assets
+    # Embed Assets in exe (bash style)
 .EXAMPLE
     .\publish.ps1 -SelfContained -Trimmed
     # Self-contained with trimming (~80-85MB)
@@ -29,10 +32,62 @@ param(
     [switch]$PackAssets = $false,
     [switch]$SelfContained = $false,
     [switch]$Trimmed = $false,
-    [string]$Runtime = ""
+    [string]$Runtime = "",
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$RemainingArgs
 )
 
 $ErrorActionPreference = "Stop"
+
+# Process remaining arguments (bash-style flags)
+if ($RemainingArgs) {
+    for ($i = 0; $i -lt $RemainingArgs.Count; $i++) {
+        $arg = $RemainingArgs[$i]
+        
+        switch -Regex ($arg) {
+            "^(--pack-assets|--PackAssets)$" {
+                $PackAssets = $true
+            }
+            "^(--self-contained|--SelfContained)$" {
+                $SelfContained = $true
+            }
+            "^(--trimmed|--Trimmed)$" {
+                $Trimmed = $true
+            }
+            "^(--runtime|--Runtime)$" {
+                if ($i + 1 -lt $RemainingArgs.Count) {
+                    $Runtime = $RemainingArgs[$i + 1]
+                    $i++
+                }
+            }
+            "^(--help|-h|-\?)$" {
+                Write-Host "Usage: .\publish.ps1 [OPTIONS]" -ForegroundColor Cyan
+                Write-Host ""
+                Write-Host "Options:" -ForegroundColor Yellow
+                Write-Host "  -PackAssets, --pack-assets       Embed Assets in the executable"
+                Write-Host "  -SelfContained, --self-contained Include .NET runtime (no installation required)"
+                Write-Host "  -Trimmed, --trimmed              Enable assembly trimming (requires -SelfContained)"
+                Write-Host "  -Runtime <RID>, --runtime <RID>  Target runtime identifier (auto-detected by default)"
+                Write-Host "  -?, -h, --help                   Show this help message"
+                Write-Host ""
+                Write-Host "Examples:" -ForegroundColor Yellow
+                Write-Host "  .\publish.ps1                                              # Default build"
+                Write-Host "  .\publish.ps1 -PackAssets                                  # Embed assets"
+                Write-Host "  .\publish.ps1 --pack-assets                                # Embed assets (bash style)"
+                Write-Host "  .\publish.ps1 -SelfContained -Trimmed                      # Self-contained, trimmed"
+                Write-Host "  .\publish.ps1 -PackAssets -SelfContained -Trimmed          # Truly single-file"
+                Write-Host "  .\publish.ps1 --pack-assets --self-contained --trimmed     # Truly single-file (bash style)"
+                Write-Host ""
+                exit 0
+            }
+            default {
+                Write-Host "Unknown argument: $arg" -ForegroundColor Red
+                Write-Host "Use --help or -? to see available options" -ForegroundColor Yellow
+                exit 1
+            }
+        }
+    }
+}
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Project = Join-Path $ScriptDir "SimpleDesktopApp.csproj"
