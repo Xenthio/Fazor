@@ -307,9 +307,7 @@ public class NativeWindow : INativeWindow, IDisposable
     {
         if (_hasNativeBorder == hasNativeBorder) return;
         
-        var oldPadding = _windowPadding;
         _hasNativeBorder = hasNativeBorder;
-        _windowPadding = hasNativeBorder ? 0 : BORDERLESS_PADDING;
 
         // Silk.NET uses WindowBorder enum: Fixed, Hidden, Resizable
         _window.WindowBorder = hasNativeBorder ? WindowBorder.Resizable : WindowBorder.Hidden;
@@ -322,14 +320,6 @@ public class NativeWindow : INativeWindow, IDisposable
         else if (hasNativeBorder)
         {
             Win32HitTestHelper.UninstallHitTestHandler(_window);
-        }
-        
-        // Adjust window size when padding changes
-        if (oldPadding != _windowPadding)
-        {
-            var currentSize = _window.Size;
-            var paddingDelta = (_windowPadding - oldPadding) * 2;
-            _window.Size = new Vector2D<int>(currentSize.X + paddingDelta, currentSize.Y + paddingDelta);
         }
     }
 
