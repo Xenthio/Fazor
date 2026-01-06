@@ -18,6 +18,8 @@
     <!-- PathResolver workaround in NativeWindow.cs enables finding extracted DLLs -->
     <!-- See: https://github.com/dotnet/Silk.NET/issues/2157 -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Include all content files in self-extract when PackAssets=true -->
+    <IncludeAllContentForSelfExtract Condition="'$(PackAssets)' == 'true'">true</IncludeAllContentForSelfExtract>
     <!-- Enable ReadyToRun for better startup performance -->
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Trim unused assemblies to reduce size -->
@@ -41,11 +43,13 @@
   <!-- Project-specific Assets with conditional packaging -->
   <Choose>
     <When Condition="'$(PackAssets)' == 'true'">
-      <!-- PackAssets=true: Embed assets in exe, don't copy to publish folder -->
+      <!-- PackAssets=true: Copy to publish, then embed in exe -->
+      <!-- Files must be in publish directory first for MSBuild to bundle them -->
+      <!-- MSBuild automatically removes bundled files from publish directory -->
       <ItemGroup>
         <Content Include="Assets\**\*" Exclude="Assets\README.md">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
           <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
           <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
         </Content>

@@ -12,11 +12,13 @@
   <!-- Include global Assets with conditional packaging -->
   <Choose>
     <When Condition="'$(PackAssets)' == 'true'">
-      <!-- PackAssets=true: Embed assets in exe, don't copy to publish folder -->
+      <!-- PackAssets=true: Copy to publish, then embed in exe -->
+      <!-- Files must be in publish directory first for MSBuild to bundle them -->
+      <!-- MSBuild automatically removes bundled files from publish directory -->
       <ItemGroup>
         <Content Include="$(GlobalAssetsPath)Assets\**\*" Exclude="$(GlobalAssetsPath)Assets\README.md">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
           <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
           <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
           <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
