@@ -79,6 +79,24 @@ public class Window : Panel
     /// When false, the window should auto-size to its content height.
     /// </summary>
     public bool IsWindowHeightExplicit => _windowHeightExplicitlySet;
+    
+    /// <summary>
+    /// Internal method to set window dimensions from auto-sizing without marking them as explicitly set.
+    /// Used by the application framework when computing automatic window size from content.
+    /// </summary>
+    internal void SetAutoComputedSize(int? width = null, int? height = null)
+    {
+        if (width.HasValue)
+        {
+            _windowWidth = width.Value;
+            // Don't set _windowWidthExplicitlySet - this is auto-computed
+        }
+        if (height.HasValue)
+        {
+            _windowHeight = height.Value;
+            // Don't set _windowHeightExplicitlySet - this is auto-computed
+        }
+    }
 
     /// <summary>
     /// Position of the in-window panel (for floating window UI elements)

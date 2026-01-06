@@ -130,31 +130,38 @@ public static class AvalazorApplication
                     rootPanel.Layout();
                     
                     // Now grab the computed size from the layout
+                    int? computedWidth = null;
+                    int? computedHeight = null;
+                    
                     if (needsAutoWidth && windowPanel.Box != null)
                     {
-                        // Use the outer rect width (includes margins)
-                        int computedWidth = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
+                        // Use the outer rect width (includes margins and borders)
+                        int w = (int)Math.Ceiling(windowPanel.Box.Rect.Width);
                         // Enforce minimum size
-                        computedWidth = Math.Max(computedWidth, (int)windowPanel.MinSize.x);
-                        if (computedWidth > 0)
+                        w = Math.Max(w, (int)windowPanel.MinSize.x);
+                        if (w > 0)
                         {
-                            width = computedWidth;
-                            windowPanel.WindowWidth = computedWidth;
-                            Console.WriteLine($"[Avalazor] Auto-sized window width: {computedWidth}px");
+                            computedWidth = w;
+                            width = w;
                         }
                     }
                     if (needsAutoHeight && windowPanel.Box != null)
                     {
-                        // Use the outer rect height (includes margins)
-                        int computedHeight = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
+                        // Use the outer rect height (includes margins and borders)
+                        int h = (int)Math.Ceiling(windowPanel.Box.Rect.Height);
                         // Enforce minimum size
-                        computedHeight = Math.Max(computedHeight, (int)windowPanel.MinSize.y);
-                        if (computedHeight > 0)
+                        h = Math.Max(h, (int)windowPanel.MinSize.y);
+                        if (h > 0)
                         {
-                            height = computedHeight;
-                            windowPanel.WindowHeight = computedHeight;
-                            Console.WriteLine($"[Avalazor] Auto-sized window height: {computedHeight}px");
+                            computedHeight = h;
+                            height = h;
                         }
+                    }
+                    
+                    // Set the computed size without marking as explicitly set
+                    if (computedWidth.HasValue || computedHeight.HasValue)
+                    {
+                        windowPanel.SetAutoComputedSize(computedWidth, computedHeight);
                     }
                     
                     // Restore the 100% sizing for native window rendering
