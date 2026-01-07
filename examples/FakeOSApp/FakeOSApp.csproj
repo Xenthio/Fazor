@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
     <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
     <ProjectReference Include="..\..\src\Sandbox.Compatibility\Sandbox.Compatibility.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.AspNetCore.Components\Microsoft.AspNetCore.Components.csproj" />
     <!-- Build-time only reference for Razor/SCSS compilation -->
     <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
@@ -34,9 +35,8 @@
     </Content>
   </ItemGroup>
 
-  <!-- Include FakeOS code files -->
+  <!-- Include FakeOS razor files for processing -->
   <ItemGroup>
-    <Compile Include="Code\**\*.cs" />
     <AdditionalFiles Include="Code\**\*.razor" />
   </ItemGroup>
 

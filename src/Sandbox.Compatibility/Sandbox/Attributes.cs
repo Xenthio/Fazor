@@ -39,4 +39,13 @@ public class ConCmdAttribute : Attribute
     /// The command name.
     /// </summary>
     public string? Name { get; set; }
+    
+    public ConCmdAttribute()
+    {
+    }
+    
+    public ConCmdAttribute(string name)
+    {
+        Name = name;
+    }
 }
