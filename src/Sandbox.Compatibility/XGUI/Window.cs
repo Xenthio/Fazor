@@ -35,7 +35,7 @@ public partial class Window : XGUIPanel
     public Button ControlsMaximise { get; set; } = new Button();
     
     public Panel? WindowContent { get; set; }
-    public Vector2? InitalInnerSize { get; set; } = null;
+    public Vector2? InitialInnerSize { get; set; } = null;
     
     public Window()
     {
@@ -100,7 +100,7 @@ public partial class Window : XGUIPanel
     private void TryInitInnerSize()
     {
         if (_hasInitInnerSize) return;
-        if (InitalInnerSize.HasValue && WindowContent != null && Box != null && WindowContent.Box != null)
+        if (InitialInnerSize.HasValue && WindowContent != null && Box != null && WindowContent.Box != null)
         {
             float currentWindowWidth = Box.Rect.Width;
             float currentWindowHeight = Box.Rect.Height;
@@ -116,7 +116,7 @@ public partial class Window : XGUIPanel
             float chromeWidth = currentWindowWidth - currentWindowContentWidth;
             float chromeHeight = currentWindowHeight - currentWindowContentHeight;
             
-            Size = new Vector2(InitalInnerSize.Value.x + chromeWidth, InitalInnerSize.Value.y + chromeHeight);
+            Size = new Vector2(InitialInnerSize.Value.x + chromeWidth, InitialInnerSize.Value.y + chromeHeight);
             
             Style.Width = Size.x;
             Style.Height = Size.y;
