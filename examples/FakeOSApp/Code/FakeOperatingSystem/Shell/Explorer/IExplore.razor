@@ -1,0 +1,219 @@
+@using System.Collections.Generic;
+@using System.Linq;
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using FakeDesktop;
+@inherits BaseBrowseUI
+@attribute [StyleSheet("IExplore.razor.scss")]
+
+<root title="Internet Explorer" width="680" height="500" class="window1" hasminimise="true" hasmaximise="true">
+	<div class="window-content">
+		<toolbarcontainer>
+			<!-- Menu Toolbar -->
+			<toolbar @ref=MenuToolbar class="menu-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Command Toolbar -->
+			<toolbar @ref=CommandToolbar class="command-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Address Toolbar -->
+			<toolbar @ref=AddressToolbar class="address-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+		</toolbarcontainer>
+
+		<div class="row padding-top padding-bottom" style="overflow:hidden; flex-grow:1">
+			<layoutboxinset>
+			<WebPanel @ref=WebPanel>
+
+			</WebPanel>
+			</layoutboxinset>
+		</div>
+		<div class="status-bar" style="flex-shrink:0">
+			<div class="status-text">@StatusText</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	private WebPanel WebPanel;
+
+	private string CurrentUrl = "";
+	private string LoadingMessage = "Connecting...";
+
+	// New property for initial URL
+	public string InitialUrl { get; set; } = "https://google.com";
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		if (firstTime)
+		{
+			WindowTitle = "Internet Explorer";
+
+			// Initialize with the provided URL or default
+			if (!string.IsNullOrEmpty(InitialUrl))
+			{
+				NavigateTo(InitialUrl, sound: false);
+			}
+			else
+			{
+				NavigateTo("https://google.com", sound: false);
+			}
+		}
+	}
+
+	protected void NavigateTo(string url, bool sound = true)
+	{
+		if (string.IsNullOrEmpty(url))
+			return;
+
+		CurrentUrl = url;
+
+		if (AddressInput != null)
+			AddressInput.Value = url;
+
+		LoadingMessage = $"Connecting to {url}...";
+
+		WebPanel.Url = url;
+
+		StatusText = $"Done";
+
+		if (sound)
+			PlaySingleClickSound();
+	}
+
+	protected override void SetupViewMenu(ContextMenu menu)
+	{
+		menu.AddMenuItem("Source", () => Log.Info("View Source"));
+		menu.AddMenuItem("Refresh", () => Refresh());
+		menu.AddSeparator();
+		menu.AddSubmenuItem("Text Size", submenu =>
+		{
+			submenu.AddMenuItem("Larger", () => Log.Info("Larger Text"));
+			submenu.AddMenuItem("Medium", () => Log.Info("Medium Text"));
+			submenu.AddMenuItem("Smaller", () => Log.Info("Smaller Text"));
+		});
+	}
+
+	protected override void SetupMenuToolbar()
+	{
+
+		// Base menu setup
+		MenuToolbar.AddMenuItem("File", (menu) =>
+		{
+			menu.AddMenuItem("New", () => Log.Info("New Item"));
+			menu.AddMenuItem("Open", () => Log.Info("Open Item"));
+			menu.AddSeparator();
+			menu.AddMenuItem("Close", () => Close());
+		});
+
+		// Add Edit menu
+		MenuToolbar.AddMenuItem("Edit", (menu) =>
+		{
+			menu.AddMenuItem("Cut", () => Log.Info("Cut"));
+			menu.AddMenuItem("Copy", () => Log.Info("Copy"));
+			menu.AddMenuItem("Paste", () => Log.Info("Paste"));
+			menu.AddSeparator();
+			menu.AddMenuItem("Select All", () => Log.Info("Select All"));
+		});
+
+		// Add View menu - to be overridden by derived classes
+		MenuToolbar.AddMenuItem("View", (menu) =>
+		{
+			SetupViewMenu(menu);
+		});
+
+		// Add Favorites menu - specific to Internet Explorer
+		MenuToolbar.AddMenuItem("Favorites", (menu) =>
+		{
+			menu.AddMenuItem("Add to Favorites", () => Log.Info("Add to Favorites"));
+			menu.AddMenuItem("Organize Favorites", () => Log.Info("Organize Favorites"));
+			menu.AddSeparator();
+			// Favorites would be populated here
+		});
+
+		// Add Tools menu
+		MenuToolbar.AddMenuItem("Tools", (menu) =>
+		{
+			menu.AddMenuItem("Internet Options", () => Log.Info("Internet Options"));
+			menu.AddMenuItem("Manage Add-ons", () => Log.Info("Manage Add-ons"));
+			menu.AddSeparator();
+			menu.AddMenuItem("Developer Tools", () => Log.Info("Developer Tools"));
+		});
+
+		// Add Help menu
+		MenuToolbar.AddMenuItem("Help", (menu) =>
+		{
+			menu.AddMenuItem("About", () => Log.Info("About"));
+		});
+
+		AddThrobber();
+
+	}
+
+	protected override void SetupCommandToolbar()
+	{
+		base.SetupCommandToolbar();
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// IE Specific buttons
+		CommandToolbar.AddButton("Stop", "stop", () => Log.Info("Stop"));
+		CommandToolbar.AddButton("Refresh", "refresh", Refresh);
+		CommandToolbar.AddButton("Home", "home", GoHome);
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// Add search and favorites
+		CommandToolbar.AddButton("Search", "search", () => Log.Info("Search"));
+		CommandToolbar.AddButton("Favorites", "bookmarks", () => Log.Info("Favorites"));
+		CommandToolbar.AddButton("History", "history", () => Log.Info("History"));
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// Misc
+		CommandToolbar.AddButton("Mail", "mail", () => Log.Info("Mail"));
+		CommandToolbar.AddButton("Print", "print", () => Log.Info("Print"));
+	}
+
+	protected override void OnAddressChanged()
+	{
+		string url = AddressInput.Value;
+		if (string.IsNullOrEmpty(url))
+			return;
+
+		NavigateTo(url);
+	}
+
+	protected override void OnBackClicked()
+	{
+		// Implement browser history navigation
+		Log.Info("Go Back");
+	}
+
+	protected override void OnForwardClicked()
+	{
+		// Implement browser history navigation
+		Log.Info("Go Forward");
+	}
+
+	protected override void OnUpClicked()
+	{
+		// Go up in the URL hierarchy
+		Log.Info("Go Up");
+	}
+
+	private void Refresh()
+	{
+		NavigateTo(CurrentUrl);
+	}
+
+	private void GoHome()
+	{
+		NavigateTo("about:home");
+	}
+}

@@ -1,0 +1,528 @@
+@using System.Collections.Generic;
+@using System.Linq;
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using System.IO
+@using XGUI;
+@using FakeDesktop;
+@using global::FakeOperatingSystem.OSFileSystem
+@using global::FakeOperatingSystem.Shell
+@inherits BaseBrowseUI
+@attribute [StyleSheet("Explorer.razor.scss")]
+
+<root title="Explorer" width="640" height="480" class="window1" hasminimise="true" hasmaximise="true">
+	<div class="window-content">
+		<toolbarcontainer>
+			<!-- Menu Toolbar -->
+			<toolbar @ref=MenuToolbar class="menu-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Command Toolbar -->
+			<toolbar @ref=CommandToolbar class="command-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Address Toolbar -->
+			<toolbar @ref=AddressToolbar class="address-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+		</toolbarcontainer>
+
+		<div class="row padding-top" style="overflow:hidden; flex-grow:1">
+			<filebrowsertree @ref=BrowserTree class="browser-tree" style="width:30%"></filebrowsertree>
+			<div class="splitter"></div>
+			<virtualfilebrowserview @ref=BrowserView class="browser-view" style="width:70%"></virtualfilebrowserview>
+		</div>
+
+		@if (ShowStatusBar)
+		{
+			<div class="margin-top column" style="flex-shrink:0">
+				<div class="status-bar layout-inset" style="flex-shrink:0;">
+					<div class="status-text">@StatusText</div>
+				</div>
+				<resizer>
+				</resizer>
+			</div>
+
+		}
+	</div>
+</root>
+
+@code {
+
+	private VirtualFileBrowserView BrowserView;
+	private FileBrowserTree BrowserTree;
+	private ComboBox FilesystemSelector;
+
+	private string CurrentPath = "";
+
+	//public bool ShowCommandBar { get; set; } = true;
+	//public bool ShowAddressBar { get; set; } = true;
+	//public bool ShowLinksBar { get; set; } = false;
+	//public bool ShowRadioBar { get; set; } = false;
+
+	public bool ShowStatusBar { get; set; } = true;
+
+	// New property for initial path
+	public string InitialPath { get; set; }
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		if (firstTime)
+		{
+
+			// Set up the file browser
+			BrowserView.Initialize(VirtualFileSystem.Instance, ShellNamespace.Instance, FileSystem.Data);
+
+			// The tree will still use the regular file system
+			BrowserTree.CurrentFileSystem = FileSystem.Data;
+			BrowserTree.Initialize("FakeSystemRoot/Windows/Desktop");
+
+			// Set up event handlers
+			BrowserView.OnFileSelected += (file) =>
+			{
+				StatusText = $"Selected: {System.IO.Path.GetFileName(file)}";
+			};
+
+			BrowserView.OnViewModeChanged += (mode) =>
+			{
+				// Force UI update for the view buttons
+				StateHasChanged();
+			};
+
+			BrowserView.OnNavigateTo += (path) =>
+			{
+				CurrentPath = path;
+				if (AddressInput != null)
+					AddressInput.Value = FormatAddressBarPath(path);
+				StatusText = FormatAddressBarPath(path);
+
+				// window title of open folder name
+				Title = $"{System.IO.Path.GetFileName(path)}";
+				var icon = FileIconHelper.GetFolderIcon(path, 16);
+				TitleBar.TitleIcon.Style.SetBackgroundImage(icon);
+
+				OnNavigate(path);
+			};
+
+			// Initialize with the provided path or default to Desktop
+			if (!string.IsNullOrEmpty(InitialPath))
+			{
+				BrowserView.NavigateToShellPath(InitialPath, sound: false);
+			}
+			else
+			{
+				// Default to Desktop if no path specified
+				BrowserView.NavigateToShellPath(ShellNamespace.DESKTOP, sound: false);
+			}
+
+			// Set default view mode
+			BrowserView.ViewMode = FileBrowserViewMode.Icons;
+
+			// Hide by default
+			BrowserTree.Style.Display = DisplayMode.None;
+		}
+	}
+
+	/// <summary>
+	/// Formats a virtual path for display in the address bar
+	/// </summary>
+	private string FormatAddressBarPath(string virtualPath)
+	{
+		if (string.IsNullOrEmpty(virtualPath))
+			return "";
+
+		// Get the entry to check its type
+		var entry = ShellNamespace.Instance.GetFolder(virtualPath);
+		if (entry == null)
+			return virtualPath;
+
+		// Transform the path based on where we are in the virtual filesystem
+		if (virtualPath == ShellNamespace.DESKTOP)
+		{
+			return "Desktop";
+		}
+		else if (virtualPath == $"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}")
+		{
+			return "My Computer";
+		}
+		else if (virtualPath.StartsWith($"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}/"))
+		{
+			// Handle paths inside My Computer
+			string relativePath = virtualPath.Substring(($"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}/").Length);
+
+			// Check if we're in a drive
+			if (relativePath.Contains('/'))
+			{
+				string driveLetter = relativePath.Split('/')[0];
+				string pathAfterDrive = relativePath.Substring(driveLetter.Length);
+
+				// Format like "C:/Documents"
+				return (driveLetter + pathAfterDrive).Replace("/", "\\");
+			}
+			else
+			{
+				// Check if we're at the root of a drive
+				if (relativePath.Contains(':'))
+				{
+					return relativePath + "\\";
+				}
+				// Just return the folder name inside My Computer
+				return relativePath;
+			}
+		}
+		else if (virtualPath.StartsWith($"{ShellNamespace.DESKTOP}/"))
+		{
+			// Handle paths directly under Desktop
+			return virtualPath.Substring(($"{ShellNamespace.DESKTOP}/").Length);
+		}
+
+		// Default case - return the original path
+		return virtualPath;
+	}
+
+	protected override void SetupFileMenu(ContextMenu menu)
+	{
+		BrowserView?.CreateFileNewMenu(menu);
+		menu.AddMenuItem("Open", () => Log.Info("Open Item")).SetClass("disabled", true);
+		menu.AddSeparator();
+		menu.AddMenuItem("Close", () => Close());
+	}
+	protected override void SetupEditMenu(ContextMenu menu)
+	{
+		menu.AddMenuItem("Undo", () => Log.Info("Cut")).SetClass("disabled", true);
+		menu.AddSeparator();
+		menu.AddMenuItem("Cut", () => Log.Info("Cut")).SetClass("disabled", true);
+		menu.AddMenuItem("Copy", () => Log.Info("Copy")).SetClass("disabled", true);
+		menu.AddMenuItem("Paste", () => Log.Info("Paste")).SetClass("disabled", true);
+		menu.AddMenuItem("Paste Shortcut", () => Log.Info("Paste Shortcut")).SetClass("disabled", true);
+		menu.AddSeparator();
+		menu.AddMenuItem("Select All", () => Log.Info("Select All"));
+	}
+
+	protected override void SetupViewMenu(ContextMenu menu)
+	{
+		menu.AddSubmenuItem("Toolbars", submenu =>
+		{
+			submenu.AddCheckItem(
+				"Command Bar",
+				() => CommandToolbar.ComputedStyle.Display == DisplayMode.Flex,
+				() =>
+				{
+					if (CommandToolbar.ComputedStyle.Display == DisplayMode.Flex)
+					{
+						CommandToolbar.Style.Display = DisplayMode.None;
+					}
+					else
+					{
+						CommandToolbar.Style.Display = DisplayMode.Flex;
+					}
+					StateHasChanged();
+					menu.Delete();
+				}
+			);
+			submenu.AddCheckItem(
+				"Address Bar",
+				() => AddressToolbar.ComputedStyle.Display == DisplayMode.Flex,
+				() =>
+				{
+					if (AddressToolbar.ComputedStyle.Display == DisplayMode.Flex)
+					{
+						AddressToolbar.Style.Display = DisplayMode.None;
+					}
+					else
+					{
+						AddressToolbar.Style.Display = DisplayMode.Flex;
+					}
+					StateHasChanged();
+					menu.Delete();
+				}
+			);
+			submenu.AddCheckItem(
+				"Links Bar",
+				() => false,
+				() =>
+				{
+					StateHasChanged();
+					menu.Delete();
+				}
+			).SetClass("disabled", true);
+			submenu.AddCheckItem(
+				"Radio Bar",
+				() => false,
+				() =>
+				{
+					StateHasChanged();
+					menu.Delete();
+				}
+			).SetClass("disabled", true);
+			submenu.AddSeparator();
+			submenu.AddCheckItem("Text Labels", () => true, () => Log.Info("Text Labels")).SetClass("disabled", true);
+		});
+		menu.AddCheckItem(
+			"Status Bar",
+			() => ShowStatusBar,
+			() =>
+			{
+				ShowStatusBar = !ShowStatusBar;
+				StateHasChanged();
+				menu.Delete();
+			}
+		);
+		menu.AddSubmenuItem("Explorer Bar", submenu =>
+		{
+			submenu.AddCheckItem(
+				"Search",
+				() => false,
+				() => Log.Info("Show Search Pane")
+			).SetClass("disabled", true);
+			submenu.AddCheckItem(
+				"Favorites",
+				() => false,
+				() => Log.Info("Show Favourites Pane")
+			).SetClass("disabled", true);
+			submenu.AddCheckItem(
+				"History",
+				() => false,
+				() => Log.Info("Show History Pane")
+			).SetClass("disabled", true);
+			submenu.AddCheckItem(
+				"Folders",
+				() => BrowserTree.ComputedStyle.Display == DisplayMode.Flex,
+				() =>
+				{
+					if (BrowserTree.ComputedStyle.Display == DisplayMode.Flex)
+					{
+						BrowserTree.Style.Display = DisplayMode.None;
+					}
+					else
+					{
+						BrowserTree.Style.Display = DisplayMode.Flex;
+					}
+					StateHasChanged();
+					menu.Delete();
+				}
+			);
+			submenu.AddSeparator();
+			submenu.AddMenuItem("Tip of the Day", () => Log.Info("Tip of the Day"));
+		});
+		menu.AddSeparator();
+		menu.AddRadioItem(
+			"Large Icons",
+			() => BrowserView?.ViewMode == FileBrowserViewMode.Icons,
+			() => { SetViewMode(FileBrowserViewMode.Icons); menu.Delete(); }
+		);
+		menu.AddRadioItem(
+			"List",
+			() => BrowserView?.ViewMode == FileBrowserViewMode.List,
+			() => { SetViewMode(FileBrowserViewMode.List); menu.Delete(); }
+		);
+		menu.AddRadioItem(
+			"Details",
+			() => BrowserView?.ViewMode == FileBrowserViewMode.Details,
+			() => { SetViewMode(FileBrowserViewMode.Details); menu.Delete(); }
+		);
+		menu.AddSeparator();
+		menu.AddSubmenuItem("Arrange Icons", submenu =>
+		{
+			submenu.AddMenuItem("By Name", () => { BrowserView?.ArrangeIcons(); });
+			submenu.AddMenuItem("By Type", () => { });
+			submenu.AddMenuItem("By Size", () => { });
+			submenu.AddMenuItem("By Date", () => { });
+			submenu.AddSeparator();
+			var autoArrangeItem = submenu.AddCheckItem(
+				"Auto Arrange",
+				() => BrowserView?.AutoArrangeIcons ?? false,
+				() =>
+				{
+					BrowserView?.SetAutoArrangeIcons(!BrowserView?.AutoArrangeIcons ?? true);
+				}
+			);
+		});
+		menu.AddMenuItem("Line Up Icons", () => { BrowserView?.LineUpIconsToGrid(); });
+		menu.AddSeparator();
+		menu.AddMenuItem("Refresh", () => { BrowserView?.Refresh(); menu.Delete(); });
+		menu.AddMenuItem("Folder Options...", () => Log.Info("Folder Options"));
+	}
+
+	protected override void SetupMenuToolbar()
+	{
+		base.SetupMenuToolbar();
+
+		// Add Go menu - specific to File Explorer
+		MenuToolbar.AddMenuItem("Go", (menu) =>
+		{
+			menu.AddMenuItem("Back", () => BrowserView.GoBack());
+			menu.AddMenuItem("Forward", () => BrowserView.GoForward());
+			menu.AddMenuItem("Up", () => BrowserView.GoUp());
+			menu.AddSeparator();
+			menu.AddMenuItem("Desktop", () => BrowserView.NavigateToShellPath(ShellNamespace.DESKTOP));
+			menu.AddMenuItem("My Computer", () => BrowserView.NavigateToShellPath($"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}"));
+			menu.AddMenuItem("My Documents", () => BrowserView.NavigateToShellPath($"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_DOCUMENTS}"));
+		});
+
+
+		// Add Help menu
+		MenuToolbar.AddMenuItem("Help", (menu) =>
+		{
+			menu.AddMenuItem("About", () => Log.Info("About"));
+		});
+	}
+
+	protected override void SetupCommandToolbar()
+	{
+		base.SetupCommandToolbar();
+
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// Edit buttons
+		CommandToolbar.AddButton("Cut", "cut", () => Log.Info("Cut"));
+		CommandToolbar.AddButton("Copy", "copy", () => Log.Info("Copy"));
+		CommandToolbar.AddButton("Paste", "paste", () => Log.Info("Paste"));
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// Undo buttons
+		CommandToolbar.AddButton("Undo", "undo", () => Log.Info("Undo"));
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// Selection buttons - specific to File Explorer
+		CommandToolbar.AddButton("Delete", "delete", () => Log.Info("Delete"));
+		CommandToolbar.AddButton("Properties", "properties", () => Log.Info("Properties"));
+
+		// Separator
+		CommandToolbar.AddSeparator();
+
+		// View dropdown
+		CommandToolbar.AddDropdownButton(
+			"Views",
+			"view",
+			() => { /* main button click */ },
+			menu =>
+			{
+				menu.AddRadioItem(
+					"Large Icons",
+					() => BrowserView?.ViewMode == FileBrowserViewMode.Icons,
+					() => { SetViewMode(FileBrowserViewMode.Icons); menu.Delete(); }
+				);
+				menu.AddRadioItem(
+					"List",
+					() => BrowserView?.ViewMode == FileBrowserViewMode.List,
+					() => { SetViewMode(FileBrowserViewMode.List); menu.Delete(); }
+				);
+				menu.AddRadioItem(
+					"Details",
+					() => BrowserView?.ViewMode == FileBrowserViewMode.Details,
+					() => { SetViewMode(FileBrowserViewMode.Details); menu.Delete(); }
+				);
+			}
+		);
+	}
+
+	private void OnNavigate(string path)
+	{
+		// If we can't go up any further, disable the Up button
+		bool canGoUp = !string.IsNullOrEmpty(Path.GetDirectoryName(BrowserView.GetCurrentShellPath()));
+		UpButton.SetClass("disabled", !canGoUp);
+	}
+
+	private void SetViewMode(FileBrowserViewMode mode)
+	{
+		if (BrowserView != null)
+		{
+			BrowserView.ViewMode = mode;
+
+			// Update button active states
+			foreach (var button in CommandToolbar.Children.OfType<Button>()
+				.Where(b => b.HasClass("view-button")))
+			{
+				bool isActive = (button.Text == mode.ToString());
+				button.SetClass("active", isActive);
+			}
+
+			BrowserView.UpdateViewMode();
+		}
+	}
+
+	protected override void OnAddressChanged()
+	{
+		string displayPath = AddressInput.Value;
+		if (string.IsNullOrEmpty(displayPath))
+			return;
+
+		// Try to convert the display path back to a virtual path
+		string virtualPath = ParseAddressInput(displayPath);
+		if (!string.IsNullOrEmpty(virtualPath))
+		{
+			BrowserView.NavigateToShellPath(virtualPath);
+		}
+	}
+
+	protected override void OnBackClicked()
+	{
+		BrowserView.GoBack();
+	}
+
+	protected override void OnForwardClicked()
+	{
+		BrowserView.GoForward();
+	}
+
+	protected override void OnUpClicked()
+	{
+		BrowserView.GoUp();
+	}
+
+	/// <summary>
+	/// Attempts to convert a user-entered address to a valid virtual path
+	/// </summary>
+	private string ParseAddressInput(string input)
+	{
+		// Check for simple cases first
+		if (input.Equals("Desktop", StringComparison.OrdinalIgnoreCase))
+			return ShellNamespace.DESKTOP;
+
+		if (input.Equals("My Computer", StringComparison.OrdinalIgnoreCase))
+			return $"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}";
+
+		if (input.Equals("My Documents", StringComparison.OrdinalIgnoreCase))
+			return $"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_DOCUMENTS}";
+
+		if (input.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+			return $"{ShellNamespace.DESKTOP}/{ShellNamespace.RECYCLE_BIN}";
+
+		// Check if input starts with a drive letter
+		if (input.Length >= 2 && input[1] == ':')
+		{
+			string driveLetter = input.Substring(0, 2);
+			string pathAfterDrive = input.Length > 2 ? input.Substring(2) : "";
+
+			// Drive path in My Computer
+			return $"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}/{driveLetter}{pathAfterDrive}";
+		}
+
+		// Check if it's a special folder in My Computer
+		if (ShellNamespace.Instance.GetFolder($"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}/{input}") != null)
+		{
+			return $"{ShellNamespace.DESKTOP}/{ShellNamespace.MY_COMPUTER}/{input}";
+		}
+
+		// Check if it's a direct child of Desktop
+		if (ShellNamespace.Instance.GetFolder($"{ShellNamespace.DESKTOP}/{input}") != null)
+		{
+			return $"{ShellNamespace.DESKTOP}/{input}";
+		}
+
+		// If it's a full virtual path already, use it directly
+		if (ShellNamespace.Instance.GetFolder(input) != null)
+		{
+			return input;
+		}
+
+		// If we can't figure it out, just return the input for the virtual system to handle
+		return input;
+	}
+}

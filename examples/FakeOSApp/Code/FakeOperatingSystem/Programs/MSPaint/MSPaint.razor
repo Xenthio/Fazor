@@ -1,0 +1,1973 @@
+﻿@using System
+@using System.Threading.Tasks
+@using System.Collections.Generic
+@using System.Linq
+@using FakeDesktop
+@using FakeOperatingSystem.OSFileSystem
+@using FakeOperatingSystem.UI.Dialogs
+@using Sandbox
+@using Sandbox.UI
+@using XGUI
+@namespace FakeOperatingSystem
+@attribute [StyleSheet]
+@inherits Window
+
+<root title="Untitled - Paint" minwidth="600" minheight="400" defaultwidth="800" defaultheight="600" style="width: 800px; height: 600px;" theme="Computer95">
+	<div class="window-content column">
+		<!-- Menu Bar -->
+		<div class="toolbar menu-toolbar">
+			<button @ref=FileMenuButton class="menu-item" onclick=@ShowFileMenu>File</button>
+			<button @ref=EditMenuButton class="menu-item" onclick=@ShowEditMenu>Edit</button>
+			<button @ref=ViewMenuButton class="menu-item" onclick=@ShowViewMenu>View</button>
+			<button @ref=ImageMenuButton class="menu-item" onclick=@ShowImageMenu>Image</button>
+			<button @ref=ColoursMenuButton class="menu-item" onclick=@ShowColoursMenu>Colors</button>
+			<button @ref=HelpMenuButton class="menu-item" onclick=@ShowHelpMenu>Help</button>
+		</div>
+
+		<!-- Main content area with Tools and Canvas -->
+		<div class="row" style="flex-grow: 1;">
+			<!-- Tools Panel -->
+			<div class="sidebar">
+				<div class="tools">
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.FreeSelect)) class:active=@(CurrentToolType == ToolType.FreeSelect)><xguiiconpanel iconsize=16 iconname="free_select"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.RectangleSelect)) class:active=@(CurrentToolType == ToolType.RectangleSelect)><xguiiconpanel iconsize=16 iconname="rectangle_select"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Eraser)) class:active=@(CurrentToolType == ToolType.Eraser)><xguiiconpanel iconsize=16 iconname="eraser"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Fill)) class:active=@(CurrentToolType == ToolType.Fill)><xguiiconpanel iconsize=16 iconname="fill"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.EyeDropper)) class:active=@(CurrentToolType == ToolType.EyeDropper)><xguiiconpanel iconsize=16 iconname="eye_dropper"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Magnify)) class:active=@(CurrentToolType == ToolType.Magnify)><xguiiconpanel iconsize=16 iconname="magnifying_glass"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Pencil)) class:active=@(CurrentToolType == ToolType.Pencil)><xguiiconpanel iconsize=16 iconname="pencil"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Brush)) class:active=@(CurrentToolType == ToolType.Brush)><xguiiconpanel iconsize=16 iconname="paintbrush"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.SprayCan)) class:active=@(CurrentToolType == ToolType.SprayCan)><xguiiconpanel iconsize=16 iconname="spraypaint"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Text)) class:active=@(CurrentToolType == ToolType.Text)><xguiiconpanel iconsize=16 iconname="text_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Line)) class:active=@(CurrentToolType == ToolType.Line)><xguiiconpanel iconsize=16 iconname="line_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Curve)) class:active=@(CurrentToolType == ToolType.Curve)><xguiiconpanel iconsize=16 iconname="curve_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Rectangle)) class:active=@(CurrentToolType == ToolType.Rectangle)><xguiiconpanel iconsize=16 iconname="rectangle_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Polygon)) class:active=@(CurrentToolType == ToolType.Polygon)><xguiiconpanel iconsize=16 iconname="polygon_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.Circle)) class:active=@(CurrentToolType == ToolType.Circle)><xguiiconpanel iconsize=16 iconname="circle_tool"></xguiiconpanel></button>
+					<button class="tool-button" onclick=@(() => SetActiveTool(ToolType.RoundedRectangle)) class:active=@(CurrentToolType == ToolType.RoundedRectangle)><xguiiconpanel iconsize=16 iconname="round_rectangle_tool"></xguiiconpanel></button>
+				</div>
+				<div class="tool-options layout-inset">
+
+				</div>
+			</div>
+
+			<!-- Canvas Area -->
+			<layoutboxinset class="canvas-area" style="flex-grow: 1; background-color: #808080;">
+				<scrollpanel style="align-items:flex-start;">
+					<div class="canvas" style="padding:3px;">
+						<panel @ref=ImagePanel @onmousedown=@MouseDownCanvas @onmousemove=@MouseMoveCanvas @onmouseup=@MouseUpCanvas class="image" style="background-color:white; image-rendering: pixelated; transform: scale(@CanvasScale);">
+							<panel @ref=PreviewPanel class="preview-overlay" style="position: absolute; top: 0; left: 0; pointer-events: none; image-rendering: pixelated;"></panel>
+						</panel>
+					</div>
+				</scrollpanel>
+			</layoutboxinset>
+		</div>
+
+		<!-- Bottom Bar with Colors and Tool Options -->
+		<div class="bottom-bar row">
+			<!-- Current Colors -->
+			<layoutboxinset class="current-colours">
+				<div class="colour-box b" style="background-color: @SecondaryColor.Hex;">
+				</div>
+				<div class="colour-box a" style="background-color: @PrimaryColor.Hex;">
+				</div>
+			</layoutboxinset>
+
+			<!-- Tool Options -->
+@* 			<div class="tool-options">
+				<label>Brush Size:</label>
+				<input type="range" min="1" max="50" @bind-value=BrushSize />
+				<span>@BrushSize</span>
+			</div> *@
+
+			<!-- Colour Palette -->
+			<div class="colour-palette">
+				@foreach (var color in PaletteColors)
+				{
+					<layoutboxinset class="palette-colour"
+						 style="background-color: @color.Hex;"
+						 onclick=@(() => SetPrimaryColor(color))
+						 onrightclick=@(() => SetSecondaryColor(color))>
+					</layoutboxinset>
+				}
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	// ===================================================================================
+	// C# DATA STRUCTURES & LOGIC
+	// For a larger project, these classes and the interface would be in their own files.
+	// For this example, we'll nest them here for a single-file implementation.
+	// ===================================================================================
+
+	/// <summary>
+	/// The "Strategy" interface. Defines the contract that all tools must follow.
+	/// This allows the main panel to treat all tools uniformly, simply calling
+	/// their methods without needing to know what specific tool is active.
+	/// </summary>
+	public interface ITool
+	{
+		void OnActivate(PaintCanvas canvas);
+		void OnDeactivate();
+		void OnMouseDown(PanelEvent e);
+		void OnMouseMove(PanelEvent e);
+		void OnMouseUp(PanelEvent e);
+		void Tick();
+	}
+
+	/// <summary>
+	/// A helper class to manage the state of the canvas (the texture, colors, etc.).
+	/// This separates the core drawing data from the UI panel's logic.
+	/// </summary>
+	public class PaintCanvas
+	{
+		public Texture ImageTexture { get; set; }
+		public Texture PreviewTexture { get; private set; }
+		public Color32 PrimaryColor { get; set; } = Color32.Black;
+		public Color32 SecondaryColor { get; set; } = Color32.White;
+		public int BrushSize { get; set; } = 4;
+
+		private int _width, _height;
+		private Color32[] _transparentColor32Data; // A reusable buffer of transparent Color32 pixels.
+
+		public PaintCanvas(int width, int height)
+		{
+			_width = width;
+			_height = height;
+			Resize(width, height);
+		}
+
+		public Rect? ActiveSelectionRect { get; set; }
+		private TimeSince _timeSinceMarchingAntsUpdate;
+		private int _marchingAntsOffset = 0;
+		public Texture SelectedPixelsTexture { get; private set; }
+		public bool IsSelectionFloating { get; set; } = false;
+		private Rect _liftedFromRect; // Stores the original rect on ImageTexture when lifted
+
+		public void SetActiveSelection(Rect? rect)
+		{
+			// If a selection is currently floating and we are setting a new one (or clearing),
+			// the floating one should be stamped first.
+			if (IsSelectionFloating && ActiveSelectionRect.HasValue)
+			{
+				StampFloatingSelectionToImage(ActiveSelectionRect.Value); // Stamp at its current position
+			}
+
+			ActiveSelectionRect = rect;
+			IsSelectionFloating = false; // A newly defined selection is not floating yet
+
+			if (rect == null)
+			{
+				ClearPreview();
+				SelectedPixelsTexture?.Dispose(); // Dispose if clearing
+				SelectedPixelsTexture = null;
+			}
+			else
+			{
+				DrawSelectionOutline(rect.Value);
+				// Ensure SelectedPixelsTexture is ready if we intend to lift immediately
+				SelectedPixelsTexture?.Dispose();
+				SelectedPixelsTexture = Texture.Create((int)rect.Value.Width, (int)rect.Value.Height, ImageFormat.RGBA8888).Finish();
+			}
+		}
+
+		public void ClearActiveSelection()
+		{
+			if (IsSelectionFloating)
+			{
+				// If it was floating, just clear it without stamping
+				SelectedPixelsTexture?.Dispose();
+				SelectedPixelsTexture = null;
+				IsSelectionFloating = false;
+			}
+			ActiveSelectionRect = null;
+			ClearPreview();
+		}
+
+		public void LiftSelectionFromImage()
+		{
+			if (!ActiveSelectionRect.HasValue || ActiveSelectionRect.Value.Width <= 0 || ActiveSelectionRect.Value.Height <= 0) return;
+
+			_liftedFromRect = ActiveSelectionRect.Value;
+			int selWidth = (int)_liftedFromRect.Width;
+			int selHeight = (int)_liftedFromRect.Height;
+
+			// Ensure SelectedPixelsTexture is appropriately sized
+			if (SelectedPixelsTexture == null || SelectedPixelsTexture.Width != selWidth || SelectedPixelsTexture.Height != selHeight)
+			{
+				SelectedPixelsTexture?.Dispose();
+				SelectedPixelsTexture = Texture.Create(selWidth, selHeight, ImageFormat.RGBA8888).Finish();
+			}
+
+			var imagePixels = ImageTexture.GetPixels().ToArray();
+			var selectionData = new Color32[selWidth * selHeight];
+
+			for (int y = 0; y < selHeight; y++)
+			{
+				for (int x = 0; x < selWidth; x++)
+				{
+					int sourceX = (int)_liftedFromRect.Left + x;
+					int sourceY = (int)_liftedFromRect.Top + y;
+					if (sourceX >= 0 && sourceX < _width && sourceY >= 0 && sourceY < _height)
+					{
+						selectionData[y * selWidth + x] = imagePixels[sourceY * _width + sourceX];
+					}
+				}
+			}
+			SelectedPixelsTexture.Update(selectionData);
+
+			// Clear the area on the main image texture (fill with secondary color)
+			var clearedAreaPixels = new Color32[(int)_liftedFromRect.Width * (int)_liftedFromRect.Height];
+			Array.Fill(clearedAreaPixels, SecondaryColor);
+			ImageTexture.Update(clearedAreaPixels, (int)_liftedFromRect.Left, (int)_liftedFromRect.Top, (int)_liftedFromRect.Width, (int)_liftedFromRect.Height);
+
+			IsSelectionFloating = true;
+			// The ActiveSelectionRect now represents the floating selection's current position and size.
+			// Preview will be updated by DrawFloatingSelectionPreview.
+		}
+
+		public void StampFloatingSelectionToImage(Rect targetRect)
+		{
+			if (!IsSelectionFloating || SelectedPixelsTexture == null || targetRect.Width <= 0 || targetRect.Height <= 0) return;
+
+			var selectionData = SelectedPixelsTexture.GetPixels().ToArray();
+			// Ensure data is valid (it should be if SelectedPixelsTexture exists)
+			if (selectionData.Length == 0) return;
+
+			// Create a temporary buffer for the target area on ImageTexture
+			// This helps with blending if selection is smaller/larger or has transparency
+			int targetX = (int)targetRect.Left;
+			int targetY = (int)targetRect.Top;
+			int stampWidth = (int)targetRect.Width; // Should match SelectedPixelsTexture.Width
+			int stampHeight = (int)targetRect.Height; // Should match SelectedPixelsTexture.Height
+
+			var imagePixels = ImageTexture.GetPixels().ToArray(); // Get current image
+
+			for (int y = 0; y < stampHeight; y++)
+			{
+				for (int x = 0; x < stampWidth; x++)
+				{
+					int destX = targetX + x;
+					int destY = targetY + y;
+
+					if (destX >= 0 && destX < _width && destY >= 0 && destY < _height)
+					{
+						Color32 selectedPixel = selectionData[y * stampWidth + x];
+						// Simple overwrite, add transparency handling later if needed (e.g., if selectedPixel.a < 255)
+						if (selectedPixel.a > 0) // Only stamp non-transparent parts of the selection
+						{
+							imagePixels[destY * _width + destX] = selectedPixel;
+						}
+					}
+				}
+			}
+			ImageTexture.Update(imagePixels);
+
+			IsSelectionFloating = false;
+			// SelectedPixelsTexture?.Dispose(); // Optionally dispose if not needed immediately
+			// SelectedPixelsTexture = null;
+
+			// The selection is now part of the image. Update ActiveSelectionRect to the stamped location.
+			ActiveSelectionRect = targetRect;
+			DrawSelectionOutline(targetRect); // Show normal selection outline
+		}
+
+		public void DrawFloatingSelectionPreview(Rect targetRect)
+		{
+			if (!IsSelectionFloating || SelectedPixelsTexture == null)
+			{
+				// If not floating but a selection exists, draw normal outline
+				if (ActiveSelectionRect.HasValue) DrawSelectionOutline(ActiveSelectionRect.Value);
+				else ClearPreview();
+				return;
+			}
+
+			var previewPixels = GetTransparentBufferClone();
+			var selectionData = SelectedPixelsTexture.GetPixels().ToArray();
+			int selWidth = SelectedPixelsTexture.Width;
+			int selHeight = SelectedPixelsTexture.Height;
+
+			for (int y = 0; y < selHeight; y++)
+			{
+				for (int x = 0; x < selWidth; x++)
+				{
+					int destX = (int)targetRect.Left + x;
+					int destY = (int)targetRect.Top + y;
+					if (destX >= 0 && destX < _width && destY >= 0 && destY < _height)
+					{
+						Color32 pixel = selectionData[y * selWidth + x];
+						if (pixel.a > 0) // Basic transparency handling
+						{
+							previewPixels[destY * _width + destX] = pixel;
+						}
+					}
+				}
+			}
+			// Also draw marching ants around the targetRect for the floating selection
+			DrawMarchingAntsRectangle(previewPixels, targetRect, Color32.Black, Color32.White, _marchingAntsOffset);
+			PreviewTexture.Update(previewPixels);
+		}
+		// Call this method in MSPaint.Tick() if a selection is active
+		public void UpdateMarchingAnts()
+		{
+			if (ActiveSelectionRect.HasValue && _timeSinceMarchingAntsUpdate > 0.1f) // Update every 100ms
+			{
+				_marchingAntsOffset = (_marchingAntsOffset + 1) % 8; // Controls the "marching" speed/pattern
+				DrawSelectionOutline(ActiveSelectionRect.Value);
+				_timeSinceMarchingAntsUpdate = 0;
+			}
+		}
+
+		public void DrawSelectionOutline(Rect rect)
+		{
+			var pixels = GetTransparentBufferClone();
+			DrawMarchingAntsRectangle(pixels, rect, Color32.Black, Color32.White, _marchingAntsOffset);
+			PreviewTexture.Update(pixels);
+		}
+
+		private void DrawMarchingAntsRectangle(Color32[] pixels, Rect rect, Color32 color1, Color32 color2, int offset)
+		{
+			int x1 = (int)Math.Max(0, rect.Left);
+			int y1 = (int)Math.Max(0, rect.Top);
+			int x2 = (int)Math.Min(_width - 1, rect.Right);
+			int y2 = (int)Math.Min(_height - 1, rect.Bottom);
+
+			// Ensure thickness is 1 for marching ants
+			int thickness = 1;
+
+			// Draw horizontal lines
+			for (int x = x1; x <= x2; x++)
+			{
+				if (((x + offset) / 4) % 2 == 0) // Draw 4 pixels of color1, then 4 of color2
+				{
+					DrawPixel(pixels, x, y1, color1);
+					DrawPixel(pixels, x, y2, color1);
+				}
+				else
+				{
+					DrawPixel(pixels, x, y1, color2);
+					DrawPixel(pixels, x, y2, color2);
+				}
+			}
+			// Draw vertical lines
+			for (int y = y1 + 1; y < y2; y++) // Avoid double-drawing corners
+			{
+				if (((y + offset) / 4) % 2 == 0)
+				{
+					DrawPixel(pixels, x1, y, color1);
+					DrawPixel(pixels, x2, y, color1);
+				}
+				else
+				{
+					DrawPixel(pixels, x1, y, color2);
+					DrawPixel(pixels, x2, y, color2);
+				}
+			}
+		}
+
+		public void Resize(int width, int height)
+		{
+			_width = width; _height = height;
+			ImageTexture = Texture.Create(width, height, ImageFormat.RGBA8888).Finish();
+			PreviewTexture = Texture.Create(width, height, ImageFormat.RGBA8888).Finish(); 
+
+			Clear(Color32.White);
+			ClearPreview();
+		}
+
+		public void Clear(Color32 color)
+		{
+			var pixelData = new Color32[_width * _height];
+			Array.Fill(pixelData, color);
+			ImageTexture.Update(pixelData);
+		}
+
+		public void ClearPreview() => PreviewTexture.Update(new Color32[_width * _height]);
+
+		public void StampPreviewToImage(Color32[] previewPixels)
+		{
+			if (previewPixels == null) return;
+			var imagePixels = ImageTexture.GetPixels().ToArray();
+			for (int i = 0; i < previewPixels.Length; i++)
+			{
+				// If the preview pixel's alpha channel is not 0, it has color.
+				if (previewPixels[i].a > 0)
+				{
+					imagePixels[i] = previewPixels[i];
+				}
+			}
+			ImageTexture.Update(imagePixels);
+		}
+
+		public Color32[] GetTransparentBufferClone() => new Color32[_width * _height];
+
+		// --- Pixel Generation Methods (Return Color32[]) ---
+
+		public Color32[] GetLinePixels(Vector2 start, Vector2 end, Color32 color, int thickness)
+		{
+			var pixels = GetTransparentBufferClone();
+			DrawLineOnColor32Array(pixels, start, end, color, thickness);
+			return pixels;
+		}
+
+		public Color32[] GetRectanglePixels(Vector2 p1, Vector2 p2, Color32 color, int thickness)
+		{
+			var pixels = GetTransparentBufferClone();
+			var min = Vector2.Min(p1, p2); var max = Vector2.Max(p1, p2);
+			DrawLineOnColor32Array(pixels, new Vector2(min.x, min.y), new Vector2(max.x, min.y), color, thickness);
+			DrawLineOnColor32Array(pixels, new Vector2(max.x, min.y), new Vector2(max.x, max.y), color, thickness);
+			DrawLineOnColor32Array(pixels, new Vector2(max.x, max.y), new Vector2(min.x, max.y), color, thickness);
+			DrawLineOnColor32Array(pixels, new Vector2(min.x, max.y), new Vector2(min.x, min.y), color, thickness);
+			return pixels;
+		}
+
+		public Color32[] GetEllipsePixels(Vector2 p1, Vector2 p2, Color32 color)
+		{
+			var pixels = GetTransparentBufferClone();
+			var min = Vector2.Min(p1, p2); var max = Vector2.Max(p1, p2);
+			var size = max - min;
+			int centerX = (int)(min.x + size.x / 2); int centerY = (int)(min.y + size.y / 2);
+			int radiusX = (int)(size.x / 2); int radiusY = (int)(size.y / 2);
+			DrawEllipseOnColor32Array(pixels, centerX, centerY, radiusX, radiusY, color);
+			return pixels;
+		}
+
+		public Color32[] GetCurvePixels(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, Color32 color, int thickness)
+		{
+			var pixels = GetTransparentBufferClone();
+			for (float t = 0; t <= 1.0f; t += 0.005f)
+			{
+				float u = 1 - t, tt = t * t, uu = u * u, uuu = uu * u, ttt = tt * t;
+				Vector2 p = uuu * p0 + 3 * uu * t * p1 + 3 * u * tt * p2 + ttt * p3;
+				DrawBrushShapeOnColor32Array(pixels, (int)p.x, (int)p.y, thickness, color);
+			}
+			return pixels;
+		}
+
+		public Color32 GetPixel(int x, int y)
+		{
+			if (x < 0 || x >= _width || y < 0 || y >= _height) return Color32.Transparent;
+			var pixels = ImageTexture.GetPixels().ToArray();
+			return pixels[y * _width + x];
+		}
+
+		// --- Drawing Primitives (operate on Color32 arrays) ---
+
+		public void DrawPixel(Color32[] pixels, int x, int y, Color32 color)
+		{
+			if (x < 0 || x >= _width || y < 0 || y >= _height) return;
+			pixels[y * _width + x] = color;
+		}
+
+		public void DrawBrushShapeOnColor32Array(Color32[] pixels, int cx, int cy, int diameter, Color32 color)
+		{
+			switch (diameter)
+			{
+				case 1: DrawPixel(pixels, cx, cy, color); break;
+				case 2:
+					DrawPixel(pixels, cx, cy, color); DrawPixel(pixels, cx + 1, cy, color);
+					DrawPixel(pixels, cx, cy + 1, color); DrawPixel(pixels, cx + 1, cy + 1, color);
+					break;
+				case 3:
+					DrawPixel(pixels, cx, cy, color); DrawPixel(pixels, cx, cy - 1, color);
+					DrawPixel(pixels, cx, cy + 1, color); DrawPixel(pixels, cx - 1, cy, color);
+					DrawPixel(pixels, cx + 1, cy, color);
+					break;
+				case 4:
+					int startX = cx - 2, startY = cy - 2;
+					DrawPixel(pixels, startX + 1, startY, color); DrawPixel(pixels, startX + 2, startY, color);
+					DrawPixel(pixels, startX, startY + 1, color); DrawPixel(pixels, startX + 1, startY + 1, color); DrawPixel(pixels, startX + 2, startY + 1, color); DrawPixel(pixels, startX + 3, startY + 1, color);
+					DrawPixel(pixels, startX, startY + 2, color); DrawPixel(pixels, startX + 1, startY + 2, color); DrawPixel(pixels, startX + 2, startY + 2, color); DrawPixel(pixels, startX + 3, startY + 2, color);
+					DrawPixel(pixels, startX + 1, startY + 3, color); DrawPixel(pixels, startX + 2, startY + 3, color);
+					break;
+				default:
+					DrawMathematicalCircleOnColor32Array(pixels, cx, cy, diameter, color);
+					break;
+			}
+		}
+
+		public void DrawLineOnColor32Array(Color32[] pixels, Vector2 start, Vector2 end, Color32 color, int thickness)
+		{
+			int startX = (int)start.x; int startY = (int)start.y;
+			int endX = (int)end.x; int endY = (int)end.y;
+			int dx = Math.Abs(endX - startX), sx = startX < endX ? 1 : -1;
+			int dy = -Math.Abs(endY - startY), sy = startY < endY ? 1 : -1;
+			int err = dx + dy, e2;
+			while (true)
+			{
+				DrawBrushShapeOnColor32Array(pixels, startX, startY, thickness, color);
+				if (startX == endX && startY == endY) break;
+				e2 = 2 * err;
+				if (e2 >= dy) { err += dy; startX += sx; }
+				if (e2 <= dx) { err += dx; startY += sy; }
+			}
+		}
+
+		public void DrawEllipseOnColor32Array(Color32[] pixels, int xc, int yc, int rx, int ry, Color32 color)
+		{
+			int x0 = Math.Clamp(xc - rx, 0, _width - 1); int y0 = Math.Clamp(yc - ry, 0, _height - 1);
+			int x1 = Math.Clamp(xc + rx, 0, _width - 1); int y1 = Math.Clamp(yc + ry, 0, _height - 1);
+			for (int y = y0; y <= y1; y++)
+			{
+				for (int x = x0; x <= x1; x++)
+				{
+					float p = (float)(Math.Pow((x - xc), 2) / Math.Pow(rx, 2)) + (float)(Math.Pow((y - yc), 2) / Math.Pow(ry, 2));
+					if (p <= 1) DrawPixel(pixels, x, y, color);
+				}
+			}
+		}
+
+		public void DrawMathematicalCircleOnColor32Array(Color32[] pixels, int centerX, int centerY, int diameter, Color32 color)
+		{
+			float radius = diameter / 2.0f;
+			float radiusSq = radius * radius;
+			int intRadius = (int)Math.Ceiling(radius);
+			for (int y = -intRadius; y <= intRadius; y++)
+			{
+				for (int x = -intRadius; x <= intRadius; x++)
+				{
+					if (x * x + y * y < radiusSq) DrawPixel(pixels, centerX + x, centerY + y, color);
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// A concrete implementation of the ITool interface for the Pencil.
+	/// </summary>
+	public class BrushTool : ITool
+	{
+		protected PaintCanvas _canvas;
+		private bool _isDrawing;
+		private Vector2 _lastPos;
+		protected virtual Color32 DrawColor => _canvas.PrimaryColor;
+		protected virtual int BrushThickness => _canvas.BrushSize;
+
+		public void OnActivate(PaintCanvas canvas) { _canvas = canvas; }
+		public void OnDeactivate() { _isDrawing = false; }
+		public void Tick() { }
+
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+
+			_isDrawing = true;
+			_lastPos = me.LocalPosition;
+
+			// Get the current canvas pixels
+			var pixels = _canvas.ImageTexture.GetPixels().ToArray();
+			// Draw a single dot for the initial click
+			_canvas.DrawBrushShapeOnColor32Array(pixels, (int)_lastPos.x, (int)_lastPos.y, BrushThickness, DrawColor);
+			// Upload the modified pixels back to the texture
+			_canvas.ImageTexture.Update(pixels);
+		}
+
+		public void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+
+			var currentPos = me.LocalPosition;
+
+			// Get the current canvas pixels
+			var pixels = _canvas.ImageTexture.GetPixels().ToArray();
+			// Draw the line segment onto the in-memory array
+			_canvas.DrawLineOnColor32Array(pixels, _lastPos, currentPos, DrawColor, BrushThickness);
+			// Upload the modified pixels back to the texture
+			_canvas.ImageTexture.Update(pixels);
+
+			_lastPos = currentPos;
+		}
+
+		public void OnMouseUp(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			_isDrawing = false;
+		}
+	}
+
+	/// <summary>
+	/// A freehand drawing tool with a fixed 1-pixel brush size.
+	/// </summary>
+	public class PencilTool : BrushTool
+	{
+		// It's a BrushTool, but it always uses a thickness of 1.
+		protected override int BrushThickness => 1;
+	}
+
+	/// <summary>
+	/// An eraser tool with variable brush size.
+	/// </summary>
+	public class EraserTool : BrushTool
+	{
+		// It's a BrushTool, but it always uses the secondary color.
+		protected override Color32 DrawColor => _canvas.SecondaryColor;
+	}
+
+	/// <summary>
+	/// Fill tool. Uses a classic flood-fill algorithm.
+	/// </summary>
+	public class FillTool : ITool
+	{
+		private PaintCanvas _canvas;
+		public void OnActivate(PaintCanvas canvas) { _canvas = canvas; }
+		public void OnDeactivate() { }
+		public void OnMouseMove(PanelEvent e) { }
+		public void OnMouseUp(PanelEvent e) { }
+
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+
+			int x = (int)me.LocalPosition.x;
+			int y = (int)me.LocalPosition.y;
+
+			OptimizedFloodFill(x, y, _canvas.PrimaryColor);
+		}
+
+		private void FloodFill(int x, int y, Color32 targetColor, Color32 fillColor)
+		{
+			var pixels = new Queue<(int, int)>();
+			pixels.Enqueue((x, y));
+
+			while (pixels.Count > 0)
+			{
+				var (px, py) = pixels.Dequeue();
+
+				if (px < 0 || px >= _canvas.ImageTexture.Width || py < 0 || py >= _canvas.ImageTexture.Height) continue;
+
+				if (_canvas.GetPixel(px, py) == targetColor)
+				{
+					_canvas.ImageTexture.Update(fillColor, px, py);
+					pixels.Enqueue((px + 1, py));
+					pixels.Enqueue((px - 1, py));
+					pixels.Enqueue((px, py + 1));
+					pixels.Enqueue((px, py - 1));
+				}
+			}
+		}
+
+		private void OptimizedFloodFill(int startX, int startY, Color32 fillColor)
+		{
+			int width = _canvas.ImageTexture.Width;
+			int height = _canvas.ImageTexture.Height;
+
+			// 1. READ ONCE: Get the entire texture into a local array. This is the crucial first step.
+			// GetPixels() returns a ReadOnlySpan, so we use .ToArray() to get a mutable copy.
+			var pixels = _canvas.ImageTexture.GetPixels().ToArray();
+
+			// Convert 2D start coordinates to a 1D array index
+			int startIndex = startY * width + startX;
+
+			// Get the color we need to replace
+			Color32 targetColor = pixels[startIndex];
+
+			// If the target is already the fill color, there's nothing to do.
+			if (targetColor == fillColor) return;
+
+			// 2. PROCESS LOCALLY: Use a queue for a breadth-first fill, operating only on the local array.
+			var queue = new Queue<int>();
+
+			// Set the starting pixel and add it to the queue
+			pixels[startIndex] = fillColor;
+			queue.Enqueue(startIndex);
+
+			while (queue.Count > 0)
+			{
+				int currentIndex = queue.Dequeue();
+				int currentX = currentIndex % width;
+				int currentY = currentIndex / width;
+
+				// Check neighbor to the West (left)
+				if (currentX > 0)
+				{
+					int neighborIndex = currentIndex - 1;
+					if (pixels[neighborIndex] == targetColor)
+					{
+						pixels[neighborIndex] = fillColor; // Change color in our array
+						queue.Enqueue(neighborIndex);    // Add to our list of pixels to check
+					}
+				}
+
+				// Check neighbor to the East (right)
+				if (currentX < width - 1)
+				{
+					int neighborIndex = currentIndex + 1;
+					if (pixels[neighborIndex] == targetColor)
+					{
+						pixels[neighborIndex] = fillColor;
+						queue.Enqueue(neighborIndex);
+					}
+				}
+
+				// Check neighbor to the North (up)
+				if (currentY > 0)
+				{
+					int neighborIndex = currentIndex - width;
+					if (pixels[neighborIndex] == targetColor)
+					{
+						pixels[neighborIndex] = fillColor;
+						queue.Enqueue(neighborIndex);
+					}
+				}
+
+				// Check neighbor to the South (down)
+				if (currentY < height - 1)
+				{
+					int neighborIndex = currentIndex + width;
+					if (pixels[neighborIndex] == targetColor)
+					{
+						pixels[neighborIndex] = fillColor;
+						queue.Enqueue(neighborIndex);
+					}
+				}
+			}
+
+			// 3. WRITE ONCE: After the loop, the entire `pixels` array is correct.
+			// Update the texture on the GPU in one single, fast bulk operation.
+			_canvas.ImageTexture.Update(pixels);
+		}
+
+		public void Tick() { }
+	}
+
+
+	public abstract class ShapeTool : ITool
+	{
+		protected PaintCanvas _canvas;
+		protected Vector2 _startPos;
+		protected bool _isDrawing;
+		protected Color32[] _currentPreviewPixels; // MODIFIED: This is now a Color32 array.
+
+		public virtual void OnActivate(PaintCanvas canvas) { _canvas = canvas; }
+		public virtual void OnDeactivate() { _canvas?.ClearPreview(); }
+
+		public virtual void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			_isDrawing = true;
+			_startPos = me.LocalPosition;
+		}
+
+		public abstract void OnMouseMove(PanelEvent e);
+
+		public virtual void OnMouseUp(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			_isDrawing = false;
+			if (_currentPreviewPixels != null) _canvas.StampPreviewToImage(_currentPreviewPixels);
+			_canvas.ClearPreview();
+		}
+		public void Tick() { }
+	}
+
+	public class LineTool : ShapeTool
+	{
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+			_currentPreviewPixels = _canvas.GetLinePixels(_startPos, me.LocalPosition, _canvas.PrimaryColor, _canvas.BrushSize);
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+	}
+
+	public class RectangleTool : ShapeTool
+	{
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+			_currentPreviewPixels = _canvas.GetRectanglePixels(_startPos, me.LocalPosition, _canvas.PrimaryColor, _canvas.BrushSize);
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+	}
+
+	public class CircleTool : ShapeTool
+	{
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+			_currentPreviewPixels = _canvas.GetEllipsePixels(_startPos, me.LocalPosition, _canvas.PrimaryColor);
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+	}
+
+	/// <summary>
+	/// A tool for drawing multi-sided shapes. Click to add points, double-click to finish.
+	/// </summary>
+	public class PolygonTool : ShapeTool
+	{
+		private List<Vector2> _points = new();
+		private TimeSince _timeSinceLastClick;
+
+		public override void OnActivate(PaintCanvas canvas) { base.OnActivate(canvas); _points.Clear(); }
+		public override void OnDeactivate() { base.OnDeactivate(); _points.Clear(); }
+
+		public override void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			if (_points.Any() && _timeSinceLastClick < 0.25f) { FinishPolygon(); return; }
+			_points.Add(me.LocalPosition);
+			_timeSinceLastClick = 0;
+		}
+
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_points.Any() || e is not MousePanelEvent me) return;
+			var tempPoints = new List<Vector2>(_points) { me.LocalPosition };
+			_currentPreviewPixels = GetPolygonPixels(tempPoints, false);
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+
+		public override void OnMouseUp(PanelEvent e) { /* Handled in OnMouseDown */ }
+
+		private void FinishPolygon()
+		{
+			if (_points.Count < 2) { _points.Clear(); return; }
+			var finalPixels = GetPolygonPixels(_points, true);
+			_canvas.StampPreviewToImage(finalPixels);
+			_points.Clear();
+			_canvas.ClearPreview();
+		}
+
+		private Color32[] GetPolygonPixels(List<Vector2> points, bool closeShape)
+		{
+			var pixels = _canvas.GetTransparentBufferClone();
+			for (int i = 0; i < points.Count - 1; i++)
+			{
+				_canvas.DrawLineOnColor32Array(pixels, points[i], points[i + 1], _canvas.PrimaryColor, _canvas.BrushSize);
+			}
+			if (closeShape && points.Count > 1)
+			{
+				_canvas.DrawLineOnColor32Array(pixels, points.Last(), points.First(), _canvas.PrimaryColor, _canvas.BrushSize);
+			}
+			return pixels;
+		}
+	}
+
+	public class CurveTool : ShapeTool
+	{
+		private enum DrawState { Idle, DrawingLine, BendingOnce, BendingTwice }
+		private DrawState _state = DrawState.Idle;
+		private Vector2 _p0, _p1, _p2, _p3;
+
+		public override void OnActivate(PaintCanvas canvas) { base.OnActivate(canvas); _state = DrawState.Idle; }
+		public override void OnDeactivate() { base.OnDeactivate(); _state = DrawState.Idle; }
+
+		public override void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			switch (_state)
+			{
+				case DrawState.Idle: base.OnMouseDown(e); _state = DrawState.DrawingLine; break;
+				case DrawState.BendingOnce: _p1 = me.LocalPosition; _state = DrawState.BendingTwice; break;
+				case DrawState.BendingTwice:
+					_p2 = me.LocalPosition;
+					_currentPreviewPixels = _canvas.GetCurvePixels(_p0, _p1, _p2, _p3, _canvas.PrimaryColor, _canvas.BrushSize);
+					_canvas.StampPreviewToImage(_currentPreviewPixels);
+					_isDrawing = false; _state = DrawState.Idle; _canvas.ClearPreview();
+					break;
+			}
+		}
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+			switch (_state)
+			{
+				case DrawState.DrawingLine: _currentPreviewPixels = _canvas.GetLinePixels(_startPos, me.LocalPosition, _canvas.PrimaryColor, _canvas.BrushSize); break;
+				case DrawState.BendingOnce: _currentPreviewPixels = _canvas.GetCurvePixels(_p0, me.LocalPosition, me.LocalPosition, _p3, _canvas.PrimaryColor, _canvas.BrushSize); break;
+				case DrawState.BendingTwice: _currentPreviewPixels = _canvas.GetCurvePixels(_p0, _p1, me.LocalPosition, _p3, _canvas.PrimaryColor, _canvas.BrushSize); break;
+			}
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+		public override void OnMouseUp(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left || _state != DrawState.DrawingLine) return;
+			_p0 = _startPos; _p3 = me.LocalPosition;
+			_state = DrawState.BendingOnce;
+		}
+	}
+
+	public class RoundedRectangleTool : ShapeTool
+	{
+		public override void OnMouseMove(PanelEvent e)
+		{
+			if (!_isDrawing || e is not MousePanelEvent me) return;
+			_currentPreviewPixels = GetRoundedRectanglePixels(_startPos, me.LocalPosition);
+			_canvas.PreviewTexture.Update(_currentPreviewPixels);
+		}
+
+		private Color32[] GetRoundedRectanglePixels(Vector2 p1, Vector2 p2)
+		{
+			var pixels = _canvas.GetTransparentBufferClone();
+			var min = Vector2.Min(p1, p2); var max = Vector2.Max(p1, p2);
+			var size = max - min;
+			float r = Math.Clamp(_canvas.BrushSize * 2.5f, 0, Math.Min(size.x, size.y) / 2f);
+
+			if (r <= 0) return _canvas.GetRectanglePixels(p1, p2, _canvas.PrimaryColor, _canvas.BrushSize);
+
+			var c1 = new Vector2(min.x + r, min.y + r); var c2 = new Vector2(max.x - r, min.y + r);
+			var c3 = new Vector2(min.x + r, max.y - r); var c4 = new Vector2(max.x - r, max.y - r);
+
+			_canvas.DrawLineOnColor32Array(pixels, new Vector2(c1.x, min.y), new Vector2(c2.x, min.y), _canvas.PrimaryColor, _canvas.BrushSize);
+			_canvas.DrawLineOnColor32Array(pixels, new Vector2(c3.x, max.y), new Vector2(c4.x, max.y), _canvas.PrimaryColor, _canvas.BrushSize);
+			_canvas.DrawLineOnColor32Array(pixels, new Vector2(min.x, c1.y), new Vector2(min.x, c3.y), _canvas.PrimaryColor, _canvas.BrushSize);
+			_canvas.DrawLineOnColor32Array(pixels, new Vector2(max.x, c2.y), new Vector2(max.x, c4.y), _canvas.PrimaryColor, _canvas.BrushSize);
+
+			DrawArcOnColor32Array(pixels, c1, r, 180, 270); DrawArcOnColor32Array(pixels, c2, r, 270, 360);
+			DrawArcOnColor32Array(pixels, c3, r, 90, 180); DrawArcOnColor32Array(pixels, c4, r, 0, 90);
+			return pixels;
+		}
+
+		private void DrawArcOnColor32Array(Color32[] pixels, Vector2 center, float radius, float start, float end)
+		{
+			for (float angle = start; angle <= end; angle += 1f)
+			{
+				float rad = angle * (MathF.PI / 180f);
+				var point = center + new Vector2(MathF.Cos(rad) * radius, MathF.Sin(rad) * radius);
+				_canvas.DrawBrushShapeOnColor32Array(pixels, (int)point.x, (int)point.y, _canvas.BrushSize, _canvas.PrimaryColor);
+			}
+		}
+	}
+
+	// NEW: Implementation for the Eye Dropper Tool
+	public class EyeDropperTool : ITool
+	{
+		private PaintCanvas _canvas;
+		private Action<Color> _setPrimary;
+		private Action<Color> _setSecondary;
+
+		// This tool needs to be able to call back to the main panel to set the color.
+		public void OnActivate(PaintCanvas canvas, Action<Color> setPrimary, Action<Color> setSecondary)
+		{
+			_canvas = canvas;
+			_setPrimary = setPrimary;
+			_setSecondary = setSecondary;
+		}
+
+		public void OnActivate(PaintCanvas canvas) { } // Not used directly
+		public void OnDeactivate() { }
+		public void OnMouseMove(PanelEvent e) { }
+		public void OnMouseUp(PanelEvent e) { }
+
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me) return;
+
+			var color = _canvas.GetPixel((int)me.LocalPosition.x, (int)me.LocalPosition.y);
+
+			if (me.MouseButton == MouseButtons.Left)
+			{
+				_setPrimary?.Invoke(color);
+			}
+			else if (me.MouseButton == MouseButtons.Right)
+			{
+				_setSecondary?.Invoke(color);
+			}
+		}
+		public void Tick() { }
+	}
+
+	public class SprayCanTool : ITool
+	{
+		private PaintCanvas _canvas;
+		private bool _isSpraying;
+		private Vector2 _mousePos;
+		private TimeSince _timeSinceSpray;
+
+		// The density of the spray. Higher means more particles.
+		private const int SprayDensity = 15;
+		// The interval between spray bursts.
+		private const float SprayInterval = 0.01f;
+
+		public void OnActivate(PaintCanvas canvas) { _canvas = canvas; }
+		public void OnDeactivate() { _isSpraying = false; }
+
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			_isSpraying = true;
+			_mousePos = me.LocalPosition;
+			Spray(); // Spray immediately on click for responsiveness
+		}
+
+		public void OnMouseMove(PanelEvent e)
+		{
+			if (!_isSpraying || e is not MousePanelEvent me) return;
+			_mousePos = me.LocalPosition;
+		}
+
+		public void OnMouseUp(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+			_isSpraying = false;
+		}
+
+		public void Tick()
+		{
+			if (!_isSpraying) return;
+
+			// Only spray every so often, not every single frame.
+			if (_timeSinceSpray > SprayInterval)
+			{
+				Spray();
+				_timeSinceSpray = 0;
+			}
+		}
+
+		private void Spray()
+		{
+			// 1. Calculate the CORRECT radius from the diameter (BrushSize).
+			// We use floating-point division to be precise.
+			float radius = _canvas.BrushSize;
+			if (radius <= 0) return; // No need to spray if the brush is tiny.
+
+			// Pre-calculate the squared radius for much faster distance checks.
+			float radiusSq = radius * radius;
+
+			for (int i = 0; i < SprayDensity; i++)
+			{
+				// 2. Generate a random offset within the bounding SQUARE of the circle.
+				// The square extends from -radius to +radius on both axes.
+				float offsetX = Random.Shared.Float(-radius, radius);
+				float offsetY = Random.Shared.Float(-radius, radius);
+
+				// 3. Check if the point is INSIDE the circle.
+				// We use squared distance to avoid a slow square root operation.
+				if ((offsetX * offsetX) + (offsetY * offsetY) <= radiusSq)
+				{
+					// 4. If it is, draw the droplet.
+					int drawX = (int)(_mousePos.x + offsetX);
+					int drawY = (int)(_mousePos.y + offsetY);
+
+					// Safely draw the pixel, ensuring it's within the canvas bounds.
+					if (drawX >= 0 && drawX < _canvas.ImageTexture.Width &&
+						drawY >= 0 && drawY < _canvas.ImageTexture.Height)
+					{
+						_canvas.ImageTexture.Update(_canvas.PrimaryColor, drawX, drawY);
+					}
+				}
+				// 5. If the point is outside the circle, we do nothing. It's "rejected".
+			}
+		}
+	}
+
+	public class MagnifyTool : ITool
+	{
+		private PaintCanvas _canvas;
+		private MSPaint _mainPanel;
+		private Vector2 _mousePos;
+		private const int MagnificationLevel = 4; // How much to magnify
+		public void OnActivate(PaintCanvas canvas)
+		{
+			Log.Warning("MagnifyTool activated without main panel reference. Use OnActivate(PaintCanvas, MSPaint) instead.");
+			_canvas = canvas;
+		}
+		public void OnActivate(PaintCanvas canvas, MSPaint mainPanel)
+		{
+			_canvas = canvas;
+			_mainPanel = mainPanel;
+		}
+		public void OnDeactivate() { }
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me) return;
+			if (me.MouseButton == MouseButtons.Left) _mainPanel.CanvasScale *= 2.0f;
+			if (me.MouseButton == MouseButtons.Right) _mainPanel.CanvasScale /= 2.0f;
+		} 
+		public void OnMouseMove(PanelEvent e) { }
+		public void OnMouseUp(PanelEvent e) { }
+
+		public void Tick() { }
+	}
+
+	public class RectangleSelectTool : ITool
+	{
+		protected PaintCanvas _canvas;
+		protected Vector2 _startPos;
+		protected bool _isSelecting;
+		private Rect _currentSelectionRect;
+
+		private enum SelectionState { Idle, CreatingSelection, MovingSelection }
+		private SelectionState _currentState = SelectionState.Idle;
+		private Vector2 _dragStartMousePos; // For moving
+		private Rect _originalMoveRect;   // Rect of the selection when move began
+
+		public void OnActivate(PaintCanvas canvas)
+		{
+			_canvas = canvas;
+			_currentState = SelectionState.Idle; // Reset state on activation
+			if (_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+			{
+				_canvas.DrawFloatingSelectionPreview(_canvas.ActiveSelectionRect.Value);
+			}
+			else if (_canvas.ActiveSelectionRect.HasValue)
+			{
+				_canvas.DrawSelectionOutline(_canvas.ActiveSelectionRect.Value);
+			}
+			else
+			{
+				_canvas.ClearPreview();
+			}
+		}
+
+		public void OnDeactivate()
+		{
+			if (_currentState == SelectionState.CreatingSelection) // Was in the middle of creating a new selection
+			{
+				_canvas.ClearPreview();
+				// If there was a previously finalized (but not floating) selection, redraw its outline
+				if (!_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+				{
+					_canvas.DrawSelectionOutline(_canvas.ActiveSelectionRect.Value);
+				}
+			}
+			// If selection was floating (_canvas.IsSelectionFloating is true),
+			// it remains floating. MSPaint's SetActiveTool will handle stamping it if necessary.
+			_isSelecting = false; // from base ShapeTool, ensure this is false
+			_currentState = SelectionState.Idle;
+		}
+
+		public void OnMouseDown(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+
+			if (_canvas.ActiveSelectionRect.HasValue && _canvas.ActiveSelectionRect.Value.IsInside(me.LocalPosition))
+			{
+				// Click is inside an existing selection
+				if (!_canvas.IsSelectionFloating)
+				{
+					_canvas.LiftSelectionFromImage();
+					// After lifting, ActiveSelectionRect still holds the original position and size.
+					// The visual representation is now on PreviewTexture via DrawFloatingSelectionPreview.
+				}
+				_currentState = SelectionState.MovingSelection;
+				_dragStartMousePos = Mouse.Position; // Use screen position for dragging to be independent of canvas scaling/scrolling
+				_originalMoveRect = _canvas.ActiveSelectionRect.Value;
+			}
+			else
+			{
+				// Click is outside or no selection exists - start new selection
+				if (_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue) // Stamp previous floating selection
+				{
+					_canvas.StampFloatingSelectionToImage(_canvas.ActiveSelectionRect.Value);
+					// After stamping, ActiveSelectionRect is updated, and IsSelectionFloating is false.
+					// The selection outline will be redrawn by SetActiveSelection or DrawSelectionOutline.
+				}
+				_canvas.ClearActiveSelection(); // Clear any previous non-floating selection rect and preview
+
+				_currentState = SelectionState.CreatingSelection;
+				_startPos = me.LocalPosition; // _startPos is for creating new selection rect
+				_currentSelectionRect = new Rect(_startPos, Vector2.Zero);
+				_canvas.ClearPreview();
+			}
+		}
+
+		public void OnMouseMove(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me) return;
+
+			if (_currentState == SelectionState.MovingSelection)
+			{
+				if (!_canvas.IsSelectionFloating || !_canvas.ActiveSelectionRect.HasValue) return;
+
+				Vector2 delta = Mouse.Position - _dragStartMousePos;
+				// Apply delta to the original position of the floating selection
+				Rect newFloatingRect = new Rect(_originalMoveRect.Position + delta / 1.0f, _originalMoveRect.Size);
+
+				_canvas.ActiveSelectionRect = newFloatingRect; // Update the logical position of the floating selection
+				_canvas.DrawFloatingSelectionPreview(newFloatingRect);
+			}
+			else if (_currentState == SelectionState.CreatingSelection)
+			{
+				var currentPos = me.LocalPosition;
+				var min = Vector2.Min(_startPos, currentPos);
+				var max = Vector2.Max(_startPos, currentPos);
+				_currentSelectionRect = new Rect(min, max - min);
+				_canvas.DrawSelectionOutline(_currentSelectionRect); // Draw dashed rect for new selection
+			}
+		}
+
+		public void OnMouseUp(PanelEvent e)
+		{
+			if (e is not MousePanelEvent me || me.MouseButton != MouseButtons.Left) return;
+
+			if (_currentState == SelectionState.MovingSelection)
+			{
+				// Selection has been moved and "dropped". It remains floating.
+				// ActiveSelectionRect in PaintCanvas is already updated to the new position.
+				// PreviewTexture shows the floating selection.
+				_currentState = SelectionState.Idle;
+				// No stamping here; stamping occurs if user clicks outside, changes tool, etc.
+			}
+			else if (_currentState == SelectionState.CreatingSelection)
+			{
+				// Finalize the new selection area
+				if (_currentSelectionRect.Width > 0 && _currentSelectionRect.Height > 0)
+				{
+					_canvas.SetActiveSelection(_currentSelectionRect); // This sets ActiveSelectionRect and IsSelectionFloating = false
+				}
+				else
+				{
+					_canvas.ClearActiveSelection();
+				}
+				_currentState = SelectionState.Idle;
+			}
+		}
+
+		public void Tick() { }
+	}
+
+	// ===================================================================================
+	// MAIN RAZOR COMPONENT LOGIC
+	// ===================================================================================
+
+	// ---- UI References & State ----
+	Button FileMenuButton, EditMenuButton, ViewMenuButton, ImageMenuButton, ColoursMenuButton, HelpMenuButton;
+	Panel ImagePanel;
+	private ContextMenu activeMenu;
+	Panel PreviewPanel;
+
+	// ---- Canvas & Tool Management ----
+	private ITool _activeTool;
+	private PaintCanvas _canvas;
+	public enum ToolType { Pencil, Brush, Eraser, Fill, Line, Rectangle, Circle, EyeDropper, SprayCan, Magnify, Text, Polygon, Curve, RoundedRectangle, RectangleSelect, FreeSelect }
+	public ToolType CurrentToolType { get; set; }
+
+	// ---- UI-Bound Properties ----
+	private Color PrimaryColor { get; set; } = Color.Black;
+	private Color SecondaryColor { get; set; } = Color.White;
+	private int _brushSize = 4;
+	public int BrushSize
+	{
+		get => _brushSize;
+		set { _brushSize = value; if (_canvas != null) _canvas.BrushSize = value; }
+	}
+	private float _canvasScale = 1.0f;
+	public float CanvasScale
+	{
+		get => _canvasScale;
+		set
+		{
+			_canvasScale = value;
+		}
+	}
+
+	private List<Color> PaletteColors { get; } = new List<Color>
+	{
+		Color.Black, Color.Gray, Color.Parse("#800000").Value, Color.Red, Color.Parse("#808000").Value, Color.Yellow, Color.Parse("#008000").Value, Color.Parse("#00ff00").Value,
+		Color.Parse("#008080").Value, Color.Parse("#00ffff").Value, Color.Parse("#000080").Value, Color.Blue, Color.Parse("#800080").Value, Color.Parse("#ff00ff").Value,
+		Color.White, Color.Parse("#c0c0c0").Value, Color.Parse("#ff0000").Value, Color.Parse("#ff8000").Value, Color.Parse("#ffff00").Value, Color.Parse("#00ff00").Value,
+		Color.Parse("#00ffff").Value, Color.Parse("#0000ff").Value, Color.Parse("#ff00ff").Value, Color.Parse("#804000").Value, Color.Parse("#ff8040").Value
+	};
+
+	// ---- Undo / Redo System ----
+	private Stack<Color32[]> undoStack = new();
+	private Stack<Color32[]> redoStack = new();
+
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		if (firstTime)
+		{
+			// Initialize the canvas state manager
+			_canvas = new PaintCanvas(512, 384);
+
+			// Set a default tool
+			SetActiveTool(ToolType.Pencil);
+
+			// Push the initial blank state to the undo stack
+			PushUndoState();
+		}
+	}
+
+	private bool IsNonSelectionToolActive => _activeTool is not RectangleSelectTool;// and not FreeSelectTool; // Assuming FreeSelectTool will exist
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		_activeTool?.Tick(); // Allow the active tool to perform per-frame logic
+
+		if (_canvas != null)
+		{
+			if (_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+			{
+				// If a selection is currently floating, continuously update its preview
+				// (which includes the floating pixels and the marching ants border).
+				_canvas.DrawFloatingSelectionPreview(_canvas.ActiveSelectionRect.Value);
+			}
+			else if (_canvas.ActiveSelectionRect.HasValue) // Selection exists but is not floating
+			{
+				// Only update the marching ants for a non-floating selection outline.
+				_canvas.UpdateMarchingAnts();
+			}
+			// If no selection is active, the PreviewTexture might be used by the current tool
+			// or should remain clear (handled by tool activation/deactivation).
+
+			// Update the UI panels from the canvas textures
+			ImagePanel.Style.BackgroundImage = _canvas.ImageTexture;
+			var canvasSize = new Vector2(_canvas.ImageTexture.Width, _canvas.ImageTexture.Height);
+			ImagePanel.Style.Width = Length.Pixels(canvasSize.x);
+			ImagePanel.Style.Height = Length.Pixels(canvasSize.y);
+
+			PreviewPanel.Style.BackgroundImage = _canvas.PreviewTexture;
+			PreviewPanel.Style.Width = Length.Pixels(canvasSize.x);
+			PreviewPanel.Style.Height = Length.Pixels(canvasSize.y);
+		}
+	}
+
+	// ---- Tool & Color Methods ----
+
+	public void SetActiveTool(ToolType toolType)
+	{
+		// If switching away from a selection tool AND a selection is currently floating
+		if ((_activeTool is RectangleSelectTool /*|| _activeTool is FreeSelectTool*/) &&
+			_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+		{
+			_canvas.StampFloatingSelectionToImage(_canvas.ActiveSelectionRect.Value);
+			PushUndoState(); // Selection has been stamped, record state
+			// After stamping, ActiveSelectionRect is updated, IsSelectionFloating is false.
+			// The new tool's OnActivate will handle the preview.
+		}
+		// If switching away from a selection tool but selection was NOT floating (just an outline)
+		else if ((_activeTool is RectangleSelectTool) && _canvas.ActiveSelectionRect.HasValue && !_canvas.IsSelectionFloating)
+		{
+			// Keep the selection outline if switching to another selection tool
+			if (toolType != ToolType.RectangleSelect && toolType != ToolType.FreeSelect)
+			{
+				// If switching to a non-selection tool, the outline should disappear from preview.
+				// The selection rect itself remains in _canvas.ActiveSelectionRect.
+				_canvas.ClearPreview();
+			}
+		}
+
+
+		_activeTool?.OnDeactivate(); // Deactivate previous tool
+		CurrentToolType = toolType;
+
+		switch (toolType)
+		{
+			case ToolType.Pencil: _activeTool = new PencilTool(); break;
+			case ToolType.Brush: _activeTool = new BrushTool(); break;
+			case ToolType.Eraser: _activeTool = new EraserTool(); break;
+			case ToolType.Fill: _activeTool = new FillTool(); break;
+			case ToolType.Line: _activeTool = new LineTool(); break;
+			case ToolType.Rectangle: _activeTool = new RectangleTool(); break;
+			case ToolType.Circle: _activeTool = new CircleTool(); break;
+			case ToolType.EyeDropper: _activeTool = new EyeDropperTool(); break;
+			case ToolType.SprayCan: _activeTool = new SprayCanTool(); break;
+			case ToolType.Magnify: _activeTool = new MagnifyTool(); break;
+			//case ToolType.Text: _activeTool = new TextTool(); break;
+			case ToolType.Polygon: _activeTool = new PolygonTool(); break;
+			case ToolType.Curve: _activeTool = new CurveTool(); break;
+			case ToolType.RoundedRectangle: _activeTool = new RoundedRectangleTool(); break;
+			case ToolType.RectangleSelect: _activeTool = new RectangleSelectTool(); break; // Uncommented
+				//case ToolType.FreeSelect: _activeTool = new FreeSelectTool(); break; // Keep commented for now
+		}
+
+		if (_activeTool is EyeDropperTool eyeDropperTool)
+		{
+			eyeDropperTool.OnActivate(_canvas, SetPrimaryColor, SetSecondaryColor);
+		}
+		else if (_activeTool is MagnifyTool magnifyTool)
+		{
+			magnifyTool.OnActivate(_canvas, this);
+		}
+		if (_activeTool != null)
+		{
+			_activeTool.OnActivate(_canvas);
+		}
+
+		// If the new tool is NOT a selection tool and a selection outline was visible (but not floating)
+		// clear the preview. The selection data (_canvas.ActiveSelectionRect) remains.
+		if (IsNonSelectionToolActive && _canvas.ActiveSelectionRect.HasValue && !_canvas.IsSelectionFloating)
+		{
+			_canvas.ClearPreview();
+		}
+		// If the new tool IS a selection tool and a selection exists (either floating or just outline),
+		// its OnActivate should handle drawing it correctly.
+		else if (!IsNonSelectionToolActive && _canvas.ActiveSelectionRect.HasValue)
+		{
+			if (_canvas.IsSelectionFloating)
+				_canvas.DrawFloatingSelectionPreview(_canvas.ActiveSelectionRect.Value);
+			else
+				_canvas.DrawSelectionOutline(_canvas.ActiveSelectionRect.Value);
+		}
+
+	}
+
+	private void SetPrimaryColor(Color color)
+	{
+		PrimaryColor = color;
+		_canvas.PrimaryColor = color; // Implicit conversion from Color to Color32
+	}
+
+	private void SetSecondaryColor(Color color)
+	{
+		SecondaryColor = color;
+		_canvas.SecondaryColor = color;
+	}
+
+	// ---- Undo / Redo Methods ----
+
+	private void PushUndoState()
+	{
+		if (_canvas?.ImageTexture == null) return;
+		undoStack.Push(_canvas.ImageTexture.GetPixels().ToArray());
+		redoStack.Clear(); // Any new action clears the redo history
+	}
+
+	private void Undo()
+	{
+		if (undoStack.Count <= 1) return; // Can't undo the initial blank canvas
+
+		// Move current state to redo stack
+		var currentState = undoStack.Pop();
+		redoStack.Push(currentState);
+
+		// Apply the previous state
+		var previousState = undoStack.Peek();
+		_canvas.ImageTexture.Update(previousState);
+	}
+
+	private void Redo()
+	{
+		if (redoStack.Count == 0) return;
+
+		var nextState = redoStack.Pop();
+		undoStack.Push(nextState);
+		_canvas.ImageTexture.Update(nextState);
+	}
+
+	private void ClearImage()
+	{
+		_canvas?.Clear(_canvas.SecondaryColor);
+		PushUndoState();
+	}
+
+	// ---- Canvas Event Handlers ---- 
+
+	public void MouseDownCanvas(PanelEvent e)
+	{
+		if (IsNonSelectionToolActive)
+		{
+			if (_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+			{
+				// If a non-selection tool is used while a selection is floating, stamp it.
+				_canvas.StampFloatingSelectionToImage(_canvas.ActiveSelectionRect.Value);
+				PushUndoState(); // Stamped, so record state
+				// The selection is now part of the image, ActiveSelectionRect is updated.
+				// The drawing tool will operate on the main image.
+				// We might want to clear ActiveSelectionRect after stamping if drawing tools shouldn't be masked.
+				// For now, the selection remains (as an outline) after stamping.
+			}
+			else if (_canvas.ActiveSelectionRect.HasValue && !_canvas.IsSelectionFloating)
+			{
+				// If a non-selection tool is used and there's just a selection outline,
+				// clear the selection entirely before drawing.
+				_canvas.ClearActiveSelection();
+				_canvas.ClearPreview(); // Ensure preview is clear for the drawing tool
+			}
+		}
+
+		_activeTool?.OnMouseDown(e); // Then let the current tool handle the mousedown
+		CloseActiveMenu();
+	}
+
+	public void MouseMoveCanvas(PanelEvent e)
+	{
+		_activeTool?.OnMouseMove(e);
+	}
+
+	public void MouseUpCanvas(PanelEvent e)
+	{
+		_activeTool?.OnMouseUp(e);
+
+		// After the drawing action is finished, save the state for undo
+		if (e is MousePanelEvent me && (me.MouseButton == MouseButtons.Left || me.MouseButton == MouseButtons.Right))
+		{
+			PushUndoState();
+		}
+	}
+
+	// ---- Misc ----
+	public void ClearCurrentSelection()
+	{
+		if (_canvas == null) return;
+
+		if (_canvas.IsSelectionFloating && _canvas.ActiveSelectionRect.HasValue)
+		{
+			// If it was floating, we need to restore the area it was lifted from
+			// This is complex: ideally, we'd have stored the background.
+			// For a simple clear, we just discard the floating pixels.
+			// The area on ImageTexture was already filled with SecondaryColor when lifted.
+		}
+		_canvas.ClearActiveSelection(); // Clears rect, floating state, and selected pixels texture
+		_canvas.ClearPreview();
+	}
+	private void CutSelection()
+	{
+		if (_canvas?.ActiveSelectionRect.HasValue ?? false)
+		{
+			CopySelection(); // Copy first
+			// Then clear the selected area on ImageTexture with secondary color
+			if (!_canvas.IsSelectionFloating) // If not already floating, lift it (which clears the area) then discard
+			{
+				_canvas.LiftSelectionFromImage(); // This clears the area on ImageTexture
+				// We don't keep the lifted pixels for Cut if we're just clearing the area.
+				// The actual pixels are on the "clipboard" (SelectedPixelsTexture after CopySelection).
+				// For a simple "Delete" like behavior for cut:
+				_canvas.ClearActiveSelection(); // This will dispose SelectedPixelsTexture if it was just lifted by CopySelection
+				_canvas.ClearPreview();
+
+			}
+			else
+			{
+				// If it was already floating, the area on ImageTexture is already cleared.
+				// Just clear the floating selection.
+				_canvas.ClearActiveSelection();
+				_canvas.ClearPreview();
+			}
+			PushUndoState(); // The ImageTexture was modified
+			Log.Info("Cut action performed (pixels copied to internal clipboard, area cleared).");
+		}
+	}
+
+	private void CopySelection()
+	{
+		if (_canvas?.ActiveSelectionRect.HasValue ?? false)
+		{
+			if (!_canvas.IsSelectionFloating)
+			{
+				// If selection is just an outline, lift its content to SelectedPixelsTexture
+				// without clearing the ImageTexture (classic copy behavior).
+				// This requires a new PaintCanvas method. For now, let's use LiftSelectionFromImage
+				// which does clear. A true "copy" would duplicate to SelectedPixelsTexture without clearing.
+				// Let's simulate by lifting then re-stamping if not floating.
+				// OR, better: add a GetSelectedPixels method to PaintCanvas.
+				_canvas.LiftSelectionFromImage(); // This lifts and clears.
+				// For a true copy, we'd need to put the original content back if it wasn't floating.
+				// This is getting complex. For now, Copy will behave like Cut in terms of lifting.
+				// The "clipboard" is _canvas.SelectedPixelsTexture.
+			}
+			// If it IS floating, SelectedPixelsTexture already has the content.
+			Log.Info("Copy action performed (pixels available in internal clipboard).");
+			// To truly decouple, copy _canvas.SelectedPixelsTexture to a separate clipboard manager.
+		}
+	}
+
+	private void PasteSelection()
+	{
+		if (_canvas?.SelectedPixelsTexture != null) // Check if our internal "clipboard" has data
+		{
+			SetActiveTool(ToolType.RectangleSelect); // Switch to selection tool for pasting
+			_canvas.IsSelectionFloating = true; // Mark that we are pasting/floating
+			// Position pasted content at top-left or center. For now, top-left.
+			Rect pasteRect = new Rect(0, 0, _canvas.SelectedPixelsTexture.Width, _canvas.SelectedPixelsTexture.Height);
+			_canvas.ActiveSelectionRect = pasteRect;
+			_canvas.DrawFloatingSelectionPreview(pasteRect);
+			Log.Info("Paste action performed (selection is now floating).");
+		}
+	}
+
+	// ---- Menu Handling  ----
+
+	private void CloseActiveMenu()
+	{
+
+		if (activeMenu != null)
+		{
+			// Remove "active" class from all menu buttons
+			FileMenuButton?.SetClass("active", false);
+			EditMenuButton?.SetClass("active", false);
+			ViewMenuButton?.SetClass("active", false);
+			HelpMenuButton?.SetClass("active", false);
+
+			activeMenu.Delete(true);
+			activeMenu = null;
+		}
+	}
+	protected override void OnMouseDown(MousePanelEvent e)
+	{
+		base.OnMouseDown(e);
+		if (activeMenu != null &&
+			!FileMenuButton.HasHovered &&
+			!EditMenuButton.HasHovered &&
+			!ViewMenuButton.HasHovered &&
+			!HelpMenuButton.HasHovered &&
+			!activeMenu.HasHovered)
+			CloseActiveMenu();
+	}
+	private void ShowFileMenu()
+	{
+		CloseActiveMenu();
+
+		// Set this button as active
+		FileMenuButton.SetClass("active", true);
+
+		// Create menu - position below button
+		activeMenu = new ContextMenu(FileMenuButton, XGUIPopup.PositionMode.BelowLeft);
+
+		activeMenu.AddMenuItem("New", () => { NewFile(); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Open...", () => { OpenFile(); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Save", () => { SaveFile(); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Save As...", () => { SaveFile(true); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Print Preview", () => { Log.Info("Print Preview"); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Page Setup", () => { Log.Info("Page Setup"); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Print", () => { Log.Info("Print"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Send", () => { Log.Info("Send"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Set As Wallpaper (Tiled)", () => { Log.Info("wallpaper tiled"); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Set As Wallpaper (Centred)", () => { Log.Info("wallpaper centre"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Recent File", () => { Log.Info("Recent File"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Exit", () => Delete());
+	}
+
+	private void ShowEditMenu()
+	{
+		CloseActiveMenu();
+		EditMenuButton.SetClass("active", true);
+		activeMenu = new ContextMenu(EditMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Undo", Undo).SetClass("disabled", !undoStack.Any() || undoStack.Count <= 1);
+		activeMenu.AddMenuItem("Redo", Redo).SetClass("disabled", !redoStack.Any()); // Pass method directly
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Cut", () => { CutSelection(); activeMenu.Delete(); }).SetClass("disabled", !_canvas?.ActiveSelectionRect.HasValue ?? true);
+		activeMenu.AddMenuItem("Copy", () => { CopySelection(); activeMenu.Delete(); }).SetClass("disabled", !_canvas?.ActiveSelectionRect.HasValue ?? true);
+		activeMenu.AddMenuItem("Paste", () => { PasteSelection(); activeMenu.Delete(); }); // Enable if clipboard has data
+		activeMenu.AddMenuItem("Clear Selection", () => { ClearCurrentSelection(); activeMenu.Delete(); }).SetClass("disabled", !_canvas?.ActiveSelectionRect.HasValue ?? true);
+		activeMenu.AddMenuItem("Select All", () => { Log.Info("Select All"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Copy To...", () => { Log.Info("Copy To..."); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Paste From...", () => { Log.Info("Paste From..."); activeMenu.Delete(); });
+	}
+
+	private void ShowImageMenu()
+	{
+		CloseActiveMenu();
+		ImageMenuButton.SetClass("active", true);
+		activeMenu = new ContextMenu(ImageMenuButton, XGUIPopup.PositionMode.BelowLeft);
+
+		activeMenu.AddMenuItem("Attributes", () => { Log.Info("Attributes"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Stretch/Skew", () => { Log.Info("Stretch/Skew"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Invert Colors", () => { Log.Info("Invert Colors"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Clear Image", ClearImage); 
+	}
+
+	private void ShowViewMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		ViewMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(ViewMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Zoom In", () => { Log.Info("Zoom In"); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("Zoom Out", () => { Log.Info("Zoom Out"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Show Grid", () => { Log.Info("Show Grid"); activeMenu.Delete(); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Toolbars", () => { Log.Info("Toolbars"); activeMenu.Delete(); });
+	}
+	private void ShowColoursMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		ColoursMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(ColoursMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Edit Colors...", () => { Log.Info("Edit Colors..."); activeMenu.Delete(); });
+	}
+
+	private void ShowHelpMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		HelpMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(HelpMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("View Help", () => { Log.Info("View Help"); activeMenu.Delete(); });
+		activeMenu.AddMenuItem("About MS-Paint", () => { Log.Info("About MS-Paint"); activeMenu.Delete(); });
+	}
+
+	// ---- File Operations ----
+	private string CurrentFilePath;
+	private bool HasUnsavedChanges = false;
+
+	private string WindowTitle => string.IsNullOrEmpty(CurrentFilePath)
+		? (HasUnsavedChanges ? "*Untitled - Paint" : "Untitled - Paint")
+		: (HasUnsavedChanges ? $"*{System.IO.Path.GetFileName(CurrentFilePath)} - Paint" : $"{System.IO.Path.GetFileName(CurrentFilePath)} - Paint");
+
+	// ---- File Operations Methods ----
+
+	private void NewFile()
+	{
+		if (HasUnsavedChanges && !ConfirmDiscardChanges())
+			return;
+
+		_canvas.Clear(Color32.White);
+		CurrentFilePath = null;
+		HasUnsavedChanges = false;
+
+		// Reset the undo/redo stacks
+		undoStack.Clear();
+		redoStack.Clear();
+		PushUndoState();
+
+		StateHasChanged(); // Update the window title
+	}
+
+	private async Task<bool> ConfirmDiscardChangesAsync()
+	{
+		bool result = false;
+		string filename = string.IsNullOrEmpty(CurrentFilePath) ? "Untitled" : System.IO.Path.GetFileName(CurrentFilePath);
+		// Show a MessageBox to ask the user what to do
+		var response = await MessageBoxUtility.ConfirmWithCancelAsync(
+			$"Save changes to {filename}?",
+			"Paint");
+		if (response == MessageBoxResult.Yes)
+		{
+			SaveFile(); // Call async save
+			result = true;
+		}
+		else if (response == MessageBoxResult.No)
+		{
+			result = true; // Discard changes
+		}
+		else
+		{
+			result = false; // Cancel operation
+		}
+		return result;
+	}
+
+	private async void OpenFile(string path = null) // Make it async
+	{
+		if (HasUnsavedChanges && !await ConfirmDiscardChangesAsync()) 
+			return;
+
+		if (string.IsNullOrEmpty(path))
+		{
+			var options = new FileDialogOptions
+			{
+				Title = "Open Image",
+				Filters = new List<FileFilter> {
+				new FileFilter("PNG Files (*.png)", "*.png"), // Your custom format
+                new FileFilter("All Files (*.*)", "*.*")
+			},
+				InitialDirectory = "C:/My Documents" // Or last used path
+			};
+			path = await FileDialogUtility.ShowOpenFileDialogAsync(options);
+		}
+
+		if (string.IsNullOrEmpty(path)) return; // User cancelled
+
+		try
+		{
+			if (VirtualFileSystem.Instance.FileExists(path))
+			{
+				var imageBytes = VirtualFileSystem.Instance.ReadAllBytes(path);
+				//LoadImageFromBytes(imageBytes); // Your existing method
+				var bitmap = Bitmap.CreateFromBytes(imageBytes);
+				var clr32array = bitmap.GetPixels32();
+				_canvas.Resize(bitmap.Width, bitmap.Height); // Resize canvas to image size
+				_canvas.ImageTexture = bitmap.ToTexture();
+
+				CurrentFilePath = path;
+				HasUnsavedChanges = false;
+
+				undoStack.Clear();
+				redoStack.Clear();
+				PushUndoState(); // Push the loaded state
+
+				StateHasChanged();
+			}
+			else
+			{
+				MessageBoxUtility.ShowError($"File not found: {path}", "Open Error");
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBoxUtility.ShowError($"Error opening file: {ex.Message}", "Open Error");
+			Log.Error(ex, $"Error opening file {path}");
+		}
+	}
+
+	private async void SaveFile(bool saveAs = false) // Make it async
+	{
+		string path = CurrentFilePath;
+
+		if (string.IsNullOrEmpty(path) || saveAs)
+		{
+			var options = new FileDialogOptions
+			{
+				Title = "Save Image As",
+				Filters = new List<FileFilter> {
+					new FileFilter("PNG File (*.png)", "*.png"),
+					new FileFilter("Bitmap File (*.bmp)", "*.bmp"),
+					new FileFilter("JPEG File (*.jpg;*.jpeg)", "*.jpg;*.jpeg"),
+				},
+				DefaultFileName = string.IsNullOrEmpty(CurrentFilePath) ? "Untitled.png" : System.IO.Path.GetFileName(CurrentFilePath),
+				InitialDirectory = string.IsNullOrEmpty(CurrentFilePath) ? "C:/My Documents" : System.IO.Path.GetDirectoryName(CurrentFilePath)
+			};
+			path = await FileDialogUtility.ShowSaveFileDialogAsync(options);
+		}
+
+		if (string.IsNullOrEmpty(path)) return; // User cancelled
+
+		try
+		{
+			string directory = System.IO.Path.GetDirectoryName(path);
+			if (!string.IsNullOrEmpty(directory) && !VirtualFileSystem.Instance.DirectoryExists(directory))
+			{
+				VirtualFileSystem.Instance.CreateDirectory(directory);
+			}
+
+			//var imageBytes = SaveImageToBytes(); // Your existing method
+			//var imageBytes = _canvas.ImageTexture.GetBitmap(0).ToPng();
+			// save depending on file extension
+			byte[] imageBytes;
+			if (path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+			{
+				imageBytes = _canvas.ImageTexture.GetBitmap(0).ToPng(); // Save as PNG
+			}
+			else if (path.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
+			{
+				imageBytes = _canvas.ImageTexture.GetBitmap(0).ToBmp(); // Save as BMP
+			}
+			else if (path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+			{
+				imageBytes = _canvas.ImageTexture.GetBitmap(0).ToJpg(90); // Save as JPEG with quality 90
+			}
+			else
+			{
+				MessageBoxUtility.ShowError("Unsupported file format.", "Save Error");
+				return;
+			}
+
+			
+			VirtualFileSystem.Instance.WriteAllBytes(path, imageBytes);
+
+			CurrentFilePath = path;
+			HasUnsavedChanges = false;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			MessageBoxUtility.ShowError($"Error saving file: {ex.Message}", "Save Error");
+			Log.Error(ex, $"Error saving file {path}");
+		}
+	}
+
+	private bool ConfirmDiscardChanges()
+	{
+		bool result = false;
+		string filename = string.IsNullOrEmpty(CurrentFilePath) ? "Untitled" : System.IO.Path.GetFileName(CurrentFilePath);
+
+		// Show a MessageBox to ask the user what to do
+		MessageBoxUtility.WarningConfirmWithCancel(
+			$"Save changes to {filename}?",
+			"Paint",
+			(response) =>
+			{
+				if (response == MessageBoxResult.Yes)
+				{
+					SaveFile();
+					result = true;
+				}
+				else if (response == MessageBoxResult.No)
+				{
+					// Discard changes
+					result = true;
+				}
+				else
+				{
+					// Cancel operation
+					result = false;
+				}
+			});
+
+		return result;
+	}
+
+	// Simple BMP-like format for now
+	private byte[] SaveImageToBytes()
+	{
+		// Get the raw pixel data
+		var pixels = _canvas.ImageTexture.GetPixels().ToArray();
+		int width = _canvas.ImageTexture.Width;
+		int height = _canvas.ImageTexture.Height;
+
+		using var ms = new System.IO.MemoryStream();
+		using var writer = new System.IO.BinaryWriter(ms);
+
+		// Write a simple header (format: "BMP1" + width + height)
+		writer.Write(new char[] { 'B', 'M', 'P', '1' });
+		writer.Write(width);
+		writer.Write(height);
+
+		// Write the pixel data (RGBA format)
+		foreach (var pixel in pixels)
+		{
+			writer.Write(pixel.r);
+			writer.Write(pixel.g);
+			writer.Write(pixel.b);
+			writer.Write(pixel.a);
+		}
+
+		return ms.ToArray();
+	}
+
+	private void LoadImageFromBytes(byte[] data)
+	{
+		using var ms = new System.IO.MemoryStream(data);
+		using var reader = new System.IO.BinaryReader(ms);
+
+		try
+		{
+			// Read the header
+			var magic = new string(reader.ReadChars(4));
+			if (magic != "BMP1")
+			{
+				Log.Error("Invalid image format");
+				return;
+			}
+
+			int width = reader.ReadInt32();
+			int height = reader.ReadInt32();
+
+			// Resize the canvas if needed
+			if (width != _canvas.ImageTexture.Width || height != _canvas.ImageTexture.Height)
+			{
+				_canvas.Resize(width, height);
+			}
+
+			// Read the pixel data
+			var pixels = new Color32[width * height];
+			for (int i = 0; i < pixels.Length; i++)
+			{
+				byte r = reader.ReadByte();
+				byte g = reader.ReadByte();
+				byte b = reader.ReadByte();
+				byte a = reader.ReadByte();
+				pixels[i] = new Color32(r, g, b, a);
+			}
+
+			// Update the canvas
+			_canvas.ImageTexture.Update(pixels);
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"Error loading image: {ex.Message}");
+		}
+	}
+}

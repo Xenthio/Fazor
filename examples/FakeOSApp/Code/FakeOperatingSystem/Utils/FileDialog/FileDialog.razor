@@ -1,0 +1,362 @@
+@using System
+@using System.IO
+@using Sandbox
+@using Sandbox.UI
+@using XGUI
+@using FakeOperatingSystem.OSFileSystem
+@using FakeOperatingSystem.UI.Dialogs
+@using FakeOperatingSystem.Shell;
+@using FakeDesktop;
+@using System.Linq
+@using System.Collections.Generic
+@namespace FakeOperatingSystem.UI.Dialogs
+@attribute [StyleSheet("FileDialog.razor.scss")]
+@inherits Window
+
+<root title="@Options.Title" minwidth="428" minheight="266" width="428" height="266">
+	<div class="window-content column">
+		<!-- Navigation Bar (Look in, Up button) -->
+		<div class="nav-bar row">
+			<label for="lookIn">Look in:</label>
+			<TextEntry @ref="PathInput" Text="@_currentDisplayPath" @onreturn="@NavigateToInputPath" class="path-input" />
+			<button class="nav-button" onclick=@NavigateUp>
+				<xguiiconpanel IconName="folder_up" IconSize="16"></xguiiconpanel>
+			</button>
+		</div>
+
+		<!-- File Browser Area -->
+		<div class="file-browser-area" style="flex-grow: 1;">
+			<VirtualFileBrowserView @ref="FileBrowserViewControl" />
+		</div>
+
+		<!-- Bottom Controls (Filename, File type, Buttons) -->
+		<div class="bottom-controls column">
+			<div class="input-row row">
+				<label for="fileName">File name:</label>
+				<textentry @ref="FileNameInput" Text="@_selectedFileNameDisplay" class="filename-input" @ontextedited="@OnFileNameManuallyEdited">
+				</textentry>
+				<button class="action-button" onclick=@ConfirmSelection>@(Options.Mode == DialogMode.Open ? "Open" : "Save")</button>
+
+			</div>
+			<div class="input-row row">
+				<label for="fileType">Files of type:</label>
+				<combobox @ref="FileTypeComboBox" class="filetype-select" OnValueChanged="@OnFilterChanged">
+				
+				</combobox>
+				<button class="cancel-button" onclick=@CancelDialog>Cancel</button>
+			</div>
+			<div class="buttons-row row">
+				
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	[Parameter] public FileDialogOptions Options { get; set; }
+	[Parameter] public Action<string> OnSuccess { get; set; }
+	[Parameter] public Action OnCancel { get; set; }
+
+	private TextEntry PathInput;
+	private TextEntry FileNameInput;
+	private ComboBox FileTypeComboBox;
+	private VirtualFileBrowserView FileBrowserViewControl;
+
+	private string _currentVfsPath { get; set; } // Actual VFS path for navigation
+	private string _currentDisplayPath {get; set; } // Path displayed in the TextEntry, might be formatted
+	private string _selectedFileNameDisplay { get; set; } // Filename in the TextEntry, might have extension managed
+	private string _selectedFileOriginalName { get; set; } // Original name of the selected file from browser
+	private bool _fileNameManuallyEdited = false;
+
+	private int CurrentFilterIndex { get; set; } = 0;
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		if (firstTime)
+		{
+			PopulateFileTypeComboBox();
+
+			_currentVfsPath = Options.InitialDirectory ?? ShellNamespace.DESKTOP; // Default to Desktop shell path
+			_selectedFileNameDisplay = Options.DefaultFileName ?? "";
+			if (FileNameInput != null) FileNameInput.Text = _selectedFileNameDisplay;
+
+
+			if (FileBrowserViewControl != null)
+			{
+				FileBrowserViewControl.Initialize(VirtualFileSystem.Instance, ShellNamespace.Instance, FileSystem.Data);
+				FileBrowserViewControl.OpenDirectoryEnabled = true; // Allow navigation
+				FileBrowserViewControl.OpenFileEnabled = false;    // Double-click selects, not executes
+				FileBrowserViewControl.CanNavigate = true;
+				FileBrowserViewControl.ViewMode = FileBrowserViewMode.List; // Default to List view
+
+				FileBrowserViewControl.OnFileSelected += HandleFileBrowserFileSelected;
+				FileBrowserViewControl.OnNavigateTo += HandleFileBrowserNavigated; // This event gives the shell path
+
+				// Initial navigation
+				FileBrowserViewControl.NavigateToShellPath(_currentVfsPath, sound: false);
+				// PathInput.Text will be set by HandleFileBrowserNavigated
+			}
+
+			// Attempt to focus the PathInput or FileNameInput
+			FocusInitialInput();
+		}
+	}
+
+	private void FocusInitialInput()
+	{
+		if (Options.Mode == DialogMode.Save && FileNameInput != null)
+		{
+			FileNameInput.Focus();
+			if (!string.IsNullOrEmpty(FileNameInput.Text))
+			{
+				// TODO: FIX ME!!!!!! Label was made proteted for some reason??
+				//FileNameInput.Label.SelectionStart = 0;
+				//FileNameInput.Label.SelectionEnd = FileNameInput.TextLength;
+			}
+		}
+		else if (PathInput != null)
+		{
+			PathInput.Focus();
+		}
+	}
+
+	private void PopulateFileTypeComboBox()
+	{
+		if (FileTypeComboBox == null || Options.Filters == null || Options.Filters.Count == 0) return;
+		FileTypeComboBox.Options.Clear();
+		for (int i = 0; i < Options.Filters.Count; i++)
+		{
+			var filter = Options.Filters[i];
+			string displayText = string.IsNullOrEmpty(filter.Name) ? "All Files" : filter.Name;
+			FileTypeComboBox.Options.Add(new Option(displayText, i.ToString()));
+		}
+		if (Options.Mode == DialogMode.Save && !string.IsNullOrEmpty(Options.DefaultFileName))
+		{
+			// If saving and a default file name is provided, apply the first filter to it
+			_selectedFileOriginalName = Options.DefaultFileName;
+			ApplyFilterToSelectedFileName();
+		}
+		
+		FileTypeComboBox.Selected = FileTypeComboBox.Options.ElementAtOrDefault(CurrentFilterIndex) ?? FileTypeComboBox.Options.First(); // Default to first filter
+		FileTypeComboBox.ValueChanged -= OnFilterChanged;
+		FileTypeComboBox.ValueChanged += OnFilterChanged;
+	}
+
+	private void HandleFileBrowserFileSelected(string filePath) // filePath here is the ShellItem.Path
+	{
+		var shellItem = ShellNamespace.Instance.GetItems(FileBrowserViewControl.GetCurrentShellPath())
+										.FirstOrDefault(i => i.Path == filePath);
+
+		if (shellItem != null && !shellItem.IsFolder)
+		{
+			_selectedFileOriginalName = shellItem.Name; // Store original name with extension
+			_selectedFileNameDisplay = shellItem.Name; // Display original name initially
+			if (FileNameInput != null) FileNameInput.Text = _selectedFileNameDisplay;
+			_fileNameManuallyEdited = false; // Reset manual edit flag
+			ApplyFilterToSelectedFileName(); // Apply extension logic if saving
+		}
+	}
+
+	private void HandleFileBrowserNavigated(string shellPath)
+	{
+		_currentVfsPath = shellPath; // This is the shell path
+		
+		// Update display path - this might need more sophisticated formatting like Explorer.razor
+		var folder = ShellNamespace.Instance.GetFolder(shellPath);
+		_currentDisplayPath = folder?.RealPath ?? shellPath; // Prefer RealPath for display if available
+		if (PathInput != null) PathInput.Text = _currentDisplayPath;
+
+		// Clear file selection when navigating
+		_selectedFileOriginalName = null;
+		_selectedFileNameDisplay = (Options.Mode == DialogMode.Save && !string.IsNullOrEmpty(Options.DefaultFileName)) ? Options.DefaultFileName : "";
+		if (FileNameInput != null) FileNameInput.Text = _selectedFileNameDisplay;
+		_fileNameManuallyEdited = false;
+	}
+	
+	private void OnFileNameManuallyEdited(string newText)
+	{
+		_selectedFileNameDisplay = newText;
+		_fileNameManuallyEdited = true;
+	}
+
+	private void OnFilterChanged(string value)
+	{
+		if (int.TryParse(value, out int index))
+		{
+			CurrentFilterIndex = index;
+			// If saving and a file was selected, and name wasn't manually edited, update its extension
+			if (Options.Mode == DialogMode.Save && !_fileNameManuallyEdited && !string.IsNullOrEmpty(_selectedFileOriginalName))
+			{
+				ApplyFilterToSelectedFileName();
+			}
+		}
+	}
+	
+	private void ApplyFilterToSelectedFileName()
+	{
+		if (Options.Mode != DialogMode.Save || string.IsNullOrEmpty(_selectedFileOriginalName)) return;
+		if (Options.Filters == null || Options.Filters.Count <= CurrentFilterIndex) return;
+
+		string selectedFilterPattern = Options.Filters[CurrentFilterIndex].Pattern;
+		string targetExtension = selectedFilterPattern.Split(';')
+									 .Select(p => p.Trim().ToLowerInvariant())
+									 .FirstOrDefault(p => p.StartsWith("*."))?
+									 .Substring(1); // Remove "*"
+
+		if (!string.IsNullOrEmpty(targetExtension))
+		{
+			_selectedFileNameDisplay = Path.ChangeExtension(_selectedFileOriginalName, targetExtension);
+		}
+		else // If filter is *.* or something else, keep original name or just name without ext
+		{
+			_selectedFileNameDisplay = _selectedFileOriginalName;
+		}
+		if (FileNameInput != null) FileNameInput.Text = _selectedFileNameDisplay;
+	}
+
+
+	private void NavigateUp()
+	{
+		FileBrowserViewControl?.GoUp();
+	}
+	
+	private void NavigateToInputPath()
+	{
+		if (PathInput == null || FileBrowserViewControl == null) return;
+		string newPath = PathInput.Text.Trim();
+
+		// Attempt to resolve as a direct VFS path first
+		if (VirtualFileSystem.Instance.DirectoryExists(newPath))
+		{
+			// Convert VFS path to a shell path if possible, or navigate directly if it's a known root
+			// This part is tricky and depends on how ShellNamespace maps VFS paths.
+			// For simplicity, we'll assume if it's a VFS path, we try to find a corresponding shell item.
+			// A more robust solution would involve ShellNamespace.Instance.GetShellPathForRealPath(newPath)
+			var shellFolder = ShellNamespace.Instance.GetFolder(newPath);
+			if (shellFolder != null)
+			{
+				FileBrowserViewControl.NavigateToShellPath(shellFolder.Path);
+			}
+			else
+			{
+				// If not directly mappable to a known shell folder via real path,
+				// it might be a path that VirtualFileBrowserView can handle if it were a shell path itself.
+				// This fallback is less reliable.
+				// A better approach: Explorer.ParseAddressInput logic might be needed here.
+				Log.Warning($"Could not map VFS path '{newPath}' to a shell path directly. Attempting as is.");
+				FileBrowserViewControl.NavigateToShellPath(newPath); // This might fail if newPath isn't a valid shell:/ path
+			}
+		}
+		else
+		{
+			// If not a VFS path, assume it might be a shell path or display name (like "Desktop")
+			// This part would benefit from logic similar to Explorer.ParseAddressInput
+			// For now, we pass it directly, VirtualFileBrowserView's NavigateToShellPath will try to resolve it.
+			FileBrowserViewControl.NavigateToShellPath(newPath);
+		}
+	}
+
+	private void ConfirmSelection()
+	{
+		string finalPath;
+		string inputFileName = FileNameInput?.Text.Trim() ?? "";
+
+		if (string.IsNullOrWhiteSpace(inputFileName))
+		{
+			FakeDesktop.MessageBoxUtility.ShowError("File name cannot be empty.", Options.Title);
+			return;
+		}
+		if (inputFileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+		{
+			FakeDesktop.MessageBoxUtility.ShowError("The file name contains invalid characters.", Options.Title);
+			return;
+		}
+
+		// Current directory for combining filename should be the RealPath of the current shell folder
+		string baseDirectory = _currentVfsPath; // Default to current shell path
+		var currentShellFolder = ShellNamespace.Instance.GetFolder(_currentVfsPath);
+		if (currentShellFolder?.RealPath != null && VirtualFileSystem.Instance.DirectoryExists(currentShellFolder.RealPath))
+		{
+			baseDirectory = currentShellFolder.RealPath;
+		}
+		else if (VirtualFileSystem.Instance.DirectoryExists(_currentVfsPath)) // If _currentVfsPath is already a real path
+		{
+			baseDirectory = _currentVfsPath;
+		}
+		else
+		{
+			FakeDesktop.MessageBoxUtility.ShowError($"Cannot determine a valid save/open location from '{_currentDisplayPath}'.", Options.Title);
+			return;
+		}
+
+
+		if (Path.IsPathRooted(inputFileName) || inputFileName.StartsWith("/"))
+		{
+			finalPath = VirtualFileSystem.Instance.GetFullPath(inputFileName);
+		}
+		else
+		{
+			string combined = Path.Combine(baseDirectory, inputFileName);
+			finalPath = VirtualFileSystem.Instance.GetFullPath(combined);
+		}
+
+        // Ensure the final path has the correct extension from the selected filter if saving
+        if (Options.Mode == DialogMode.Save && Options.Filters != null && Options.Filters.Count > CurrentFilterIndex)
+        {
+            string selectedFilterPattern = Options.Filters[CurrentFilterIndex].Pattern;
+            string targetExtension = selectedFilterPattern.Split(';')
+                                         .Select(p => p.Trim().ToLowerInvariant())
+                                         .FirstOrDefault(p => p.StartsWith("*."))?
+                                         .Substring(1); 
+
+            if (!string.IsNullOrEmpty(targetExtension) && !Path.GetExtension(finalPath).Equals(targetExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                finalPath = Path.ChangeExtension(finalPath, targetExtension);
+            }
+        }
+
+		if (Options.Mode == DialogMode.Open)
+		{
+			if (!VirtualFileSystem.Instance.FileExists(finalPath))
+			{
+				FakeDesktop.MessageBoxUtility.ShowError($"File not found: {finalPath}", Options.Title);
+				return;
+			}
+            if (VirtualFileSystem.Instance.DirectoryExists(finalPath))
+            {
+                FakeDesktop.MessageBoxUtility.ShowError($"Cannot open a directory: {finalPath}\nPlease select a file.", Options.Title);
+                return;
+            }
+		}
+		else // DialogMode.Save
+		{
+            if (VirtualFileSystem.Instance.DirectoryExists(finalPath)) 
+            {
+                FakeDesktop.MessageBoxUtility.ShowError($"A directory with the name '{Path.GetFileName(finalPath)}' already exists.\nPlease choose a different file name.", Options.Title);
+                return;
+            }
+			if (VirtualFileSystem.Instance.FileExists(finalPath) && Options.OverwritePrompt)
+			{
+				 // FakeDesktop.MessageBoxUtility.WarningConfirm($"File '{Path.GetFileName(finalPath)}' already exists.\nDo you want to replace it?", 
+					// "Confirm Save As", 
+					// (confirmed) => {
+					// 	if (confirmed) {
+					// 		OnSuccess?.Invoke(finalPath);
+					// 		Close();
+					// 	}
+					// });
+				return; 
+			}
+		}
+
+		OnSuccess?.Invoke(finalPath);
+		Close();
+	}
+
+	private void CancelDialog()
+	{
+		OnCancel?.Invoke();
+		Close();
+	}
+}

@@ -1,0 +1,147 @@
+@using Sandbox
+@using Sandbox.UI
+@using XGUI
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using FakeOperatingSystem
+@using global::FakeOperatingSystem
+
+@inherits Window
+
+<root title="Log On to Windows"
+	  width="417" height="256"
+	  minwidth="417" minheight="256"
+	  class="logondialog"
+	  hasclose="false" 
+	  hasminimise="false"
+	  hasmaximise="false"
+	  issizeable="false">
+
+	<div class="window-content" style="flex-direction: column;">
+
+		<brandingelement style="margin-bottom: 15px; height:93px; margin-top:1px;">
+		</brandingelement>
+
+		<div style="flex-direction:column;  justify-content:space-between; flex-grow: 1;">
+			<div style="flex-direction:column; padding: 0px 8px;">
+				<div style="align-items:center; margin-bottom:7px;">
+					<label for="username" style="width: 76px;">User name:</label>
+					<combobox @ref="UsernameComboBox" id="username" style="width:243px; height:20px" default="@availableUsers.FirstOrDefault()?.UserName">
+						@foreach (var user in availableUsers)
+						{
+							<option value="@user.UserName">@user.UserName</option>
+						}
+					</combobox>
+				</div>
+				<div style="align-items:center; margin-bottom:7px;">
+					<label for="password" style="width: 76px;">Password:</label>
+					<TextEntry @ref="PasswordEntry" id="password" type="password" style="width:243px; height:20px" />
+				</div>
+				<div style="align-items:center; height:22px; margin-bottom:7px;">
+					<div style="width: 76px;"></div>
+					<check class="disabled">Log on using dial-up connection</check>
+				</div>
+			</div>
+
+			<div style="padding: 4px; justify-content:flex-end; align-self: flex-end; margin-bottom:7px;">
+				<Button class="margin-right" onclick=@HandleLogonClick style="min-width:75px; height:23px;">OK</Button>
+				<Button class="margin-right disabled" onclick=@HandleCancelClick style="min-width:75px; height:23px;">Cancel</Button>
+				<Button class="margin-right disabled" style="min-width:75px; height:23px;">Shutdown...</Button>
+				<Button class="margin-right disabled" style="min-width:75px; height:23px;">@("Options <<")</Button>
+				<!-- Optional: <Button class="button" onclick=@HandleShutdownClick style="min-width:80px;">Shutdown</Button> -->
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	private ComboBox UsernameComboBox;
+	private TextEntry PasswordEntry;
+
+	public Action<UserAccount> OnLoginSuccess { get; set; }
+	public Action OnLoginCancel { get; set; }
+	// public Action OnShutdown { get; set; } // Optional
+
+	private List<UserAccount> availableUsers = new();
+
+	public LogonDialog()
+	{
+		// Default constructor
+	}
+
+	public LogonDialog(List<UserAccount> users, Action<UserAccount> onLoginSuccess, Action onLoginCancel) : this()
+	{
+		availableUsers = users ?? new List<UserAccount>();
+		OnLoginSuccess = onLoginSuccess;
+		OnLoginCancel = onLoginCancel;
+	}
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		TryCentre();
+	}
+
+	int ticknum = 0;
+	void TryCentre()
+	{
+		if (ticknum < 5)
+		{
+			// Center the window
+			var panel = XGUISystem.Instance.Panel;
+			if (panel != null)
+			{
+				var x = (panel.Box.Rect.Width - Box.Rect.Width) / 2;
+				var y = (panel.Box.Rect.Height - Box.Rect.Height) / 2;
+				this.Position = new Vector2(x, y);
+			}
+			else
+			{
+				var x = (Screen.Width - Box.Rect.Width) / 2;
+				var y = (Screen.Height - Box.Rect.Height) / 2;
+				this.Position = new Vector2(x, y);
+			}
+			ticknum++;
+		}
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+		TryCentre();
+	}
+	private void HandleLogonClick()
+	{
+		string selectedUserName = UsernameComboBox.Value?.ToString();
+		string password = PasswordEntry.Text;
+
+		if (string.IsNullOrWhiteSpace(selectedUserName))
+		{
+			// TODO: Show error (e.g., MessageBox)
+			Log.Warning("Please select a user name.");
+			return;
+		}
+
+		var user = FakeOSLoader.Instance.UserManager.Users.FirstOrDefault(u => u.UserName.Equals(selectedUserName, StringComparison.OrdinalIgnoreCase));
+
+		if (FakeOSLoader.Instance.UserManager.Login(selectedUserName, password))
+		{
+			OnLoginSuccess?.Invoke(FakeOSLoader.Instance.UserManager.CurrentUser); // CurrentUser is set by Login method
+			Delete();
+		}
+		else
+		{
+			// TODO: Show login failed error (e.g., MessageBox "The user name or password you typed is incorrect.")
+			Log.Warning("Login failed: Incorrect user name or password.");
+			PasswordEntry.Text = ""; // Clear password field
+		}
+	}
+
+	private void HandleCancelClick()
+	{
+		OnLoginCancel?.Invoke();
+		Delete();
+	}
+
+	// private void HandleShutdownClick() { /* TODO: Implement shutdown */ OnShutdown?.Invoke(); Delete(); }
+}

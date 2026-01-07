@@ -1,0 +1,364 @@
+﻿@using System;
+@using FakeDesktop
+@using Sandbox;
+@using Sandbox.UI;
+@using System.IO
+@using XGUI;
+@using FakeOperatingSystem;
+@using FakeOperatingSystem.Shell;
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem.OSFileSystem
+@using global::FakeOperatingSystem.User
+@using global::FakeOperatingSystem.Shell
+@attribute [StyleSheet("StartMenu.razor.scss")]
+@inherits Window
+
+<root title="Start"
+	  isdraggable="false" isresizable="false" hastitlebar="false"
+	  class="startmenu">
+	<div class="window-content">
+		<!-- Left Pane -->
+		<div class="startmenu-left-pane">
+			<label class="sideways-label">XGUI</label>
+		</div>
+
+		<!-- Main Pane -->
+		<div class="startmenu-right-pane">
+			<div class="ContextMenu column">
+				<panel class="MenuItem" @ref=ProgramsButton onmouseover=@OpenProgramsMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/prog_folder_icon_24.png"/>
+					Programs
+					<iconpanel class="ItemArrow">arrow_right</iconpanel>
+				</panel>
+				<panel class="MenuItem" @ref=DocumentsButton onmouseover=@OpenDocumentsMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/doc_folder_icon_24.png" />
+					Documents
+					<iconpanel class="ItemArrow">arrow_right</iconpanel>
+				</panel>
+				<panel class="MenuItem" @ref=SettingsButton onmouseover=@OpenSettingsMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/settings_icon_24.png" />
+					Settings
+					<iconpanel class="ItemArrow">arrow_right</iconpanel>
+				</panel>
+				<panel class="MenuItem" @ref=FindButton onmouseover=@OpenFindMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/find_icon_24.png" />
+					Find
+					<iconpanel class="ItemArrow">arrow_right</iconpanel>
+				</panel>
+				<panel class="MenuItem" @ref=HelpButton onmouseover=@CloseActiveMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/help_icon_24.png" />
+					Help
+				</panel>
+				<panel class="MenuItem" @ref=RunButton onmouseover=@CloseActiveMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/run_icon_24.png" />
+					Run...
+				</panel>
+				<hr />
+				<panel class="MenuItem" @ref=ShutdownButton onmouseover=@CloseActiveMenu onclick=@OpenShutdownMenu>
+					<img class="ItemIcon" src="XGUI/Resources/95/shutdown_icon_24.png" />
+					Shut down...
+				</panel>
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	public Button OwnerStartButton;
+
+	// References to menu buttons
+	public Panel ProgramsButton;
+	public Panel DocumentsButton;
+	public Panel SettingsButton;
+	public Panel FindButton;
+	public Panel HelpButton;
+	public Panel RunButton;
+	public Panel ShutdownButton;
+
+	// Currently active menu
+	private ContextMenu activeMenu;
+
+	// Timer for delayed menu closing
+	private RealTimeSince timeSinceMenuLeave;
+	private bool pendingMenuClose = false;
+	private float menuCloseDelay = 0.4f; // Delay before closing menu when mouse leaves
+
+	// Track if mouse is over the active menu
+	private bool isMouseOverMenu = false;
+
+	public StartMenu()
+	{ 
+		SetClass("startmenu", true);
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		// Handle delayed menu closing
+		if (pendingMenuClose && timeSinceMenuLeave > menuCloseDelay)
+		{
+			if (!isMouseOverMenu)
+			{
+				CloseActiveMenu();
+				pendingMenuClose = false;
+			}
+		}
+	}
+
+	private void StartCloseMenuTimer()
+	{
+		timeSinceMenuLeave = 0;
+		pendingMenuClose = true;
+	}
+
+	private void CloseActiveMenu()
+	{
+		if (activeMenu != null)
+		{ 
+			// Remove "open" class from all menu buttons
+			if (ProgramsButton != null) ProgramsButton.RemoveClass("open");
+			if (DocumentsButton != null) DocumentsButton.RemoveClass("open");
+			if (SettingsButton != null) SettingsButton.RemoveClass("open");
+			if (FindButton != null) FindButton.RemoveClass("open");
+
+			activeMenu.Delete(true);
+			activeMenu = null;
+		}
+	}
+
+	// Event handler called when mouse enters a menu button
+	private void OpenProgramsMenu()
+	{
+		CloseActiveMenu();
+		ProgramsButton.AddClass("open");
+		activeMenu = new ContextMenu(ProgramsButton, XGUIPopup.PositionMode.Right, 0);
+		activeMenu.AddClass("Large");
+		SetupMenuMouseEvents(activeMenu);
+
+		string programsPath = Path.Combine(UserProfileHelper.GetStartMenuPath(), "Programs");
+		PopulateProgramsMenuRecursive(activeMenu, programsPath);
+
+		// Hardcoded folders
+		// XGUI
+		activeMenu.AddSubmenuItem("XGUI", (submenu) =>
+		{
+			submenu.AddClass("Large");
+			submenu.AddMenuItem("About XGUI", () => OpenPanelAndClose("About"), iconurl: "XGUI/Resources/95/about_xgui_icon_16.png");
+			submenu.AddMenuItem("Panel List", () => OpenPanelAndClose("panelselector"), iconurl: "XGUI/Resources/95/panel_list_icon_16.png");
+			submenu.AddMenuItem("Global Theme", () => OpenPanelAndClose("globalstyle"), iconurl: "XGUI/Resources/95/global_theme_icon_16.png");
+		}, iconurl: "XGUI/Resources/95/prog_folder_icon_16.png");
+	}
+
+	private void PopulateProgramsMenuRecursive(ContextMenu menu, string path)
+	{
+		// Add directories as submenus (recursively)
+		foreach (var dir in VirtualFileSystem.Instance.GetDirectories(path))
+		{
+			var dirName = System.IO.Path.GetFileName(dir);
+			if (dirName == "." || dirName == "..")
+				continue;
+
+			menu.AddSubmenuItem(dirName, (submenu) =>
+			{
+				submenu.AddClass("Large");
+				PopulateProgramsMenuRecursive(submenu, dir); // Recursive call
+			}, iconurl: "XGUI/Resources/95/prog_folder_icon_16.png");
+		}
+
+		// Add files in this folder
+		foreach (var file in VirtualFileSystem.Instance.GetFiles(path))
+		{
+			var fileName = System.IO.Path.GetFileNameWithoutExtension(file);
+			menu.AddMenuItem(fileName, () => Shell.ShellExecute(file), iconurl: FileIconHelper.GetFileIcon(file, 16));
+		}
+	}
+
+	private void OpenDocumentsMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Documents button
+		DocumentsButton.AddClass("open");
+
+		// Create the Documents menu
+		activeMenu = new ContextMenu(DocumentsButton, XGUIPopup.PositionMode.Right, 0);
+		activeMenu.AddClass("Large");
+
+		SetupMenuMouseEvents(activeMenu);
+
+		// Add recently used documents
+		activeMenu.AddMenuItem("Readme", () => Log.Info("Opening Readme"), iconurl: "XGUI/Resources/95/text_doc_icon_16.png");
+	}
+
+	private void OpenSettingsMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Settings button
+		SettingsButton.AddClass("open");
+
+		// Create the Settings menu
+		activeMenu = new ContextMenu(SettingsButton, XGUIPopup.PositionMode.Right, 0);
+		activeMenu.AddClass("Large");
+
+		SetupMenuMouseEvents(activeMenu); 
+
+		// Taskbar submenu
+		activeMenu.AddMenuItem("Control Panel", () => OpenFolderAndClose("Desktop/My Computer/Control Panel"), iconurl: "XGUI/Resources/95/control_panel_icon_16.png");
+		activeMenu.AddMenuItem("Printers", () => Log.Info("Opening Printers Settings"), iconurl: "XGUI/Resources/95/printers_icon_16.png");
+		activeMenu.AddMenuItem("Taskbar...", () => Log.Info("Opening Taskbar Settings"), iconurl: "XGUI/Resources/95/taskbar_icon_16.png");
+		activeMenu.AddMenuItem("XGUI Theme...", () => OpenPanelAndClose("globalstyle"), iconurl: "XGUI/Resources/95/global_theme_icon_16.png");
+	}
+
+	protected override void OnBlur(PanelEvent e)
+	{
+		base.OnBlur(e); 
+		if (OwnerStartButton.HasHovered || OwnerStartButton.HasFocus)
+		{
+			Log.Info("Start button is active or focused, not closing menu.");
+			// If the blur event is triggered by the Start button, do not close the menu
+			Focus();
+			return;
+		}
+		Delete();
+	}
+
+	private void OpenFindMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Find button
+		FindButton.AddClass("open");
+
+		// Create the Search menu
+		activeMenu = new ContextMenu(FindButton, XGUIPopup.PositionMode.Right, 0);
+		activeMenu.AddClass("Large");
+
+		SetupMenuMouseEvents(activeMenu);
+
+		activeMenu.AddMenuItem("Files or Folders...", () => Log.Info("Search Files"));
+		activeMenu.AddMenuItem("Computer...", () => Log.Info("Search Computer"));
+		activeMenu.AddMenuItem("On the Internet...", () => Log.Info("Search Internet"));
+		activeMenu.AddMenuItem("People...", () => Log.Info("Search People"));
+	}
+
+	private void OpenHelpMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Help button
+		HelpButton.AddClass("open");
+
+		// Create the Help menu
+		activeMenu = new ContextMenu(HelpButton, XGUIPopup.PositionMode.Right, 0);
+		SetupMenuMouseEvents(activeMenu);
+
+		activeMenu.AddMenuItem("Help Topics", () => Log.Info("Opening Help Topics"));
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("About Windows...", () => Log.Info("Opening About Windows"));
+	}
+
+	private void OpenRunMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Run button
+		RunButton.AddClass("open");
+
+		// Create a simple Run menu (typically opens a dialog in Windows 95)
+		activeMenu = new ContextMenu(RunButton, XGUIPopup.PositionMode.Right, 0);
+		activeMenu.AddClass("Large");
+
+		SetupMenuMouseEvents(activeMenu);
+
+		activeMenu.AddMenuItem("Command Prompt", () => Log.Info("Opening Command Prompt"));
+		activeMenu.AddMenuItem("Browse...", () => Log.Info("Opening Run Browser"));
+	}
+
+	private void OpenShutdownMenu()
+	{
+		CloseActiveMenu();
+
+		// Add "open" class to the Shutdown button
+		ShutdownButton.AddClass("open");
+
+		// Create the shutdown menu
+		activeMenu = new ContextMenu(ShutdownButton, XGUIPopup.PositionMode.AboveLeft, 0);
+		activeMenu.AddClass("Large");
+
+		activeMenu.AddMenuItem("Restart...", () => Log.Info("Restarting..."));
+		activeMenu.AddMenuItem("Shut Down...", () => Log.Info("Shutting down..."));
+		activeMenu.AddMenuItem("Log Off...", () => Log.Info("Logging off..."));
+	}
+
+	// Add mouse tracking to menus to prevent premature closing
+	private void SetupMenuMouseEvents(ContextMenu menu)
+	{
+		menu.AddEventListener("onmouseenter", () =>
+		{
+			isMouseOverMenu = true;
+			pendingMenuClose = false;
+		});
+
+		menu.AddEventListener("onmouseleave", () =>
+		{
+			isMouseOverMenu = false;
+			StartCloseMenuTimer();
+		});
+	}
+
+
+	public void OpenPanel(string panel)
+	{
+		var a = TypeLibrary.GetType(panel).Create<Window>();
+		a.AutoFocus = true;
+		Game.ActiveScene.GetSystem<XGUISystem>().Panel.AddChild(a);
+		Game.ActiveScene.GetSystem<XGUISystem>().Panel.SetChildIndex(a, 0);
+		a.FocusWindow();
+	}
+
+	public void OpenPanelAndClose(string panel)
+	{
+		OpenPanel(panel);
+		Delete();
+	}
+
+	public void OpenExe(string path)
+	{
+		// Open the executable file
+		ProcessManager.Instance.OpenExecutable(path, new Win32LaunchOptions());
+	}
+
+	public void OpenExeAndClose(string path)
+	{
+		OpenExe(path);
+		Delete();
+	}
+
+	public void Execute(string path)
+	{
+		Shell.ShellExecute(path);
+	}
+
+	public void ExecuteAndClose(string path)
+	{
+		Execute(path);
+		Delete();
+	}
+
+	public void OpenFolder(string path)
+	{
+		// Open the folder in explorer
+		ProcessManager.Instance.OpenExecutable("C:\\Windows\\explorer.exe", new Win32LaunchOptions() {
+			Arguments = path
+		});
+	}
+
+	public void OpenFolderAndClose(string path)
+	{
+		OpenFolder(path);
+		Delete();
+	}
+
+}

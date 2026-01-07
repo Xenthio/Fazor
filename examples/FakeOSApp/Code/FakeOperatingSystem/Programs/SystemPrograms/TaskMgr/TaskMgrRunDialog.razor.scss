@@ -1,0 +1,46 @@
+TaskMgrRunDialog {
+	.window-content {
+		padding: 10px;
+		flex-direction: column;
+		gap: 12px; // Increased gap for better spacing
+	}
+
+	.icon-description-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 10px;
+
+		.run-icon {
+			min-width: 32px;
+			min-height: 32px;
+		}
+
+		.description-label {
+			flex-grow: 1; 
+		}
+	}
+
+	.open-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+
+		.command-input {
+			flex-grow: 1;
+		}
+	}
+
+	.buttons-row {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+		gap: 8px;
+
+		button {
+			min-width: 75px;
+			padding: 4px 8px;
+		}
+	}
+}

@@ -1,61 +1,75 @@
 # FakeOS App - XGUI Compatibility Demo
 
-This example demonstrates the S&box/XGUI compatibility layer for Fazor/Avalazor. It provides infrastructure for running s&box XGUI code with the compatibility module.
+This example demonstrates the S&box/XGUI compatibility layer for Fazor/Avalazor. The goal is to run s&box XGUI code (like FakeOS from xgui-3_test) with minimal modifications.
 
-## Current Status
+## Current Progress
 
-The compatibility module (`Sandbox.Compatibility`) provides foundational infrastructure:
+The `Sandbox.Compatibility` module provides substantial infrastructure:
 
-1. **S&box API stubs**: `Component`, `GameObjectSystem`, `Scene`, `GameObject`, `FileSystem`, etc.
-2. **XGUI classes**: `XGUISystem`, `XGUIPanel`, `XGUIRootPanel`, `Window`, `TitleBar`
-3. **Theme loading wrapper**: `XGUIThemeLoader` for future-proof theme restructuring
-4. **Basic controls**: `ListView`, `ContextMenu`, `Toolbar`, `FileBrowserView` (stubs)
+### S&box API Stubs
+- `Component`, `PanelComponent`, `GameObjectSystem`, `Scene`, `GameObject` - ECS lifecycle
+- `BaseFileSystem`, `FileSystem` - File system abstraction with Data/Mounted mounts
+- `Log`, `TypeLibrary`, `Input`, `Mouse`, `Screen` - Utility classes
+- `Sound`, `SoundFile` - Audio stubs
+- `Game`, `TimeSince`, `RealTimeSince` - Global state and time
+- `Color32` - 32-bit color struct
+- `Package`, `PackageResult` - Package system stubs
+- `Services.Stats`, `Services.Achievements` - Services stubs
+- `Steamworks` - Basic Steam API stubs
 
-## Running the Example
+### XGUI Controls
+- `Window`, `TitleBar` - Full XGUI window system
+- `ListView` with `ListViewItem` - Multi-view list control with drag support
+- `FileBrowserView` - File browser view with virtual methods
+- `TreeView`, `TreeViewNode` - Tree structure control
+- `ContextMenu`, `ComboBox`, `CheckBox`, `RadioButton` - Form controls
+- `ScrollPanel`, `GroupBox`, `Backdrop` - Container panels
+- `SelectList`, `ListOption` - Selection list
+- `SliderScale`, `ColorPickerControl` - Value controls
+- `XGUIIconPanel`, `XGUIIconSystem` - Theme-aware icons
+- `XGUIThemeLoader` - Path remapping for themes
+
+### Build Infrastructure
+- Namespace shims for `Sandbox.UI.Construct`
+- `LayoutBoxInset` panel type
+
+## Remaining Work for Full xgui-3_test Compatibility
+
+### 1. Window Class Conflict
+The generated Razor code has ambiguous references between `Sandbox.UI.Window` (native desktop windows) and `XGUI.Window` (in-panel windows). Options:
+- Rename one of the Window classes
+- Use explicit namespace qualification in all razor files
+- Modify the Razor code generator to use global using aliases
+
+### 2. Nested Types Need Moving
+Some XGUI types are nested classes that need to be accessed properly:
+- `TreeView.TreeViewNode` - Move TreeViewNode to top-level in XGUI namespace
+- `ListView.ListViewItem` - Already implemented
+
+### 3. Missing Virtual Methods
+Some overrides in VirtualFileBrowserView reference methods that don't exist in base:
+- Make `FileBrowserView` methods virtual (partially done)
+
+### 4. Namespace Self-References
+The XGUI-3 code uses `using FakeOperatingSystem.X` from within the FakeOperatingSystem namespace, which should work but requires all sub-namespaces to be properly defined.
+
+### 5. Additional Missing Types
+- `RenderFragment` - Need `@using Microsoft.AspNetCore.Components` in all razor files
+- `Parameter` attribute - Same issue
+
+## Running
 
 ```bash
 cd examples/FakeOSApp
-dotnet run
+dotnet build  # Will show remaining errors
 ```
-
-This runs a test window that demonstrates the basic XGUI Window class is functional.
-
-## Additional Work Required for Full XGUI-3 Support
-
-Running the complete FakeOS from `xgui-3_test` requires additional work:
-
-### Missing Types in Compatibility Layer
-- `XGUI.ListView.ListViewItem` - nested class for list items
-- `XGUI.FileBrowserView` with full implementation
-- `XGUI.FileBrowserTree` with full implementation
-- `XGUI.WebPanel` - web rendering panel
-- `Sandbox.Color32` - color type
-- `Sandbox.Package` - s&box package system
-- `Sandbox.Services.Steamworks` - Steam integration
-
-### Namespace Changes Required in XGUI-3 Code
-The original code uses s&box's namespace conventions that need adjustment:
-- `Sandbox.FakeOperatingSystem.*` → `FakeOperatingSystem.*`
-- `Sandbox.FakeSteam` → `FakeSteam`
-- `Sandbox.UI.Construct` attribute (not implemented)
-
-### Window Class Conflict
-Both `Sandbox.UI.Window` (for native desktop windows) and `XGUI.Window` (for in-panel windows) exist. The XGUI-3 code expects `XGUI.Window`. The generated Razor code needs proper namespace resolution.
 
 ## Theme Loading
 
-The `XGUIThemeLoader` supports path remapping for future theme restructuring:
-
 ```csharp
-// Current paths work as-is
+// Current XGUI paths work as-is
 XGUIThemeLoader.ResolveThemePath("/XGUI/DefaultStyles/Computer95.scss");
 
-// For future restructuring, add remappings
+// For future restructuring
 XGUIThemeLoader.AddDirectoryRemapping("/XGUI/DefaultStyles", "/themes/xgui");
 ```
-
-## Structure
-
-- `Program.cs` - Application entry point with XGUI setup demonstration
-- `Code/` - Place XGUI/FakeOS code here (requires adaptation for compatibility)
-- `Assets/` - Place theme, font, and image assets here

@@ -1,0 +1,147 @@
+﻿@using Sandbox;
+@using Sandbox.UI;
+@using XGUI; 
+@inherits Window
+
+<root title="Launcher" hasminimise="true" hasmaximise="true" x="540" y="240">
+	<div class="window-content">
+
+		<tabcontrol>
+			<tab tabName="settings" slot="tab" tabtext="About">
+				<div style="width:100%;height:380px;">
+					<groupbox title="Resolution">
+						<combobox default="Native Resolution" style="margin-bottom:8px;">
+							<option value="high">Native Resolution</option>
+							<option value="low">Low</option>
+						</combobox>
+						<check style="margin-bottom:8px;">
+							Use Custom Resolution
+						</check>
+						<controllabel label="Custom Resolution">
+							<textentry value="0x0" style="margin-bottom:8px; width:128px">
+							</textentry>
+						</controllabel>
+					</groupbox>
+
+					<groupbox title="Game" style="margin-top:8px;">
+
+						<check style="margin-bottom:8px;">
+							Load Custom Folder
+						</check>
+
+						<check style="margin-bottom:8px;">
+							High Quality On
+						</check>
+					</groupbox>
+				</div>
+			</tab>
+			<tab tabName="mounting" slot="tab" tabtext="Content Mounting">
+				<div style="width:320px;height:240px;">
+				</div>
+			</tab>
+			<tab tabName="advanced" slot="tab" tabtext="Advanced">
+				<div style="width:320px;height:240px;">
+				</div>
+			</tab>
+			<tab tabName="install" slot="tab" tabtext="Install">
+				<div style="width:320px;height:240px;">
+				</div>
+			</tab>
+			<tab tabName="about" slot="tab" tabtext="About">
+				<div style="width:320px;height:240px;">
+				</div>
+			</tab>
+		</tabcontrol>
+		@if (Input.Down("Walk") || false)
+		{
+			<label style="font-size:9px; margin-right:3px;">Select Theme:</label>
+			<div style="align-items:center; align-self:flex-start;">
+				@foreach (string i in FileSystem.Mounted.FindFile("/XGUI/DefaultStyles/"))
+				{
+					<button style="font-size:9px; width:auto; margin-right:3px;" onclick=@( () => LoadStyle(i) )>@i.Replace(".scss", "")</button>
+				}
+			</div>
+		}
+		else
+		{
+
+			<div class="self-layout" style="flex-direction:row; margin:8px; margin-top:5px; justify-content:flex-end;">
+				<button style="left:0px; position:absolute;">Open Install Folder</button>
+				<button style="margin-left:8px;">Launch Game</button>
+				<button style="margin-left:8px;">Close</button>
+			</div>
+		}
+		<resizer>
+
+		</resizer>
+	</div>
+</root>
+
+@code {
+
+	public string StartTab = "";
+	public Vector2 OverrideSize = Vector2.Zero;
+	public TabContainer MainTabs { get; set; }
+	int Loaded = 0;
+	public override void Tick()
+	{
+		base.Tick();
+		if (Loaded == 0)
+		{
+			Loaded++;
+			Style.ZIndex = 100;
+			ApplyStyle(StyleName);
+			if (StartTab != "") SetTab(StartTab);
+			if (OverrideSize != Vector2.Zero)
+			{
+				Style.Width = OverrideSize.x;
+				Style.Height = OverrideSize.y;
+			}
+		}
+	}
+
+	public void SetTab(string tab)
+	{
+		foreach (var tabs in ChildrenOfType<TabContainer>())
+		{
+			tabs.ActiveTab = tab;
+		}
+	}
+	public string GetTab()
+	{
+		foreach (var tabs in ChildrenOfType<TabContainer>())
+		{
+			return tabs.ActiveTab;
+		}
+		return "about";
+	}
+
+	StyleSheet CurrentStyle;
+	public string StyleName = "OliveGreen.scss";
+
+	public void ResetStyle()
+	{
+		StyleSheet.Remove("*");
+		Loaded++;
+	}
+	public void ApplyStyle(string styleName)
+	{
+		StyleSheet.Remove("*");
+		CurrentStyle = Sandbox.UI.StyleSheet.FromFile($"/XGUI/DefaultStyles/{styleName}");
+		StyleSheet.Add(CurrentStyle);
+		Loaded++;
+	}
+	public void LoadStyle(string styleName)
+	{
+		var b = Parent.AddChild<Thingy>();
+		b.StyleName = styleName;
+		b.Position = Position;
+		//b.OverrideSize = new Vector2(Box.Rect.Width, Box.Rect.Height);
+		b.StartTab = GetTab();
+		Delete();
+	}
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(Loaded, Input.Down("Walk"));
+	}
+}

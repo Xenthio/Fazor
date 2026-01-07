@@ -1,0 +1,38 @@
+﻿@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@using XGUI;
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
+@inherits Window
+
+<root title="Console" width="560px" height="400px" minwidth="128px" minheight="128px" x="40px" y="40px">
+	<div class="window-content">
+		<layoutboxinset style="margin:3px; margin-top:6px; flex-grow:1; flex-direction:column; overflow:scroll;">
+			<div style="min-height:16px; flex-wrap:nowrap; ">]</div>
+			@foreach (var i in conmsg)
+			{
+				<div style="min-height:16px; flex-wrap:nowrap;">@i</div>
+			}
+		</layoutboxinset>
+		<div style="flex-direction:row; margin:3px; margin-top:5px;">
+			<textentry style="flex-grow:1;" @ref=conentry></textentry>
+			<button style="margin-left:8px; width:64px; height:24px;" @onclick=@submit>Submit</button>
+		</div>
+		<resizer>
+
+		</resizer>
+	</div>
+	
+</root>
+
+@code {
+	public TextEntry conentry { get; set; }
+	public List<string> conmsg = new();
+
+	public void submit()
+	{
+		conmsg.Add("] "+conentry.Text); 
+		conentry.Text = "";
+	}
+}
+

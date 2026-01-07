@@ -1,0 +1,88 @@
+Calculator {
+	flex-direction: column;
+
+	.window-content { 
+		flex-direction: column;
+		padding: 6px; // Add some padding to the window content
+	}
+
+	.calc-display-area {
+		background-color: #f0f0f0; 
+		text-align: right;
+		min-height: 30px;  
+		color: black;
+		padding: 8px;
+		margin-bottom: 5px; // Space between display and buttons
+	}
+
+	.calc-buttons-area {
+		flex-grow: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.calc-button-row {
+		display: flex;
+		flex-direction: row;
+		flex-grow: 1; // Allow rows to take up space
+
+		> .calc-button {
+			flex-grow: 1; // Make buttons expand equally
+			flex-basis: 0; // Distribute space based on flex-grow
+		}
+	}
+
+	.calc-button {
+		flex-shrink: 0;
+		padding: 5px; // Adjusted padding for potentially smaller buttons
+
+		&:not(:last-child) {
+			margin-right: 5px; // Add space between buttons in a row
+		}
+
+		&:not(:first-child) {
+			margin-left: 5px; // Add space between buttons in a row
+		}
+
+		font-size: 14px;
+		background-color: #E0E0E0;
+		cursor: pointer;
+		text-align: center;
+		min-height: 30px; // Ensure buttons have a minimum height
+
+		&:hover {
+			background-color: #D0D0D0;
+		}
+
+		&:active {
+			background-color: #C0C0C0;
+			transform: translateY(1px);
+		}
+		// Specific button styles
+		&.clear-button {
+			background-color: #FFCCCC;
+		}
+
+		&.clear-entry-button {
+			background-color: #FFFFCC;
+		}
+
+		&.backspace-button {
+			background-color: #CCFFCC;
+		}
+
+		&.operator-button {
+			background-color: #CCCCFF;
+		}
+
+		&.equals-button {
+			background-color: #99CCFF;
+		}
+
+		&.zero-button {
+			flex-grow: 2.1; // Make the zero button wider (adjust ratio as needed with gap)
+			// This will make it take roughly twice the space of a button with flex-grow: 1
+			// The extra .1 helps account for the gap it spans.
+		}
+	}
+}

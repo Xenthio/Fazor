@@ -1,0 +1,43 @@
+@using Sandbox.UI
+@using XGUI
+@using System
+@using FakeOperatingSystem
+
+@inherits Window
+
+<root title="Personalized Settings"
+	  width="284" height="114"
+	  class="personalized-settings-dialog window1"
+	  hasclose="false"
+	  hasminimise="false"
+	  hasmaximise="false"
+	  issizeable="false">
+
+	<div class="window-content" style="padding: 12px; display: flex; flex-direction: column;">
+		<label style="white-space:pre;">@StatusText</label>
+	</div>
+</root>
+
+@code {
+
+	private string StatusText = "Setting up your personalized settings...";
+	// private ProgressBar ProgressBar; // Uncomment if you add a progress bar
+
+	public PersonalisedSettingsDialog()
+	{
+		// You can set an initial message if needed, though it's often set from the caller.
+	}
+
+	public void UpdateStatus(string message)
+	{
+		Log.Info($"PersonalizedSettingsDialog: {message}");
+		StatusText = message;
+		StateHasChanged(); // Ensure the UI updates if called from a non-UI thread or after await
+	}
+
+	// Call this method to close the dialog when setup is complete
+	public void Complete()
+	{
+		Delete();
+	}
+}

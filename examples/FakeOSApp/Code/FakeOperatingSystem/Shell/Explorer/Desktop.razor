@@ -1,0 +1,101 @@
+@using System;
+@using FakeOperatingSystem.Shell
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using FakeDesktop;
+@using FakeOperatingSystem;
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem.OSFileSystem
+@using global::FakeOperatingSystem.Shell
+@attribute [StyleSheet("Desktop.razor.scss")]
+@inherits XGUIPanel
+
+<root>
+	<virtualfilebrowserview @ref=BrowserView class="browser-view" style="width:70%"></virtualfilebrowserview>
+	@{
+		BrowserView.ListView.ItemContainer.Style.FlexDirection = FlexDirection.Column;
+	}
+</root>
+
+@code {
+	private VirtualFileBrowserView BrowserView;
+	public static Desktop CurrentDesktop;
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		// Can Navigate is set to false to prevent navigation within the browser view
+		BrowserView.CanNavigate = false;
+		if (firstTime)
+		{
+			CurrentDesktop = this;
+			InitializeDesktop();
+
+			BrowserView.DefaultDirection = FlexDirection.Column;
+			BrowserView.AutoArrangeIcons = false;
+			BrowserView.IconPositionsFileName = ".iconpositions_desktop";
+
+			// Initialize browser view with virtual file system
+			BrowserView.Initialize(VirtualFileSystem.Instance, ShellNamespace.Instance, FileSystem.Data);
+
+			// Set default view mode
+			BrowserView.ViewMode = FileBrowserViewMode.Icons;
+
+			// Navigate to Desktop - this will stay fixed
+			BrowserView.NavigateToShellPath(ShellNamespace.DESKTOP, sound: false);
+		}
+	}
+
+	public void InitializeDesktop()
+	{
+		// This assumes Registry.Instance is accessible
+		string wallpaperPath = Registry.Instance.GetValue<string>(@"HKEY_CURRENT_USER\Control Panel\Desktop", "Wallpaper", null);
+		int wallpaperStyle = Registry.Instance.GetValue<int>(@"HKEY_CURRENT_USER\Control Panel\Desktop", "WallpaperStyle", 0);
+		string backgroundColor = Registry.Instance.GetValue<string>(@"HKEY_CURRENT_USER\Control Panel\Desktop", "BackgroundColor", "0,0,128"); // Default blue
+
+		Style.BackgroundImage = null; // Clear any previous background image;
+		Style.ImageRendering = null;
+
+		switch (wallpaperStyle)
+		{
+			default: // Default
+			case 0: // centre
+				Style.Set("background-size: auto;");
+				Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
+				Style.BackgroundPositionX = Length.Parse("center");
+				Style.BackgroundPositionY = Length.Parse("center");
+				Style.ImageRendering = ImageRendering.Point;
+				break;
+			case 1: // tile
+				Style.Set("background-size: auto;");
+				Style.BackgroundRepeat = BackgroundRepeat.Repeat;
+				Style.Set("background-position: top left;");
+				break;
+			case 2: // stretch
+				Style.Set("background-size: cover;"); // Cover the entire area
+				Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
+				Style.Set("background-position: center;");
+				break;
+		}
+		if (!string.IsNullOrEmpty(wallpaperPath) && VirtualFileSystem.Instance.FileExists(wallpaperPath))
+		{
+			// Assuming 'DesktopBackgroundPanel' is a Panel in your Explorer UI
+			var res = VirtualFileSystem.Instance.ResolveMountPoint(wallpaperPath);
+			Style.BackgroundImage = Texture.Load(res.FileSystem, res.RealPath, false);
+			// Apply wallpaperStyle (e.g., Style.BackgroundSize, Style.BackgroundRepeat)
+
+		}
+		Style.Dirty();
+	}
+
+	private void LaunchExplorerWithPath(string virtualPath)
+	{
+		// Launch the Explorer application with the specified virtual path
+		ProcessManager.Instance.OpenExecutable("C:\\Windows\\explorer.exe", new Win32LaunchOptions()
+		{
+			Arguments = $"{virtualPath}",
+		});
+	}
+}

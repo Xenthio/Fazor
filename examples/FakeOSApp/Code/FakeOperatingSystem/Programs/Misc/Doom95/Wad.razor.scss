@@ -1,0 +1,51 @@
+Wad {
+
+	.mainbox {
+		padding: 2px;
+		padding-top: 3px;
+	}
+
+	.group-box {
+		padding: 8px;
+		padding-top: 6px;
+	}
+
+	.filesystem-selector {
+		flex-grow: 1;
+	}
+
+	.address-bar {
+		align-items: center;
+	}
+
+	.selector {
+		height: 19px;
+	}
+
+
+	.controllabel {
+		margin-bottom: 1px;
+
+		> .label {
+			margin-bottom: 2px;
+		}
+
+		> .selector {
+			margin-left: 3px;
+			margin-right: 3px;
+		}
+
+		> .row {
+			margin-left: 2px;
+			margin-right: 2px;
+		}
+
+		&.custom-wad-file {
+			margin-bottom: -1px;
+
+			> .label {
+				margin-bottom: 1px;
+			}
+		} 
+	}
+}

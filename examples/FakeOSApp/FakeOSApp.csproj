@@ -6,9 +6,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <RootNamespace>FakeOSApp</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <!-- Suppress some warnings from the XGUI code that hasn't been updated -->
+    <NoWarn>1701;1702;1591;CS8618;CS8602;CS8603;CS8604;CS8625</NoWarn>
   </PropertyGroup>
 
   <!-- Disable console window on Windows -->

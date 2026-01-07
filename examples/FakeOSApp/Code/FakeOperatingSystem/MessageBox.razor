@@ -1,0 +1,114 @@
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeDesktop
+@attribute [StyleSheet("MessageBox.razor.scss")]
+@inherits Window
+
+<root title="@Title"
+      minwidth="300" minheight="120"
+      defaultwidth="@Width" defaultheight="@Height"
+      class="messagebox-window @IconClass">
+
+    <div class="window-content">
+        <div class="messagebox-top">
+            @{
+				string icon = "";
+				if (Icon == MessageBoxIcon.Information)
+				{
+					icon = "info";
+				}
+				else if (Icon == MessageBoxIcon.Warning)
+				{
+					icon = "warning";
+				}
+				else if (Icon == MessageBoxIcon.Error)
+				{
+					icon = "error";
+				}
+				else if (Icon == MessageBoxIcon.Question)
+				{
+					icon = "question";
+				}
+			}
+            <XGUIIconPanel class="messagebox-icon @IconClass" IconSize=@(32) IconName=@icon>
+			</XGUIIconPanel>
+            <div class="messagebox-message">@Message</div>
+        </div>
+        <div class="messagebox-buttons">
+            @if (Buttons == MessageBoxButtons.OK || Buttons == MessageBoxButtons.OKCancel)
+            {
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.OK))>OK</button>
+            }
+            @if (Buttons == MessageBoxButtons.YesNo || Buttons == MessageBoxButtons.YesNoCancel)
+            {
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Yes))>Yes</button>
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.No))>No</button>
+            }
+            @if (Buttons == MessageBoxButtons.OKCancel || Buttons == MessageBoxButtons.YesNoCancel)
+            {
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Cancel))>Cancel</button>
+            }
+            @if (Buttons == MessageBoxButtons.RetryCancel)
+            {
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Retry))>Retry</button>
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Cancel))>Cancel</button>
+            }
+            @if (Buttons == MessageBoxButtons.AbortRetryIgnore)
+            {
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Abort))>Abort</button>
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Retry))>Retry</button>
+                <button class="messagebox-button" onclick=@(() => Close(MessageBoxResult.Ignore))>Ignore</button>
+            }
+        </div>
+    </div>
+</root>
+
+@code {
+    public string Title { get; set; } = "Message";
+    public string Message { get; set; } = "";
+    public MessageBoxIcon Icon { get; set; } = MessageBoxIcon.Information;
+    public MessageBoxButtons Buttons { get; set; } = MessageBoxButtons.OK;
+    public int Width { get; set; } = 350;
+    public int Height { get; set; } = 150;
+
+    private string IconClass => Icon.ToString().ToLower();
+
+    private Action<MessageBoxResult> ResultCallback;
+
+    public MessageBox()
+    {
+        //HasCloseButton = false; // Force user to click a button
+        //IsModal = true; // Make it modal
+        //IsDraggable = true;
+        //IsResizable = false;
+    }
+
+    public void SetCallback(Action<MessageBoxResult> callback)
+    {
+        ResultCallback = callback;
+    }
+
+    private void Close(MessageBoxResult result)
+    {
+        ResultCallback?.Invoke(result);
+        Delete();
+    }
+
+    public override void OnClose()
+    {
+        // When closed via window X button, treat as Cancel
+        ResultCallback?.Invoke(MessageBoxResult.Cancel);
+        base.OnClose();
+    }
+
+    public void PositionAtScreenCenter()
+    {
+        var screenWidth = Screen.Width;
+        var screenHeight = Screen.Height;
+        var x = (screenWidth - Width) / 2;
+        var y = (screenHeight - Height) / 2;
+        Position = new Vector2(x, y);
+	}
+}

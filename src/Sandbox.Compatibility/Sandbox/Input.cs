@@ -69,12 +69,12 @@ public static class Mouse
     /// <summary>
     /// The current mouse position in screen coordinates.
     /// </summary>
-    public static System.Numerics.Vector2 Position { get; set; }
+    public static Sandbox.UI.Vector2 Position { get; set; }
     
     /// <summary>
     /// The mouse delta since last frame.
     /// </summary>
-    public static System.Numerics.Vector2 Delta { get; set; }
+    public static Sandbox.UI.Vector2 Delta { get; set; }
     
     /// <summary>
     /// The scroll wheel delta.

@@ -1,0 +1,106 @@
+﻿@using Sandbox.UI
+@using XGUI
+@using FakeOperatingSystem
+@namespace FakeDesktop
+@attribute [StyleSheet]
+@inherits Window
+
+<root title="Run" minwidth="380" minheight="160" defaultwidth="400" defaultheight="170" style="width: 400px; height: 170px;" theme="Computer95">
+	<div class="window-content column">
+		<div class="icon-description-row">
+			<xguiiconpanel class="run-icon" icon-name="application_go" icon-size="32"></xguiiconpanel>
+			<label class="description-label">Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.</label>
+		</div>
+
+		<div class="open-row">
+			<label for="commandInput">Open:</label>
+			<TextEntry @ref="CommandInput" class="command-input" />
+		</div>
+
+		<div class="buttons-row">
+			<button class="run-button" onclick=@OnOkClick>OK</button>
+			<button class="cancel-button" onclick=@OnCancelClick>Cancel</button>
+			<button class="browse-button" onclick=@OnBrowseClick>Browse...</button>
+		</div>
+	</div>
+	@{
+		CommandInput?.Focus(); // Set focus to the text input when the dialog opens.
+	}
+</root>
+
+@code {
+	private TextEntry CommandInput;
+
+	public TaskMgrRunDialog()
+	{
+		// You might want to set a specific icon for the Run dialog window itself
+		// SetWindowIcon("application_go_icon_for_window"); 
+	}
+
+	private void OnOkClick()
+	{
+		string command = CommandInput?.Text.Trim();
+		if (!string.IsNullOrWhiteSpace(command))
+		{
+			try
+			{
+				// Attempt to launch the executable. 
+				// The 'shellLaunch: true' suggests that ProcessManager might handle paths, URLs, etc.
+				// Adjust if your ProcessManager.OpenExecutable is more specific.
+				var process = ProcessManager.Instance?.OpenExecutable(command, new Win32LaunchOptions(), shellLaunch: true); 
+
+				if (process == null)
+				{
+					// This case might occur if OpenExecutable returns null for "file not found" or similar
+					// without throwing an exception.
+					MessageBoxUtility.ShowError($"Windows cannot find '{command}'. Make sure you typed the name correctly, and then try again.", "Run");
+				}
+			}
+			catch (System.IO.FileNotFoundException fnfEx)
+			{
+				Log.Warning($"RunDialog: File not found for command '{command}': {fnfEx.Message}");
+				MessageBoxUtility.ShowError($"Windows cannot find '{command}'. Make sure you typed the name correctly, and then try again.", "Run");
+			}
+			catch (System.Exception ex)
+			{
+				Log.Error(ex, $"RunDialog: Error running command '{command}'");
+				MessageBoxUtility.ShowError($"An error occurred while trying to run '{command}':\n{ex.Message}", "Run Error");
+			}
+		}
+		else
+		{
+			// Optionally, show a message if the input is empty, or just do nothing.
+			// MessageBoxUtility.ShowWarning("Please enter a program name, folder, document, or Internet resource.", "Run");
+			// return; // Keep dialog open if you show a warning for empty input.
+		}
+		Close(); // Close the dialog after attempting to run or if input was empty.
+	}
+
+	private void OnCancelClick()
+	{
+		Close();
+	}
+
+	private void OnBrowseClick()
+	{
+		// This would typically open a file dialog to select an executable.
+		// For now, it's a placeholder.
+		Log.Info("RunDialog: Browse button clicked - To be implemented.");
+		MessageBoxUtility.ShowInformation("Browse functionality is not yet implemented.", "Browse");
+	}
+
+	public override void OnButtonEvent(ButtonEvent e)
+	{
+		base.OnButtonEvent(e); 
+		if (e.Button == "enter")
+		{
+			OnOkClick();
+			e.StopPropagation = true;
+		}
+		else if (e.Button == "escape")
+		{
+			OnCancelClick();
+			e.StopPropagation = true;
+		}
+	}
+}

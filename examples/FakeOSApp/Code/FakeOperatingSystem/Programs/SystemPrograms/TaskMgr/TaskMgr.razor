@@ -1,0 +1,158 @@
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using System.IO;
+@using FakeDesktop;
+@using FakeOperatingSystem;
+@using global::FakeOperatingSystem.Experiments.Ambitious.X86;
+@using global::FakeOperatingSystem
+@attribute [StyleSheet("TaskMgr.razor.scss")]
+@inherits Window
+
+<root title="Task Manager"
+	  minwidth="400" minheight="400"
+	  width="404" height="447"
+	  class="taskmanager-window window1"
+	  hasminimise="true"
+	  hasmaximise="true">
+
+	<div class="window-content">
+
+		<div>
+			<!-- Menu Bar -->
+			<div class="toolbar menu-toolbar">
+				<button @ref=FileMenuButton class="menu-item" onclick=@ShowFileMenu>File</button>
+				<button @ref=OptionsMenuButton class="menu-item" onclick=@ShowOptionsMenu>Options</button>
+				<button @ref=ViewMenuButton class="menu-item" onclick=@ShowViewMenu>View</button>
+				<button @ref=HelpMenuButton class="menu-item" onclick=@ShowHelpMenu>Help</button>
+			</div>
+		</div>
+		<Seperator></Seperator>
+		<tabcontrol style="flex-grow: 1; margin-top:2px;">
+			<tab tabName="applications" slot="tab" tabtext="Applications" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<tasklist style="flex-direction:column; flex-grow:1;"></tasklist>
+				</div>
+			</tab>
+			<tab tabName="processes" slot="tab" tabtext="Processes" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<processlist style="flex-direction:column; flex-grow:1;"></processlist>
+				</div>
+			</tab>
+		</tabcontrol>
+	</div> 
+</root>
+
+@code {
+	Button FileMenuButton;
+	Button OptionsMenuButton;
+	Button ViewMenuButton;
+	Button HelpMenuButton;
+
+	// Currently active menu
+	private ContextMenu activeMenu;
+
+	protected override void OnMouseDown(MousePanelEvent e)
+	{
+		base.OnMouseDown(e);
+
+		// Only close if mouse is not over a menu button or menu
+		if (activeMenu != null &&
+			!FileMenuButton.HasHovered &&
+			!OptionsMenuButton.HasHovered &&
+			!ViewMenuButton.HasHovered &&
+			!HelpMenuButton.HasHovered &&
+			!activeMenu.HasHovered)
+		{
+			CloseActiveMenu();
+		}
+	}
+
+	private void CloseActiveMenu()
+	{
+		if (activeMenu != null)
+		{
+			// Remove "active" class from all menu buttons
+			FileMenuButton?.SetClass("active", false);
+			OptionsMenuButton?.SetClass("active", false);
+			ViewMenuButton?.SetClass("active", false);
+			HelpMenuButton?.SetClass("active", false);
+
+			activeMenu.Delete(true);
+			activeMenu = null;
+		}
+	} 
+
+	private void ShowRunDialog()
+	{
+		var runDialog = new TaskMgrRunDialog();
+		// Add the dialog to the main UI panel (typically XGUISystem.Instance.Panel or this.Parent if TaskMgr is already on it)
+		// Assuming TaskMgr is a child of XGUISystem.Instance.Panel or similar root.
+		XGUISystem.Instance?.Panel?.AddChild(runDialog);
+		// runDialog.Focus(); // This is now handled in RunDialog.OnFirstRender
+	}
+
+	// Menu handlers
+	private void ShowFileMenu()
+	{
+		CloseActiveMenu();
+
+		// Set this button as active
+		FileMenuButton.SetClass("active", true);
+
+		// Create menu - position below button
+		activeMenu = new ContextMenu(FileMenuButton, XGUIPopup.PositionMode.BelowLeft);
+
+		activeMenu.AddMenuItem("New Task (Run...)", () => { ShowRunDialog(); activeMenu.Delete();});
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Exit Task Manager", () => Delete());
+	}
+	private void ShowOptionsMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		OptionsMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(OptionsMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Always On Top", (() => Log.Info("Always on Top")));
+		activeMenu.AddMenuItem("Minimize On Use", (() => Log.Info("Minimise On Use")));
+		activeMenu.AddMenuItem("Hide When Minimized", (() => Log.Info("Hide When Minimised")));
+		activeMenu.AddMenuItem("Show 16-bit tasks", (() => Log.Info("Show 16-bit tasks")));
+	}
+	private void ShowViewMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		ViewMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(ViewMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Refresh Now", (() => Log.Info("Refresh")));
+		activeMenu.AddMenuItem("Update Speed", (() => Log.Info("Update Speed")));
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Select Columns", (() => Log.Info("Select Columns")));
+	}
+	private void ShowHelpMenu()
+	{
+		CloseActiveMenu();
+		// Set this button as active
+		HelpMenuButton.SetClass("active", true);
+		// Create menu - position below button
+		activeMenu = new ContextMenu(HelpMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		activeMenu.AddMenuItem("Task Manager Help Topics", (() => Log.Info("Task Manager Help Topics")));
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("About Task Manager", (() => Log.Info("About Task Manager")));
+	}
+
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(ProcessManager.Instance.GetProcessCount());
+	}
+
+	private void EndTask(BaseProcess process)
+	{
+		ProcessManager.Instance.TerminateProcess(process);
+		StateHasChanged();
+	}
+}

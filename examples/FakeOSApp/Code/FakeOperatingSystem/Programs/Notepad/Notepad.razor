@@ -1,0 +1,397 @@
+@using System;
+@using FakeOperatingSystem.OSFileSystem
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using System.IO;
+@namespace FakeDesktop
+@attribute [StyleSheet("Notepad.razor.scss")]
+@inherits Window
+
+<root title="Notepad"
+	  minwidth="400" minheight="300"
+	  defaultwidth="600" defaultheight="400"
+	  style="width: 600px; height: 400px;"
+	  class="notepad-window">
+
+	<div class="window-content">
+		<div style="flex-shrink: 0">
+			<!-- Menu Bar -->
+			<div class="toolbar menu-toolbar">
+				<button @ref=FileMenuButton class="menu-item" onclick=@ShowFileMenu>File</button>
+				<button @ref=EditMenuButton class="menu-item" onclick=@ShowEditMenu>Edit</button>
+				<button @ref=FormatMenuButton class="menu-item" onclick=@ShowFormatMenu>Format</button>
+				<button @ref=ViewMenuButton class="menu-item" onclick=@ShowViewMenu>View</button>
+				<button @ref=HelpMenuButton class="menu-item" onclick=@ShowHelpMenu>Help</button>
+			</div>
+		</div>
+
+		<!-- Content Area -->
+		<layoutboxinset style="flex-grow: 1;">
+			<scrollpanel class="content-area column" style="flex-grow: 1;">
+				<TextEntry @ref=TextArea class="text-area" multiline=true Text="@TextContent" OnTextEdited="@OnTextEdited" />
+			</scrollpanel> 
+		</layoutboxinset>
+
+		<!-- Status Bar -->
+		<div class="status-bar" style="flex-shrink: 0">
+			<div class="status-text">@StatusText</div>
+		</div>
+	</div> 
+</root>
+
+@code {
+	// UI References
+	private TextEntry TextArea;
+	
+	// Menu buttons
+	private Button FileMenuButton;
+	private Button EditMenuButton;
+	private Button FormatMenuButton;
+	private Button ViewMenuButton;
+	private Button HelpMenuButton;
+	
+	// Currently active menu
+	private ContextMenu activeMenu;
+
+	// File Properties
+	private string CurrentFilePath;
+	private bool HasUnsavedChanges = false;
+
+	// Content
+	private string _textContent = "";
+	private string TextContent
+	{
+		get => _textContent;
+		set
+		{
+			if (_textContent != value)
+			{
+				_textContent = value;
+				HasUnsavedChanges = true;
+				UpdateTitle();
+			}
+		}
+	}
+
+	// Status
+	private string StatusText = "Ready";
+
+	// Command line argument handling
+	private string InitialFilePath;
+
+	// Program arguments
+	private string ProgramArguments { get; set; }
+
+	public Notepad()
+	{
+		//SetWindowIcon("notepad");
+	}
+
+	// This property will be set by Window.Launch when a ProgramDescriptor launches this window
+	public string Arguments { get; set; }
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		if (firstTime)
+		{
+			// Check for file to open from command line
+			if (!string.IsNullOrEmpty(Arguments))
+			{
+				// Remove quotes if present
+				string path = Arguments.Trim('"');
+				InitialFilePath = path;
+				OpenFile(path);
+			}
+			else
+			{
+				// New untitled document
+				NewFile();
+			}
+		}
+	}
+
+	// Close any open menu when clicking outside
+	protected override void OnMouseDown(MousePanelEvent e)
+	{
+		base.OnMouseDown(e);
+		
+		// Only close if mouse is not over a menu button or menu
+		if (activeMenu != null && 
+			!FileMenuButton.HasHovered &&
+			!EditMenuButton.HasHovered &&
+			!FormatMenuButton.HasHovered &&
+			!ViewMenuButton.HasHovered &&
+			!HelpMenuButton.HasHovered &&
+			!activeMenu.HasHovered)
+		{
+			CloseActiveMenu();
+		}
+	}
+	
+	private void CloseActiveMenu()
+	{
+		if (activeMenu != null)
+		{
+			// Remove "active" class from all menu buttons
+			FileMenuButton?.SetClass("active", false);
+			EditMenuButton?.SetClass("active", false);
+			FormatMenuButton?.SetClass("active", false);
+			ViewMenuButton?.SetClass("active", false);
+			HelpMenuButton?.SetClass("active", false);
+			
+			activeMenu.Delete(true);
+			activeMenu = null;
+		}
+	}
+
+	private void OnTextEdited(string text)
+	{
+		TextContent = text;
+	}
+
+	private void UpdateTitle()
+	{
+		string filename = string.IsNullOrEmpty(CurrentFilePath) ? "Untitled" : Path.GetFileName(CurrentFilePath);
+		Title = HasUnsavedChanges ? $"*{filename} - Notepad" : $"{filename} - Notepad";
+	}
+
+	private void NewFile()
+	{
+		// Check for unsaved changes
+		if (HasUnsavedChanges)
+		{
+			if (!ConfirmDiscardChanges())
+				return;
+		}
+
+		TextContent = "";
+		if (TextArea != null)
+			TextArea.Text = "";
+			
+		CurrentFilePath = null;
+		HasUnsavedChanges = false;
+		UpdateTitle();
+		StatusText = "New file created";
+	}
+
+	private bool ConfirmDiscardChanges()
+	{
+		bool result = false;
+		string filename = string.IsNullOrEmpty(CurrentFilePath) ? "Untitled" : Path.GetFileName(CurrentFilePath);
+
+		// Show a MessageBox to ask the user what to do
+		MessageBoxUtility.WarningConfirmWithCancel(
+			$"The text in the {filename} file has changed.\n\n Do you want to save the changes?",
+			"Notepad",
+			(response) =>
+			{
+				if (response == MessageBoxResult.Yes)
+				{
+					SaveFile();
+					result = true;
+				}
+				else if (response == MessageBoxResult.No)
+				{
+					// Discard changes
+					result = true;
+				}
+				else
+				{
+					// Cancel close
+					result = false;
+				}
+			});
+
+		return result;
+	}
+
+
+	public void OpenFile(string path = null)
+	{
+		// Check for unsaved changes
+		if (HasUnsavedChanges)
+		{
+			if (!ConfirmDiscardChanges())
+				return;
+		}
+
+		if (string.IsNullOrEmpty(path))
+		{
+			// TODO: Open file dialog
+			return;
+		}
+
+		try
+		{
+			if (VirtualFileSystem.Instance.FileExists(path))
+			{
+				string content = VirtualFileSystem.Instance.ReadAllText(path);
+				TextContent = content;
+				if (TextArea != null)
+					TextArea.Text = content;
+				
+				CurrentFilePath = path;
+				HasUnsavedChanges = false;
+				UpdateTitle();
+				StatusText = $"Opened file: {Path.GetFileName(path)}";
+			}
+			else
+			{
+				StatusText = "File not found";
+			}
+		}
+		catch (Exception ex)
+		{
+			StatusText = $"Error opening file: {ex.Message}";
+		}
+	}
+
+	private void SaveFile(bool saveAs = false)
+	{
+		string path = CurrentFilePath;
+
+		if (string.IsNullOrEmpty(path) || saveAs)
+		{
+			// TODO: Show save file dialog
+			// For now, save to a default path if not already set
+			if (string.IsNullOrEmpty(path))
+			{
+				path = "C:/My Documents/Untitled.txt";
+			}
+		}
+
+		try
+		{
+			string directory = Path.GetDirectoryName(path);
+			if (!VirtualFileSystem.Instance.DirectoryExists(directory))
+			{
+				VirtualFileSystem.Instance.CreateDirectory(directory);
+			}
+
+			// Make sure we have the latest text from the control
+			if (TextArea != null)
+				TextContent = TextArea.Text;
+
+			VirtualFileSystem.Instance.WriteAllText(path, TextContent);
+			CurrentFilePath = path;
+			HasUnsavedChanges = false;
+			UpdateTitle();
+			StatusText = $"Saved to: {Path.GetFileName(path)}";
+		}
+		catch (Exception ex)
+		{
+			StatusText = $"Error saving file: {ex.Message}";
+		}
+	}
+
+	// Menu handlers
+	private void ShowFileMenu()
+	{
+		CloseActiveMenu();
+		
+		// Set this button as active
+		FileMenuButton.SetClass("active", true);
+		
+		// Create menu - position below button
+		activeMenu = new ContextMenu(FileMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		
+		activeMenu.AddMenuItem("New", NewFile);
+		activeMenu.AddMenuItem("Open...", () => OpenFile());
+		activeMenu.AddMenuItem("Save", () => SaveFile());
+		activeMenu.AddMenuItem("Save As...", () => SaveFile(true));
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Exit", () => Close());
+	}
+
+	private void ShowEditMenu()
+	{
+		CloseActiveMenu();
+		
+		// Set this button as active
+		EditMenuButton.SetClass("active", true);
+		
+		// Create menu - position below button
+		activeMenu = new ContextMenu(EditMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		
+		// We can now hook up these text editing functions
+		activeMenu.AddMenuItem("Undo", () => { if (TextArea != null) TextArea.CreateEvent("onundo"); });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("Cut", () => { if (TextArea != null) TextArea.GetClipboardValue(true); });
+		activeMenu.AddMenuItem("Copy", () => { if (TextArea != null) TextArea.GetClipboardValue(false); });
+		activeMenu.AddMenuItem("Paste", () => { if (TextArea != null /* && Clipboard.HasText */) TextArea.OnPaste("Todo: pasting"); });
+
+		// TODO: FIX ME!!!!!! Label was made proteted for some reason??
+		activeMenu.AddMenuItem("Delete", () => { 
+			//if (TextArea != null && TextArea.Label.HasSelection()) 
+			//	TextArea.Label.ReplaceSelection(""); 
+		});
+		activeMenu.AddSeparator();
+		// TODO: FIX ME!!!!!! Label was made proteted for some reason??
+		activeMenu.AddMenuItem("Select All", () => { 
+			if (TextArea != null) {
+				//TextArea.Label.SelectionStart = 0;
+				//TextArea.Label.SelectionEnd = TextArea.TextLength;
+			}
+		});
+	}
+
+	private void ShowFormatMenu()
+	{
+		CloseActiveMenu();
+		
+		// Set this button as active
+		FormatMenuButton.SetClass("active", true);
+		
+		// Create menu - position below button
+		activeMenu = new ContextMenu(FormatMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		
+		activeMenu.AddMenuItem("Word Wrap", () => { /* Toggle word wrap */ });
+		activeMenu.AddMenuItem("Font...", () => { /* Show font dialog */ });
+	}
+
+	private void ShowViewMenu()
+	{
+		CloseActiveMenu();
+		
+		// Set this button as active
+		ViewMenuButton.SetClass("active", true);
+		
+		// Create menu - position below button
+		activeMenu = new ContextMenu(ViewMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		
+		activeMenu.AddMenuItem("Status Bar", () => { /* Toggle status bar */ });
+	}
+
+	private void ShowHelpMenu()
+	{
+		CloseActiveMenu();
+		
+		// Set this button as active
+		HelpMenuButton.SetClass("active", true);
+		
+		// Create menu - position below button
+		activeMenu = new ContextMenu(HelpMenuButton, XGUIPopup.PositionMode.BelowLeft);
+		
+		activeMenu.AddMenuItem("View Help", () => { /* Show help */ });
+		activeMenu.AddSeparator();
+		activeMenu.AddMenuItem("About Notepad", () => { /* Show about dialog */ });
+	}
+
+	// Prevent window close if there are unsaved changes
+	public override void OnClose()
+	{
+		if (HasUnsavedChanges)
+		{
+			// In the future, prompt to save changes
+			if (ConfirmDiscardChanges())
+				base.OnClose();
+		}
+		else
+		{
+			base.OnClose();
+		}
+	}
+}

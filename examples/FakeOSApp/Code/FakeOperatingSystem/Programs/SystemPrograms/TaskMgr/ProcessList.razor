@@ -1,0 +1,134 @@
+@using XGUI
+@using System.Collections.Generic
+@using Sandbox
+@using global::FakeOperatingSystem.Experiments.Ambitious.X86
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem
+@attribute [Library("processlist")]
+
+<root>
+	<ListView @ref="ProcessListView"
+			  ViewMode=@ListView.ListViewMode.Details
+			  style="flex-grow:1;"
+			  @OnItemSelected=@OnProcessSelected
+			  @OnItemActivated=@OnProcessActivated>
+	</ListView>
+
+	<div style="flex-direction:row-reverse" class="div-buttons">
+		<button style="width:78px; margin-left:5px;" @onclick=@EndSelectedProcess>End Process</button>
+	</div>
+</root>
+
+@code {
+	private ListView ProcessListView;
+	private BaseProcess SelectedProcess;
+
+	// Store a hash of the last process list state
+	private int _lastProcessListHash = 0;
+
+	protected override void OnAfterTreeRender(bool firstRender)
+	{
+		if (firstRender)
+		{
+			SetupListView();
+		}
+		else
+		{
+			RefreshListView();
+		}
+	}
+
+	private void SetupListView()
+	{
+		if (ProcessListView == null)
+			return;
+
+		ProcessListView.Columns.Clear();
+		ProcessListView.AddColumn("Name", "ProcessName", 180);
+		ProcessListView.AddColumn("PID", "ProcessId", 60);
+		ProcessListView.AddColumn("Status", "Status", 80);
+		ProcessListView.AddColumn("Started", "StartTime", 80);
+
+		// Always force a refresh on setup
+		_lastProcessListHash = 0;
+		RefreshListView();
+	}
+
+	private void RefreshListView()
+	{
+		if (ProcessListView == null)
+			return;
+
+		// Compute a hash of the current process list
+		int currentHash = 0;
+		foreach (var process in ProcessManager.Instance.GetProcesses())
+		{
+			// Combine key properties for change detection
+			currentHash = System.HashCode.Combine(
+				currentHash,
+				process.ProcessId,
+				process.ProcessFileName,
+				process.Status,
+				process.StartTime
+			);
+		}
+
+		// Only refresh if the process list has changed
+		if (currentHash == _lastProcessListHash)
+			return;
+
+		_lastProcessListHash = currentHash;
+
+		ProcessListView.Items.Clear();
+
+		foreach (var process in ProcessManager.Instance.GetProcesses())
+		{
+			var subItems = new List<string>
+			{
+				process.ProcessFileName,
+				process.ProcessId.ToString(),
+				process.Status.ToString(),
+				process.StartTime.ToShortTimeString()
+			};
+			ProcessListView.AddItem(process, subItems);
+		}
+		ProcessListView.UpdateItems();
+	}
+
+	private void OnProcessSelected(ListView.ListViewItem item)
+	{
+		SelectedProcess = item.Data as BaseProcess;
+		StateHasChanged();
+	}
+
+	private void OnProcessActivated(ListView.ListViewItem item)
+	{
+		var process = item.Data as BaseProcess;
+		if (process != null)
+		{
+			EndProcess(process);
+		}
+	}
+
+	public void EndSelectedProcess()
+	{
+		if (SelectedProcess != null)
+		{
+			EndProcess(SelectedProcess);
+		}
+	}
+
+	private void EndProcess(BaseProcess process)
+	{
+		ProcessManager.Instance.TerminateProcess(process);
+		// Force refresh after process termination
+		_lastProcessListHash = 0;
+		RefreshListView();
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(ProcessManager.Instance.GetProcessCount());
+	}
+}

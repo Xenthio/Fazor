@@ -1,0 +1,25 @@
+Desktop {
+	flex-direction: row;
+	flex-grow: 1;
+	.browser-view {
+		.listview {
+			border: none;
+			border: 1px solid transparent;
+
+			&::before {
+				position:absolute;
+				border: 1px solid transparent;
+			}
+
+			background-color: transparent;
+
+			.listview-container {
+				color: white;
+			}
+
+			.listview-icon-container {
+				flex-direction: column;
+			}
+		}
+	}
+}

@@ -1,0 +1,61 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI; 
+@namespace FakeSteam
+@attribute [StyleSheet]
+@inherits Window
+
+
+<root title=@($"Install - {Game.Title}") hasminimise="true" hasmaximise="false" x="400" y="200" width="404" height="396">
+	<div class="window-content">
+	<div class="mainarea">
+		@if (tab == "main")
+		{
+			<label class="standard-text">@($"You are about to install {Game.Title}.")</label>
+			<div class="space"></div>
+			<div class="size-text">
+				<label class="presize standard-text">Disk space required:</label>
+				<label class="active-text size">@($"{Game.FileSize} MB")</label>
+			</div>
+			<div class="size-text">
+				<label class="presize standard-text">Disk space Available:</label>
+				<label class="active-text size">@($"?????? MB")</label>
+			</div>
+			<div class="disclaimer">
+				<label class="presize info-text">Files from your local installation (including any saved games and config files) will be copied for use in Steam. Any files not present locally will be downloaded from the Steam servers.</label>
+			</div>
+			<div class="bottom">
+				<button class="disabled">@("< Back")</button>
+				<button onclick=@DownloadGame>@("Next >")</button>
+				<button class="cancelbutton" onclick=@Close>Cancel</button>
+			</div>
+		} else
+		{
+			<label class="standard-text">@($"{Game.Title} should now be installing, no really, trust me it should be. S&box has limits and this is the best I can do.")</label>
+
+			<div class="bottom">
+				<button class="disabled">@("< Back")</button>
+				<button onclick=@Close>@("Finish")</button>
+				<button class="cancelbutton disabled">Cancel</button>
+			</div>
+		}
+	</div> 
+	</div> 
+</root>
+
+@code {
+	public GameInstallWindow()
+	{
+		SetTheme("/XGUI/DefaultStyles/OliveGreen.scss"); 
+	}
+	string tab = "main";
+	public Package Game { get; set; }
+	void DownloadGame()
+	{
+		tab = "nowinstalling";
+		Game.MountAsync();
+
+		//ConsoleSystem.Run("game", gameident);
+		//MenuUtility.OpenGame(Package.FullIdent, true);
+	}
+}

@@ -1,0 +1,32 @@
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@inherits Panel
+
+<root class="column" style="flex-grow:1; padding:9px; padding-top:2px;">
+	<groupbox title="Desktop icons" style="padding:10px;">
+		<listview style="height:91px;" @ref=DesktopIconsListView> 
+		</listview>
+		<div class="row" style="margin-top:9px; margin-bottom:15px; justify-content:flex-end;">
+			<button style="width:90px; height:24px; margin-right:7px;">Change Icon...</button>
+			<button style="width:90px; height:24px;">Default Icon</button>
+		</div>
+		<check>Hide icons when the desktop is viewed as a Web page</check>
+	</groupbox>
+	<groupbox title="Visual effects" style="padding:10px;">
+		<check class="margin-bottom">Use large icons</check>
+		<check class="margin-bottom">Show icons using all possible colours</check>
+		<check class="margin-bottom">Animate windows, menus and lists</check>
+		<check class="margin-bottom">Smooth edges of screen fonts</check>
+		<check class="">Show window contents while dragging</check>
+	</groupbox>
+</root>
+
+@code {
+	ListView DesktopIconsListView { get; set; }
+}

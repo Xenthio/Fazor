@@ -1,0 +1,197 @@
+﻿@using Sandbox;
+@using Sandbox.UI;
+@using XGUI; 
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
+@inherits Window
+
+<root title="Options" width="512px" height="406px" minwidth="512px" minheight="406px">
+	<tabcontrol style="height:100%;">
+		<tab tabName="keyboard" slot="tab" tabtext="Keyboard">
+			<div style="width:100%;height:100%; flex-direction:column;">
+				<layoutboxinset style="margin:4px; margin-top:6px; flex-grow:1;">
+
+				</layoutboxinset>
+				
+				<div style="flex-direction:row; margin:4px; margin-top:5px; align-items: flex-end;">
+					<button style="height:24px;">Use Defaults</button>
+					<div style="flex-grow:1;"></div>
+					<button style="margin-left:8px; width:84px; height:24px;">Edit key</button>
+					<button style="margin-left:8px; width:84px; height:24px;">Clear Key</button>
+				</div>
+			</div>
+		</tab>
+		<tab tabName="mouse" slot="tab" tabtext="Mouse">
+			<div style="width:100%;height:100%;">
+				<div style="margin:32px; width:350px;">
+					<div style="flex-direction:row;">
+						<div style="flex-direction:column;">
+							<check value="false">Reverse mouse</check>
+							<check value="true">Mouse look</check>
+							<check value="false">Mouse filter</check>
+							<check value="true">Joystick</check>
+							<check value="true">Joystick look</check>
+							<check value="false">Auto-Aim</check>
+							<check value="true">Raw mouse input</check>
+						</div>
+
+						<div style="flex-direction:column; margin-left:8px;">
+							<label class="info">Reverse mouse up-down axis</label>
+							<label class="info">Use the mouse to look around</label>
+							<label class="info">Smooth out mouse movement</label>
+							<label class="info">Enable the joystick</label>
+							<label class="info">Use the joystick to look around</label>
+							<label class="info">Aims at enemies automatically.</label>
+							<label class="info">Directly access mouse data</label>
+						</div>
+					</div>
+					<sliderscaleentry step=0.1 value="1.5" style="margin-top:16px;" label="Mouse sensitivity" min=0.2 max=20 mintext="0.20" maxtext="20.00">
+
+					</sliderscaleentry>
+				</div>
+			</div>
+		</tab>
+		<tab tabName="audio" slot="tab" tabtext="Audio">
+			<div style="width:100%;height:100%;">
+				<div style="margin:32px;">
+					<div style="flex-direction:row;">
+						<div style="width:220px; flex-direction:column;">
+							<sliderscale value="1.5" label="Sound effects volume" min=0 max=1 step=0.1 mintext="" maxtext=""></sliderscale>
+							<sliderscale value="1.5" label="MP3 volume *" min=0 max=1 step=0.1 mintext="" maxtext=""></sliderscale>
+							<sliderscale value="1.5" label="HEV suit volume" min=0 max=1 step=0.1 mintext="" maxtext=""></sliderscale>
+						</div>
+						<div style="width:380px; flex-direction:column; padding-left:48px;padding-right:48px;">
+							<controllabel label="Sound quality">
+								<combobox default="High">
+									<option value="high">High</option>
+									<option value="low">Low</option>
+								</combobox>
+							</controllabel>
+						</div>
+					</div>
+
+					<label class="info">
+						* MPEG Layer-3 playback supplied with the Miles Sound System from RAD Game Tools, Inc. MPEG Layer-3 audio compression technology licensed by Fraunhofer IIS and THOMSON multimedia.
+					</label>
+				</div>
+			</div>
+		</tab>
+		<tab tabName="video" slot="tab" tabtext="Video">
+			<div style="width:100%;height:100%;">
+				<div style="margin:32px; margin-bottom:8px; margin-top:24px;">
+					<div style="flex-direction:row;">
+						<div style="width:180px; margin:0px; flex-direction:column; gap:5px;">
+							<controllabel label="Renderer">
+								<combobox default="OpenGL">
+									<option value="software">Software</option>
+									<option value="opengl">OpenGL</option>
+								</combobox>
+							</controllabel>
+							<controllabel label="Resolution">
+								<combobox default="1280 x 720">
+									<option value="a">1280 x 720</option>
+									<option value="b">1920 x 1080</option>
+								</combobox>
+							</controllabel>
+							<controllabel label="Display Mode">
+								<combobox default="Widescreen" style="margin-top:2px;">
+									<option value="normal">Normal</option>
+									<option value="widescreen">Widescreen</option>
+								</combobox>
+							</controllabel>
+						</div>
+						<div style="width:250px; margin:26px; margin-left:50px; flex-direction:column; gap:4px;">
+							<check value="true">Run in a window</check>
+							<check value="false">Wait for vertical sync</check>
+							<check value="false">Enable HD models if available</check>
+							<check value="false">Allow custom addon content</check>
+							<check value="false">Low video quality. Helps with slower video cards.</check>
+						</div>
+					</div>
+					<div style="flex-direction:row;">
+						<controllabel label="Brightness">
+							<sliderscale style="width: 160px; margin-right: 40px;" step=0.1 value="0.5" min=0 max=1 mintext="Low" maxtext="High"></sliderscale>
+						</controllabel>
+						<controllabel label="Gamma">
+							<sliderscale style="width: 160px;" step=0.1 value="0.5" min=0 max=1 mintext="Low" maxtext="High"></sliderscale>
+						</controllabel>
+					</div>
+					<label class="info">
+						Note: changing video options will cause the game to exit and restart.
+					</label>
+				</div>
+			</div>
+		</tab>
+		<tab tabName="voice" slot="tab" tabtext="Voice">
+			<div style="width:100%;height:100%;">
+
+				<div style="margin:32px; margin-bottom:8px; margin-top:32px;">
+					<check value="true">Enable voice in this game</check>
+
+					<div style="flex-direction:row; margin-top:16px;">
+						<controllabel label="Voice transmit volume *">
+							<sliderscale style="width: 160px; margin-right: 40px;" step=0.1 value="0.5" min=0 max=1 mintext="" maxtext=""></sliderscale>
+						</controllabel>
+						<controllabel label="Voice receive volume *">
+							<sliderscale style="width: 160px;" step=0.1 value="0.5" min=0 max=1 mintext="" maxtext=""></sliderscale>
+						</controllabel>
+					</div>
+
+					<textentry style="width:160px; margin-top:7px;"></textentry>
+					<button style="width:160px; margin-top:7px;">Test Microphone</button>
+					<check style="margin-top:16px;" value="false">Boost microphone gain</check>
+
+					<label class="info" style="margin-top:16px;">
+						* Uses Miles Sound System.
+						Copyright © 1991-2001 by RAD Game Tools, Inc.
+					</label> 
+				</div>
+			</div>
+		</tab>
+		<tab tabName="lock" slot="tab" tabtext="Lock">
+			<div style="width:100%;height:100%;">
+				<div style="margin:32px; margin-right:8px;">
+					<div style="flex-direction:row;">
+						<div style="flex-direction:column; width:128px; justify-content:center;">
+							<check value="false">Content lock</check>
+						</div>
+						<div style="flex-direction:column; margin-left:8px;">
+							<label class="info">Press this button and enter password to disable visuals inappropriate for younger players.</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		</tab>
+		<tab tabName="multiplayer" slot="tab" tabtext="Multiplayer">
+			<div style="width:100%;height:100%;">
+				<div style="margin:16px;">
+					<controllabel label="Player name">
+						<textentry style="width:140px; margin-bottom:24px;" value="Xenthio"></textentry>
+					</controllabel>
+					<controllabel label="Player model">
+						<combobox default="barney" style="width:140px; margin-bottom:24px;">
+							<option>barney</option>
+							<option>gina</option>
+							<option>gman</option>
+							<option>gordon</option>
+							<option>helmet</option>
+							<option>hgrunt</option>
+						</combobox>
+					</controllabel>
+					<controllabel label="Colours">
+						<sliderscale style="width: 140px;" step=0.1 value="0.5" min=0 max=1 mintext="" maxtext=""></sliderscale>
+						<sliderscale style="width: 140px;" step=0.1 value="0.2" min=0 max=1 mintext="" maxtext=""></sliderscale>
+					</controllabel>
+				</div>
+			</div>
+		</tab>
+	</tabcontrol>
+	<div style="flex-direction:row; margin:8px; margin-top:5px; justify-content:flex-end;">
+		<button style="margin-left:8px; width:64px; height:24px;" autofocus=1 focus=1>OK</button>
+		<button style="margin-left:8px; width:64px; height:24px;" focus=1>Cancel</button>
+		<button style="margin-left:8px; width:64px; height:24px;" focus=1>Apply</button>
+	</div>
+	<resizer>
+
+	</resizer>
+</root>
+

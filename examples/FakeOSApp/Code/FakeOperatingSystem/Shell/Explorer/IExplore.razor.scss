@@ -1,0 +1,33 @@
+IExplore {
+
+	.throbber {
+		width: 40px;
+		height: 24px;
+		margin-left: 4px;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-color: black;
+		background-image: url("XGUI/Resources/95/browseui_throbber.png");
+
+		&.toolbar-container {
+			margin: -1px;
+		}
+	}
+
+	.filesystem-selector {
+		flex-grow: 1;
+	}
+
+	.address-bar {
+		align-items: center;
+	}
+
+	LayoutBoxInset {
+		flex-grow:1;
+	}
+
+	WebPanel
+	{
+		flex-grow: 1;
+	}
+}

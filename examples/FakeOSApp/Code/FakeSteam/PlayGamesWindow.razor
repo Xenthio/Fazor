@@ -1,0 +1,60 @@
+@using Sandbox;
+@using Sandbox.Services.Players
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@using System.Linq;
+@using XGUI; 
+@using Steamworks;
+@attribute [StyleSheet]
+@inherits Window
+
+
+<root title="Play games" hasminimise="true" hasmaximise="false" x="756" y="20" width="512" height="626">
+	
+	<div class="window-content">
+	@{
+		var localSteamProfile = new Friend(Connection.Local.SteamId);
+	}
+	<div class="mainarea" style="flex-direction:column;">
+		<selectlist class="gamelist item-list" style="">
+			<ListOptGroup label=@($"MY GAMES ({localSteamProfile.Name})")></ListOptGroup>
+			@foreach (var game in MyGamesList)
+			{
+				<GameEntry Game=@game></GameEntry>
+			}
+			<ListOptGroup label="GAMES"></ListOptGroup>
+			@foreach (var game in GamesList)
+			{
+				<GameEntry Game=@game></GameEntry>
+			}
+		</selectlist> 
+
+		<button class="browsegames">Browse games...</button>
+	</div>
+	<resizer>
+
+	</resizer>
+	</div>
+</root>
+
+@code {
+	List<Package> MyGamesList = new();
+	List<Package> GamesList = new();
+	public PlayGamesWindow()
+	{
+		SetTheme("/XGUI/DefaultStyles/OliveGreen.scss");
+	}
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		if (firstTime)
+		{
+			MyGamesList = Package.FindAsync("type:game sort:favourite", 20).Result.Packages.ToList();
+			GamesList = Package.FindAsync("type:game sort:trending", 20).Result.Packages.ToList();
+		}
+	}
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(GamesList.Count);
+	}
+}

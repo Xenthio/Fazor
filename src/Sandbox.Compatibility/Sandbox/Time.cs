@@ -73,3 +73,32 @@ public class LayoutBoxInsetAttribute : Attribute
         Left = left;
     }
 }
+
+/// <summary>
+/// LayoutBoxInset panel type - a panel with inset layout.
+/// </summary>
+public class LayoutBoxInset : Sandbox.UI.Panel
+{
+    public float Top { get; set; }
+    public float Right { get; set; }
+    public float Bottom { get; set; }
+    public float Left { get; set; }
+    
+    public LayoutBoxInset()
+    {
+        AddClass("layout-box-inset");
+    }
+    
+    public LayoutBoxInset(float top, float right, float bottom, float left) : this()
+    {
+        Top = top;
+        Right = right;
+        Bottom = bottom;
+        Left = left;
+        
+        Style.PaddingTop = top;
+        Style.PaddingRight = right;
+        Style.PaddingBottom = bottom;
+        Style.PaddingLeft = left;
+    }
+}

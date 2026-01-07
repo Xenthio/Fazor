@@ -1,0 +1,87 @@
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@inherits Panel
+
+<root class="column" style="flex-grow:1;">
+	<label>Theme:</label>
+	<combobox default=@(XGUISystem.Instance.GlobalTheme) @ref="ThemeComboBox">
+		@foreach (string themeFileName in GetAllThemes())
+		{
+			var fullThemePath = $"/XGUI/DefaultStyles/{themeFileName}";
+			<option value="@fullThemePath">@themeFileName.Replace(".scss", "")</option>
+		}
+	</combobox>
+	<div style="flex-grow:1;"></div>
+	<layoutboxinset style="height:193px; background-color: #008080;">
+		<!-- Preview would be here -->
+	</layoutboxinset>
+</root>
+
+@code {
+	private ComboBox ThemeComboBox;
+
+	protected string _selectedThemePath => ThemeComboBox?.Value as string;
+	public static string SelectedThemePath;
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		// dumb, need to do because of stupid bug in s&box.
+		SelectedThemePath = $"/XGUI/DefaultStyles/{_selectedThemePath}.scss";
+		if (string.IsNullOrWhiteSpace(SelectedThemePath) || SelectedThemePath == "/XGUI/DefaultStyles/.scss")
+		{
+			SelectedThemePath = ""; // nullify!
+		}
+	}
+
+	List<string> GetAllThemes()
+	{
+		var themes = new List<string>();
+		// This list contains only the filenames
+		var defaultThemes = new List<string>()
+		{
+			"Computer11.scss",
+			"Computer7.scss",
+			"Computer95.scss",
+			"ComputerXP.scss",
+			"Derma.scss",
+			"DermaBkup.scss",
+			"IMGUI.scss",
+			"OliveGreen.scss",
+			"SboxDark.scss",
+			"Simple.scss",
+			"ThinGrey.scss",
+			"Vapour.scss",
+			"XGUI.scss"
+		};
+		// FileSystem.Mounted.FindFile returns filenames without the base path
+		var themeFiles = FileSystem.Mounted.FindFile("/XGUI/DefaultStyles/", "*.scss");
+
+		themes.AddRange(defaultThemes);
+		foreach (var file in themeFiles) // file is just the filename e.g., "MyTheme.scss"
+		{
+			if (!themes.Contains(file))
+			{
+				themes.Add(file);
+			}
+		}
+
+		// Ensure the current global theme (if it's a custom one not in defaultThemes) is in the list
+		// XGUISystem.Instance.GlobalTheme is a full path, e.g., "/XGUI/DefaultStyles/Computer95.scss"
+		var currentGlobalThemeFileName = Path.GetFileName(XGUISystem.Instance.GlobalTheme);
+		if (!string.IsNullOrEmpty(currentGlobalThemeFileName) && !themes.Contains(currentGlobalThemeFileName))
+		{
+			themes.Add(currentGlobalThemeFileName);
+		}
+
+
+		return themes.Distinct().ToList(); // Return distinct list of filenames
+	}
+}

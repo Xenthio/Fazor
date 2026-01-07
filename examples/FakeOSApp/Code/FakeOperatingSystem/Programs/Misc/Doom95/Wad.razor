@@ -1,0 +1,68 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@attribute [StyleSheet()]
+@inherits Window
+
+<root title="S&Doom" width="280" height="430" theme="Computer95">
+	<div class="window-content">
+		<layoutboxinset class="column mainbox" style="margin:1px; margin-top:2px; flex-grow:1;">
+			<groupbox title="Game Parameters" class="game-parameters margin" style="margin-top: 16px;">
+				<controllabel label="GameWAD file">
+					<combobox default="DOOM" class="control">
+						<option value="doom.wad">DOOM</option>
+					</combobox>
+				</controllabel>
+				<controllabel label="Custom WAD File" class="custom-wad-file">
+					<div class="row control">
+						<combobox default="Select..." style="flex-grow:1; margin-right: 8px;">
+						</combobox>
+						<button style="margin-right:4px; height:21px; bottom:2px;">
+							Browse...
+						</button>
+					</div>
+				</controllabel>
+				<controllabel label="Skill Level" style="margin-bottom:2px;">
+					<combobox default="I'm too young to die" class="control">
+						<option value="easy">I'm too young to die</option>
+						<option value="medium">Hey, not too rough</option>
+					</combobox>
+				</controllabel>
+				<controllabel label="Episode/Level" style="margin-bottom:-1px;">
+					<combobox class="control" default="Episode 1, Map 1: &quotHanger&quot">
+						<option value="e1m1">Episode 1, Map 1: "Hanger"</option> 
+					</combobox>
+				</controllabel>
+				<groupbox title="Deathmatch Options" style="margin-left: 1px; margin-right: 1px;">
+					<check class="margin-bottom">Play in "Deathmatch" Mode</check>
+					<check>Play in "Deathmatch II" Mode (altdeath)</check>
+				</groupbox>
+				<groupbox title="Monster Options" style="margin-left: 1px; margin-right: 1px;">
+					<check class="margin-bottom">No Monsters</check>
+					<check class="margin-bottom">Fast Monsters</check>
+					<check>Respawn Monsters</check>
+				</groupbox>
+				<div class="row" style="margin-top:10px">
+					<button style="min-width:96px; height:21px; margin-right:38px; margin-left:0px;">Advanced...</button>
+					<button style="min-width:96px; height:21px;">Configuration...</button>
+				</div>
+			</groupbox>
+			<div class="row margin" style="justify-content:space-evenly">
+				<button onclick=@LaunchGame style="min-width:96px; height:21px;">New Game</button>
+				<button style="min-width:96px; height:21px;">Cancel</button>
+			</div>
+		</layoutboxinset>
+	</div>
+
+</root>
+
+@code {
+	void LaunchGame()
+	{
+		var gameident = "ataco.sdoomresurrection";
+		Sandbox.Game.Overlay.ShowGameModal(gameident);
+
+		//ConsoleSystem.Run("game", gameident);
+		//MenuUtility.OpenGame(gameident, true);
+	}
+}

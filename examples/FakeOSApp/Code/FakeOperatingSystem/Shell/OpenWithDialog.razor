@@ -1,0 +1,279 @@
+@using FakeDesktop
+@using FakeOperatingSystem;
+@using FakeOperatingSystem.Shell;
+@using Sandbox.UI;
+@using XGUI;
+@using System;
+@using System.Linq;
+@using System.Collections.Generic;
+@using System.IO;
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem.Shell
+
+@attribute [StyleSheet]
+@inherits Window
+
+<root title="Open With"
+	  width="324" height="316"
+	  minwidth="324" minheight="316"
+	  class="open-with-dialog window1">
+
+	<div class="window-content" style="padding: 10px; flex-direction: column;">
+		<Label @ref="InfoLabel">
+			@($"Click the program you want to use to open the file '{Path.GetFileName(TargetFilePath)}'")
+		</Label>
+		<label style="margin-bottom: 10px;">
+			If the program you want is not in the list, click Other.
+		</label>
+
+		<Label Text="Choose the program you want to use:" style="margin-bottom: 2px;" />
+		<div class="app-list-container" style="flex-grow: 1;">
+			<ListView style="flex-grow: 1;" @ref="AppListView" />
+		</div>
+
+		<div style="margin-top: 10px;">
+			<check @ref="AlwaysUseCheckBox">Always use this program to open this type of file</check>
+		</div>
+
+		<div class="button-row" style="flex-direction: row; justify-content: flex-end; margin-top: 30px;">
+			<Button class="button-primary margin-right" onclick=@OnOkClick>OK</Button>
+			<Button class="margin-right" onclick=@OnCancelClick>Cancel</Button>
+			<Button onclick=@OnBrowseClick>Other...</Button>
+		</div>
+	</div>
+</root>
+
+@code {
+
+
+
+	public string TargetFilePath { get; set; }
+	private string _targetExtension;
+
+	private Label InfoLabel;
+	private ListView AppListView;
+	private CheckBox AlwaysUseCheckBox;
+
+	// Action: selected program path, set as default
+	public Action<string, bool> OnProgramSelectedAndConfirmed { get; set; }
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		if (firstTime)
+		{
+			if (string.IsNullOrEmpty(TargetFilePath))
+			{
+				Log.Error("OpenWithDialog: TargetFilePath not set.");
+				Close();
+				return;
+			}
+
+			_targetExtension = Path.GetExtension(TargetFilePath)?.TrimStart('.').ToLowerInvariant();
+			if (string.IsNullOrEmpty(_targetExtension))
+			{
+				Log.Error($"OpenWithDialog: Could not determine extension for {TargetFilePath}.");
+				Close();
+				return;
+			}
+
+			SetupAppListView();
+			PopulateAppList();
+		}
+	}
+
+	AppEntry _selectedAppEntry;
+
+	private void SetupAppListView()
+	{
+		AppListView.AddColumn("Program", "Program", 250); 
+		AppListView.ViewMode = ListView.ListViewMode.List; 
+		AppListView.OnItemSelected += (item) =>
+		{
+			_selectedAppEntry = item?.Data as AppEntry; 
+		};
+	}
+
+	private void PopulateAppList()
+	{
+		if (AppListView == null || Registry.Instance == null) return; // Added Registry.Instance null check
+		AppListView.Items.Clear();
+
+		var appEntries = new List<AppEntry>();
+		FileAssociation currentAssociation = null;
+
+		if (!string.IsNullOrEmpty(_targetExtension))
+		{
+			currentAssociation = FileAssociationManager.Instance?.GetAssociation(_targetExtension);
+		}
+		
+		// 1. Add Default Program from current association (if any)
+		if (currentAssociation?.DefaultProgram != null)
+		{
+			string defaultAppName = GetAppNameFromPath(currentAssociation.DefaultProgram);
+			// Prefer display name from "open" action if it matches the default program
+			if (currentAssociation.Actions.TryGetValue("open", out var openAction) && 
+				openAction.Program.Equals(currentAssociation.DefaultProgram, StringComparison.OrdinalIgnoreCase))
+			{
+				defaultAppName = openAction.DisplayName ?? defaultAppName;
+			}
+			appEntries.Add(new AppEntry { Name = $"{defaultAppName} (Default)", ProgramPath = currentAssociation.DefaultProgram, IsCurrentDefault = true });
+		}
+
+		// 2. Add other registered actions for this extension (if an extension exists)
+		if (currentAssociation?.Actions != null)
+		{
+			foreach (var action in currentAssociation.Actions.Values)
+			{
+				// Avoid duplicating the default program if it's already added
+				if (appEntries.Any(ae => ae.ProgramPath.Equals(action.Program, StringComparison.OrdinalIgnoreCase)))
+				{
+					continue;
+				}
+				appEntries.Add(new AppEntry { Name = action.DisplayName ?? GetAppNameFromPath(action.Program), ProgramPath = action.Program });
+			}
+		}
+
+		// 3. Add programs from HKEY_CLASSES_ROOT\Applications
+		string applicationsRegPath = @"HKEY_CLASSES_ROOT\Applications";
+		if (Registry.Instance.KeyExists(applicationsRegPath))
+		{
+			var registeredAppNames = Registry.Instance.GetSubKeyNames(applicationsRegPath);
+			foreach (var appExeName in registeredAppNames)
+			{
+				string appKeyPath = Path.Combine(applicationsRegPath, appExeName);
+				string friendlyName = Registry.Instance.GetValue<string>(appKeyPath, "", appExeName);
+				string commandPath = Registry.Instance.GetValue<string>(Path.Combine(appKeyPath, "shell", "open", "command"), "", null);
+
+				if (!string.IsNullOrEmpty(commandPath))
+				{
+					// Extract the actual program path from the command string (e.g., "C:\path\to\app.exe" "%1")
+					string actualProgramPath = ExtractProgramPathFromCommand(commandPath);
+
+					if (!string.IsNullOrEmpty(actualProgramPath) && 
+						!appEntries.Any(ae => ae.ProgramPath.Equals(actualProgramPath, StringComparison.OrdinalIgnoreCase)))
+					{
+						appEntries.Add(new AppEntry { Name = friendlyName, ProgramPath = actualProgramPath });
+					}
+				}
+			}
+		}
+
+
+		ListView.ListViewItem firstSelectableItem = null;
+
+		foreach (var app in appEntries.DistinctBy(a => a.ProgramPath, StringComparer.OrdinalIgnoreCase) // Ensure unique program paths
+									   .OrderByDescending(a => a.IsCurrentDefault)
+									   .ThenBy(a => a.Name))
+		{
+			var listViewItem = AppListView.AddItem(app, new List<string> { app.Name });
+			var iconPanel = listViewItem.IconPanel;
+			if (iconPanel == null && listViewItem.Children.FirstOrDefault(c => c is XGUIIconPanel) is XGUIIconPanel existingIconPanel)
+			{
+				iconPanel = existingIconPanel;
+			}
+			else if (iconPanel == null)
+			{
+				iconPanel = listViewItem.AddChild<XGUIIconPanel>(); // Ensure IconPanel exists
+				listViewItem.IconPanel = iconPanel; // Assuming ListViewItem has a direct reference or you manage it
+			}
+
+
+			var size = 16;
+			// Attempt to get icon from the executable itself
+			var iconPath = FileIconHelper.GetFileIcon(app.ProgramPath, size); 
+
+			if (!string.IsNullOrEmpty(iconPath) && !iconPath.StartsWith("material:")) // Ensure it's a file path
+			{
+				iconPanel.SetIcon($"url:{iconPath}", iconSize: size);
+			}
+			else
+			{
+				// Fallback to a generic application icon or use XGUIIconSystem for a UI icon
+				iconPanel.SetIcon("exe", XGUIIconSystem.IconType.FileType, size);
+			}
+			
+			if (app.IsCurrentDefault && firstSelectableItem == null)
+			{
+				firstSelectableItem = listViewItem;
+			}
+		}
+		AppListView.UpdateItems();
+		
+		if (firstSelectableItem != null)
+		{
+			AppListView.SelectItem(firstSelectableItem);
+		} else if (AppListView.Items.Any())
+		{
+			AppListView.SelectItem(AppListView.Items.First());
+		}
+	}
+
+	private string ExtractProgramPathFromCommand(string command)
+	{
+		if (string.IsNullOrEmpty(command)) return null;
+
+		command = command.Trim();
+		if (command.StartsWith("\""))
+		{
+			int closingQuoteIndex = command.IndexOf('"', 1);
+			if (closingQuoteIndex > 0)
+			{
+				return command.Substring(1, closingQuoteIndex - 1);
+			}
+			// Malformed, but might be the path itself if no closing quote
+			return command.Substring(1); 
+		}
+		else
+		{
+			int firstSpaceIndex = command.IndexOf(' ');
+			if (firstSpaceIndex > 0)
+			{
+				return command.Substring(0, firstSpaceIndex);
+			}
+			return command; // Assume the whole string is the path if no spaces
+		}
+	}
+
+	private string GetAppNameFromPath(string programPath)
+	{
+		if (string.IsNullOrEmpty(programPath)) return "Unknown Application";
+		return Path.GetFileNameWithoutExtension(programPath);
+	}
+
+
+	private void OnOkClick()
+	{
+		if (_selectedAppEntry == null)
+		{
+			MessageBoxUtility.ShowCustom("Please select a program from the list.", "No Program Selected", MessageBoxIcon.Warning, MessageBoxButtons.OK);
+			return;
+		}
+
+		OnProgramSelectedAndConfirmed?.Invoke(_selectedAppEntry.ProgramPath, AlwaysUseCheckBox.Checked);
+		Close();
+	}
+
+	private void OnCancelClick()
+	{
+		Close();
+	}
+
+	private void OnBrowseClick()
+	{
+		MessageBoxUtility.ShowCustom("Browse functionality is not yet implemented. Please select from the list.", "Browse", MessageBoxIcon.Information, MessageBoxButtons.OK);
+		Log.Info("OpenWithDialog: Browse clicked - functionality not implemented.");
+	}
+
+	private class AppEntry
+	{
+		public string Name { get; set; }
+		public string ProgramPath { get; set; }
+		public bool IsCurrentDefault { get; set; }
+	}
+
+	public override void OnClose()
+	{
+		base.Delete(); 
+	}
+}

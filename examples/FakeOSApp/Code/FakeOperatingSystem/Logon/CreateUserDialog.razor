@@ -1,0 +1,113 @@
+@using Sandbox.UI
+@using XGUI
+@using System
+@using FakeOperatingSystem
+
+@inherits Window
+
+<root title="Create New User"
+	  width="417" height="256"
+	  minwidth="417" minheight="256"
+	  class="createuser-dialog"
+	  hasclose="false"
+	  hasminimise="false"
+	  hasmaximise="false">
+
+	<div class="window-content">
+
+		<brandingelement style="margin-bottom: 15px; height:93px; margin-top:1px;">
+		</brandingelement>
+
+		<div style="padding: 0px 6px; flex-direction:column;">
+			<div style="flex-direction: column; margin-bottom:12px;">
+				<label>Type a user name for your account.</label>
+				<label>If you prefer not to use user accounts, you can skip this step.</label>
+			</div>
+
+			<div style="flex-direction: column;">
+				<div style="align-items:center; margin-bottom:6px;">
+					<label for="username" style="width:100px;">User name:</label>
+					<TextEntry @ref="UsernameEntry" id="username" style="width:128px;" value="Administrator"/>
+				</div>
+				<div style="align-items:center; margin-bottom:6px;">
+					<label for="password" style="width:100px;">Password:</label>
+					<TextEntry @ref="PasswordEntry" id="password" type="password" style="width:128px;"/>
+				</div>
+			</div>
+
+			<div style="display: flex; flex-direction: row; justify-content: flex-end; gap: 10px; margin-top: auto;">
+				<Button class="button" onclick=@HandleCreateUserClick style="min-width:72px;">Next</Button>
+				<Button class="button" onclick=@HandleSkipClick  style="min-width:72px;">Skip</Button>
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+	private TextEntry UsernameEntry;
+	private TextEntry PasswordEntry;
+	private TextEntry ConfirmPasswordEntry;
+
+	public Action<string, string> OnCreate { get; set; }
+	public Action OnSkip { get; set; }
+
+	public CreateUserDialog()
+	{
+		// Default constructor
+	}
+
+	// Constructor to be called from FakeOSLoader
+	public CreateUserDialog(Action<string, string> onCreate, Action onSkip) : this()
+	{
+		OnCreate = onCreate;
+		OnSkip = onSkip;
+	}
+
+	int ticknum = 0;
+	public override void Tick()
+	{
+		base.Tick();
+		if (ticknum < 5)
+		{
+			// Center the window
+			var panel = XGUISystem.Instance.Panel;
+			if (panel != null)
+			{
+				var x = (panel.Box.Rect.Width - Box.Rect.Width) / 2;
+				var y = (panel.Box.Rect.Height - Box.Rect.Height) / 2;
+				this.Position = new Vector2(x, y);
+			}
+			ticknum++;
+		}
+	}
+
+	private void HandleCreateUserClick()
+	{
+		string username = UsernameEntry.Text.Trim();
+		string password = PasswordEntry.Text;
+		string confirmPassword = PasswordEntry.Text;
+
+		if (string.IsNullOrWhiteSpace(username))
+		{
+			// TODO: Show an error message (e.g., a simple XGUI MessageBox)
+			Log.Warning("Username cannot be empty.");
+			return;
+		}
+
+		if (password != confirmPassword)
+		{
+			// TODO: Show an error message
+			Log.Warning("Passwords do not match.");
+			return;
+		}
+
+		OnCreate?.Invoke(username, password);
+		Delete(); // Close the dialog
+	}
+
+	private void HandleSkipClick()
+	{
+		OnSkip?.Invoke();
+		Delete(); // Close the dialog
+	}
+}

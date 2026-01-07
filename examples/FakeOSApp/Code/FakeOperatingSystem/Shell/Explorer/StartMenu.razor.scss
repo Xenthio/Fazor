@@ -1,0 +1,74 @@
+StartMenu {
+	&.startmenu {
+		flex-direction: column;
+
+		.window-content {
+			flex-direction: row;
+
+			.startmenu-left-pane {
+				margin: 1px;
+				margin-right: 0px;
+				background-color: #000080;
+				flex-direction: column;
+				width: 21px;
+
+				.sideways-label {
+					//sideways text
+					transform: rotate(-90deg);
+					bottom: 20px;
+					position: absolute;
+					width: 31px;
+					font-weight: bold;
+					height: 21px;
+					text-wrap: nowrap;
+					color: #C0C0C0;
+				}
+			}
+
+			.startmenu-right-pane {
+				margin: 1px;
+				margin-left: 0px;
+				flex-direction: column;
+
+				.ContextMenu {
+					border: none;
+
+					&::before {
+						position:absolute;
+						border: 0px;
+					}
+
+					padding: 0px;
+				}
+
+				.menuitem {
+					margin: 0px;
+					margin-left: 0px;
+					justify-content: flex-start;
+					width: 136px;
+					height: 32px;
+					cursor: default;
+					border: 0px;
+
+					&::before {
+						border: 0px;
+					}
+
+					.ItemIcon {
+						margin-left: 8px;
+						margin-right: 10px;
+						width: 24px;
+						height: 24px;
+					}
+				}
+
+				hr {
+					margin: 2px 0;
+					height: 1px;
+					background-color: #808080;
+					border: none;
+				}
+			}
+		}
+	}
+}

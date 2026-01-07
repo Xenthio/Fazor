@@ -1,0 +1,16 @@
+Notepad {
+	.text-area {
+		font-family: 'Lucida Console';
+		font-size: 14px;
+		border: 0px;
+
+		&::before {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			border: 0px;
+		}
+	}
+}

@@ -1,0 +1,287 @@
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using System.IO
+@using XGUI;
+@using FakeDesktop;
+@using global::FakeOperatingSystem;
+@using global::FakeOperatingSystem.OSFileSystem
+@using global::FakeOperatingSystem.Shell;
+@using global::FakeOperatingSystem.User
+@attribute [StyleSheet()]
+@inherits Window
+
+<root class="taskbar-root" hastitlebar="false" isresizable="false" isdraggable="false">
+	<div class="window-content" style="padding:2px; display:flex; align-items:center;">
+
+		<!-- Start Button -->
+		<button class="start-button" @ref=StartButton onclick=@OpenStartMenu> 
+			<img class="iconpanel icon" src="XGUI/Resources/95/start_icon_shaded_16.png" />
+			Start
+		</button>
+
+		<SeperatorVertical class="seperator"></SeperatorVertical>
+
+		<!-- Quick Access Section -->
+		<div class="quick-access">
+			<div class="toolbar-drag-handle handle"></div>
+
+			@foreach (var item in QuickAccessItems)
+			{
+				<button class="quick-access-btn" title="@item.Name" onclick="@(() => OpenQuickAccessItem(item))">
+					<img class="iconpanel icon" src="@item.Icon" />
+				</button>
+			}
+		</div>
+
+		<SeperatorVertical class="seperator"></SeperatorVertical>
+
+        <!-- Open Windows Section -->
+        <div class="open-windows">
+			<div class="toolbar-drag-handle handle"></div>
+			@foreach (var win in OpenWindows)
+			{
+				var isFocused = win.WindowRef?.HasFocus == true;
+				<button class="window-btn @(isFocused ? "focused forceinset" : "")" title="@win.Title" onclick="@(() => RestoreOrFocusWindow(win))" style="display:flex; align-items:center;">
+					<img class="iconpanel icon" src="@win.Icon" style="margin-right:2px;" />
+					<span>@win.Title</span>
+				</button>
+			}
+        </div>
+
+		<div class="spacer"></div>
+
+		<SeperatorVertical class="seperator"></SeperatorVertical>
+
+		<!-- System Tray Section -->
+		<div class="system-tray layout-inset">  
+			<button class="tray-btn" title="Volume">
+				<img class="icon" src="XGUI/Resources/95/sound_16.png" />
+			</button>
+			<label class="clock">
+				@DateTime.Now.ToString("hh:mm tt")
+			</label> 
+		</div> 
+	</div> 
+</root>	
+
+@code {
+
+	Button StartButton;
+
+	bool StartMenuOpen => StartMenuWindow != null && StartMenuWindow.IsValid;
+
+	// --- Quick Access Implementation ---
+	public record QuickAccessItem(string Name, string Path, string Icon, bool IsDirectory);
+
+	private List<QuickAccessItem> _quickAccessItems = new();
+
+	public List<QuickAccessItem> QuickAccessItems => _quickAccessItems;
+
+	// Method to load quick launch items from the virtual file system
+	private void LoadQuickLaunchItems()
+	{
+		_quickAccessItems.Clear();
+
+		// Get the VirtualFileSystem instance
+		var virtualFileSystem = VirtualFileSystem.Instance;
+		if (virtualFileSystem == null)
+			return;
+
+		// Path to Quick Launch folder
+		string quickLaunchPath = UserProfileHelper.GetQuickLaunchPath();
+
+		// Check if the folder exists
+		if (virtualFileSystem.FileExists(quickLaunchPath))
+			return;
+
+		Log.Info("Loading Quick Access Items");
+		// Get folder contents
+		var contents = virtualFileSystem.GetFiles(quickLaunchPath);
+
+
+		// Add each item to the quick launch items
+		foreach (var entry in contents)
+		{
+			int iconSize = 16;
+			string iconPath;
+			var entryName = Path.GetFileNameWithoutExtension(entry);
+			Log.Info($"Adding Quick Access Item: {entryName}"); 
+			iconPath = FileIconHelper.GetFileIcon(entry, iconSize);
+			_quickAccessItems.Add(new QuickAccessItem(
+				entryName,
+				entry,
+				iconPath,
+				true
+			));
+		}
+		// Todo, readd folder back.
+
+		// Add each item to the quick launch items
+		// Old Reference Code for OldVirtualFileSystem
+		// foreach (var entry in contents)
+		// {
+		// 	Log.Info($"Adding Quick Access Item: {entry.Name} ({entry.Type})");
+		// 	int iconSize = 16;
+		// 	string iconPath;
+
+		// 	if (entry.Type == OldVirtualFileSystem.EntryType.Directory ||
+		// 		entry.Type == OldVirtualFileSystem.EntryType.SpecialFolder)
+		// 	{
+		// 		iconPath = FileIconHelper.GetFolderIcon(entry.Path, iconSize);
+		// 		_quickAccessItems.Add(new QuickAccessItem(
+		// 			entry.Name,
+		// 			entry.Path,
+		// 			iconPath,
+		// 			true
+		// 		));
+		// 	}
+		// 	else
+		// 	{
+		// 		iconPath = FileIconHelper.GetFileIcon(entry.Path, iconSize);
+		// 		_quickAccessItems.Add(new QuickAccessItem(
+		// 			entry.Name,
+		// 			entry.Path,
+		// 			iconPath,
+		// 			false
+		// 		));
+		// 	}
+		// }
+	}
+
+	// Method to open quick access item
+	private void OpenQuickAccessItem(QuickAccessItem item)
+	{
+		Shell.ShellExecute(item.Path);
+	}
+
+	// --- Open Windows Implementation ---
+	public class WindowInfo
+	{
+		public string Title { get; set; }
+		public string Icon { get; set; }
+		public Window WindowRef { get; set; }
+	}
+
+	WindowInfo FocusedWindow => OpenWindows.FirstOrDefault(w => w.WindowRef?.HasFocus == true);
+
+	List<WindowInfo> OpenWindows => GetOpenWindows();
+
+	List<WindowInfo> GetOpenWindows()
+	{
+		var windows = new List<WindowInfo>();
+
+		foreach (var process in global::FakeOperatingSystem.ProcessManager.Instance.GetProcesses())
+		{
+			// NativeProcess: has OwnedWindows
+			if (process is global::FakeOperatingSystem.NativeProcess nativeProc)
+			{
+				foreach (var panel in nativeProc.OwnedWindows)
+				{
+					if (panel == this)
+						continue; // Skip the taskbar itself
+					if (panel is Window win && win != null && win.IsValid && (win.IsVisible || win.IsMinimised))
+					{
+						windows.Add(new WindowInfo
+						{
+							Title = win.Title ?? process.ProcessName ?? "Window",
+							Icon = win?.TitleBar?.TitleIcon?.Style?.BackgroundImage?.ResourcePath ?? "XGUI/Resources/95/app_default_16.png", // Optionally use a process-specific icon
+							WindowRef = win
+						});
+					}
+				}
+			}
+			// If you add window support to other process types, handle them here.
+		}
+
+		return windows;
+	}
+
+	void RestoreOrFocusWindow(WindowInfo win)
+	{
+		if (win.WindowRef?.IsMinimised == true)
+		{
+			win.WindowRef.Minimise(); // This will restore and show the window
+		}
+		else
+		{
+			win.WindowRef?.FocusWindow();
+		}
+	}
+
+	public TaskBar()
+	{ 
+		SetClass("taskbar-root",true);
+		Position = new Vector2(0, 9000);
+
+		// Load quick launch items when the taskbar is created
+		LoadQuickLaunchItems();
+
+		Window.OnMinimised += OnAnyWindowMinimised;
+		Window.OnRestored += OnAnyWindowRestored;
+	}
+
+	private void OnAnyWindowMinimised(Window window)
+	{
+		window.Style.Display = DisplayMode.None;
+	}
+	private void OnAnyWindowRestored(Window window)
+	{
+		window.Style.Display = DisplayMode.Flex;
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		Style.Top = null;
+		Style.Left = null;
+		Style.Bottom = 0;
+		if ( PositionStartMenuNextTick != 0 )
+		{
+			if ( PositionStartMenuNextTick == 1 )
+			{
+				PositionStartMenuNextTick = 0;
+				StartMenuWindow.Position = new Vector2(3, this.Box.Rect.Top - StartMenuWindow.Box.Rect.Height);
+				StartMenuWindow.FocusWindow();
+			}
+			else
+			{
+				PositionStartMenuNextTick--;
+			} 
+		}
+
+		// force StartButton to be active if the start menu is open
+		StartButton.PseudoClass = StartButton.PseudoClass.WithFlag(PseudoClass.Active, StartMenuOpen || (StartButton.HasActive && HasActive));
+	}
+
+	StartMenu StartMenuWindow;
+
+	int PositionStartMenuNextTick = 0;
+	public void OpenStartMenu()
+	{
+		// close if already open
+		if (StartMenuWindow != null && StartMenuWindow.IsValid)
+		{
+			StartMenuWindow.Delete();
+			StartMenuWindow = null;
+			return;
+		}
+		StartMenuWindow = Scene.GetSystem<XGUISystem>().Panel.AddChild<StartMenu>();
+		StartMenuWindow.OwnerStartButton = StartButton;
+		// position the start menu 
+		// set startmenu.Postion so the bottom of the window is aligned with the top of the taskbar
+		// this.Box.Rect.Bottom is the bottom of the taskbar
+		StartMenuWindow.Position = new Vector2(3, this.Box.Rect.Top - StartMenuWindow.Box.Rect.Height);
+		PositionStartMenuNextTick = 3;
+
+		StartMenuWindow.FocusWindow();
+	}
+
+	protected override int BuildHash()
+	{
+		return HashCode.Combine(base.BuildHash(), StartMenuOpen, QuickAccessItems.Count, OpenWindows.Count, FocusedWindow);
+	}
+}

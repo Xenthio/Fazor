@@ -1,0 +1,264 @@
+@using Sandbox.UI
+@using XGUI
+@using System
+@using System.Globalization
+@using System.Collections.Generic
+@using FakeDesktop
+@using FakeOperatingSystem
+
+@inherits Window
+
+<root title="@DialogTitle"
+	  width="420" height="@DialogHeight"
+	  class="edit-regvalue-dialog window1"
+	  hasclose="true"
+	  hasminimise="false"
+	  hasmaximise="false"
+	  issizeable="false">
+
+	<div class="window-content" style="padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+		
+		<!-- Value Name and Data Input Section -->
+		<div style="display: flex; flex-direction: column; gap: 8px;">
+			<!-- Value Name Row -->
+			<div style="display: flex; flex-direction: row; align-items: center;">
+				<label style="width: 90px; text-align: right; margin-right: 8px; flex-shrink: 0;">Value name:</label>
+				<TextEntry @ref="ValueNameEntry" readonly="@_isNameReadOnly" style="flex-grow: 1;" />
+			</div>
+
+			<!-- Value Data Row -->
+			<div style=@($"display: flex; flex-direction: row; align-items: {(_valueType == RegistryValueType.REG_MULTI_SZ ? "flex-start" : "center")}")>
+				<label style=@($"width: 90px; text-align: right; margin-right: 8px; flex-shrink: 0; padding-top: {(_valueType == RegistryValueType.REG_MULTI_SZ ? "3px" : "0px")}")>Value data:</label>
+				@if (_valueType == RegistryValueType.REG_MULTI_SZ)
+				{
+					<TextEntry @ref="ValueDataEntry" multiline="true" style="min-height: 80px; max-height:200px; flex-grow:1;" />
+				}
+				else
+				{
+					<TextEntry @ref="ValueDataEntry" style="flex-grow: 1;" />
+				}
+			</div>
+		</div>
+		
+		@if (_valueType == RegistryValueType.REG_DWORD || _valueType == RegistryValueType.REG_QWORD)
+		{
+			<!-- Base Format Radio Buttons -->
+			<div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin-left: 98px;"> <!-- 90px label width + 8px margin-right -->
+				<label style="flex-shrink: 0;">Base:</label>
+				<radiobuttons @ref="BaseFormatGroup" OnValueChanged="OnBaseFormatChangedFromGroup" style="flex-direction: row; gap: 10px;">
+					<radiobutton Value="'Hex'">Hexadecimal</radiobutton>
+					<radiobutton Value="'Decimal'">Decimal</radiobutton>
+				</radiobuttons>
+			</div>
+		}
+
+		<!-- OK/Cancel Buttons -->
+		<div style="display: flex; flex-direction: row; justify-content: flex-end; gap: 10px; margin-top: auto;">
+			<Button class="button" onclick=@HandleOKClick style="min-width:72px;">OK</Button>
+			<Button class="button" onclick=@HandleCancelClick style="min-width:72px;">Cancel</Button>
+		</div>
+	</div>
+</root>
+
+@code {
+	// C# code remains the same as your last provided version
+	// Ensure BaseFormatGroup is declared if you switched to <radiobuttons>
+	private RadioButtons BaseFormatGroup; // If you are using the <radiobuttons> wrapper
+
+	public enum RegistryValueType { REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD, REG_QWORD, REG_MULTI_SZ, Unknown }
+
+	public string DialogTitle { get; set; } = "Edit Value";
+	public int DialogHeight { get; set; } = 200;
+
+	private string _originalValueName;
+	private object _originalValueData;
+	private RegistryValueType _valueType;
+	private bool _isNameReadOnly = false;
+	private bool _isHexFormat = true; // For DWORD/QWORD
+
+	private TextEntry ValueNameEntry;
+	private TextEntry ValueDataEntry;
+	// If not using <radiobuttons> wrapper, keep these:
+	// private RadioButton HexRadio; 
+	// private RadioButton DecimalRadio;
+
+	public Action<string, object> OnSave { get; set; } 
+
+	public EditRegistryValueDialog() { /* For XGUI */ }
+
+	public EditRegistryValueDialog(string valueName, object valueData, string valueTypeString) : this()
+	{
+		_originalValueName = valueName;
+		_originalValueData = valueData;
+		_valueType = ParseValueType(valueTypeString);
+
+		DialogTitle = $"Edit {valueTypeString}";
+		if (_valueType == RegistryValueType.REG_MULTI_SZ) DialogHeight = 280;
+		else if (_valueType == RegistryValueType.REG_DWORD || _valueType == RegistryValueType.REG_QWORD) DialogHeight = 230; // Adjusted height for radio buttons
+
+
+		if (valueName == "(Default)")
+		{
+			_isNameReadOnly = true;
+		}
+	}
+
+	private RegistryValueType ParseValueType(string typeStr) => typeStr switch
+	{
+		"REG_SZ" => RegistryValueType.REG_SZ,
+		"REG_EXPAND_SZ" => RegistryValueType.REG_EXPAND_SZ,
+		"REG_BINARY" => RegistryValueType.REG_BINARY,
+		"REG_DWORD" => RegistryValueType.REG_DWORD,
+		"REG_QWORD" => RegistryValueType.REG_QWORD,
+		"REG_MULTI_SZ" => RegistryValueType.REG_MULTI_SZ,
+		_ => RegistryValueType.Unknown
+	};
+
+	private string FormatDataForDisplay(object data, RegistryValueType type, bool useHex)
+	{
+		if (data == null) return "";
+		switch (type)
+		{
+			case RegistryValueType.REG_DWORD:
+				uint dwordVal = Convert.ToUInt32(data);
+				return useHex ? dwordVal.ToString("X") : dwordVal.ToString();
+			case RegistryValueType.REG_QWORD:
+				ulong qwordVal = Convert.ToUInt64(data);
+				return useHex ? qwordVal.ToString("X") : qwordVal.ToString();
+			case RegistryValueType.REG_BINARY:
+				return BitConverter.ToString((byte[])data).Replace("-", " ");
+			case RegistryValueType.REG_MULTI_SZ:
+				return string.Join("\n", (string[])data);
+			case RegistryValueType.REG_SZ:
+			case RegistryValueType.REG_EXPAND_SZ:
+			default:
+				return data.ToString();
+		}
+	}
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		if (firstTime)
+		{
+			ValueNameEntry.Text = _originalValueName;
+			ValueDataEntry.Text = FormatDataForDisplay(_originalValueData, _valueType, _isHexFormat);
+			
+			if ((_valueType == RegistryValueType.REG_DWORD || _valueType == RegistryValueType.REG_QWORD) && BaseFormatGroup != null)
+			{
+				BaseFormatGroup.SelectedRadioOption.Value = _isHexFormat ? "Hex" : "Decimal";
+			}
+			// If using individual RadioButton elements:
+			// else if (_valueType == RegistryValueType.REG_DWORD || _valueType == RegistryValueType.REG_QWORD)
+			// {
+			//     if (HexRadio != null) HexRadio.Selected = _isHexFormat;
+			//     if (DecimalRadio != null) DecimalRadio.Selected = !_isHexFormat;
+			// }
+
+
+			ValueDataEntry.Focus();
+			if (ValueDataEntry.Text != null) ValueDataEntry.CaretPosition = ValueDataEntry.Text.Length;
+			CenterWindow();
+		}
+	}
+	
+	// If using <radiobuttons> wrapper
+	private void OnBaseFormatChangedFromGroup(string newValue)
+	{
+		_isHexFormat = (newValue == "Hex");
+		try
+		{
+			object tempData = ParseDataFromInput(ValueDataEntry.Text, _valueType, !_isHexFormat); 
+			ValueDataEntry.Text = FormatDataForDisplay(tempData, _valueType, _isHexFormat); 
+		}
+		catch { /* If current text is invalid, just leave it for user to fix */ }
+	}
+
+	// If using individual RadioButton elements:
+	// private void OnBaseFormatChange()
+	// {
+	//     _isHexFormat = HexRadio.Selected;
+	//     try
+	//     {
+	//         object tempData = ParseDataFromInput(ValueDataEntry.Text, _valueType, !_isHexFormat); 
+	//         ValueDataEntry.Text = FormatDataForDisplay(tempData, _valueType, _isHexFormat); 
+	//     }
+	//     catch { /* If current text is invalid, just leave it for user to fix */ }
+	// }
+
+
+	private void CenterWindow()
+	{
+		var panel = XGUISystem.Instance.Panel;
+		if (panel != null)
+		{
+			var x = (panel.Box.Rect.Width - Box.Rect.Width) / 2;
+			var y = (panel.Box.Rect.Height - Box.Rect.Height) / 2;
+			Style.Left = x;
+			Style.Top = y;
+			Style.Dirty();
+		}
+	}
+	
+	private object ParseDataFromInput(string input, RegistryValueType type, bool wasDecimalForNumeric)
+	{
+		switch (type)
+		{
+			case RegistryValueType.REG_SZ:
+			case RegistryValueType.REG_EXPAND_SZ:
+				return input;
+			case RegistryValueType.REG_DWORD:
+				return wasDecimalForNumeric ? uint.Parse(input, NumberStyles.Integer, CultureInfo.InvariantCulture) 
+											: uint.Parse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			case RegistryValueType.REG_QWORD:
+				return wasDecimalForNumeric ? ulong.Parse(input, NumberStyles.Integer, CultureInfo.InvariantCulture)
+											: ulong.Parse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			case RegistryValueType.REG_BINARY:
+				var hexParts = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+				var byteList = new List<byte>();
+				foreach (var part in hexParts) byteList.Add(Convert.ToByte(part, 16));
+				return byteList.ToArray();
+			case RegistryValueType.REG_MULTI_SZ:
+				return input.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+			default:
+				throw new NotSupportedException($"Unsupported registry type for parsing: {type}");
+		}
+	}
+
+	private void HandleOKClick()
+	{
+		string newName = ValueNameEntry.Text.Trim();
+		if (!_isNameReadOnly && string.IsNullOrWhiteSpace(newName))
+		{
+			MessageBoxUtility.ShowCustom("Error", "Value name cannot be empty.", MessageBoxIcon.Warning, MessageBoxButtons.OK);
+			return;
+		}
+		
+		object convertedData;
+		try
+		{
+			bool parseAsDecimal = false;
+			if ((_valueType == RegistryValueType.REG_DWORD || _valueType == RegistryValueType.REG_QWORD))
+			{
+				 // If using <radiobuttons> wrapper:
+				if (BaseFormatGroup != null) parseAsDecimal = (BaseFormatGroup.SelectedRadioOption.Value == "Decimal");
+				// Else if using individual RadioButton elements:
+				// else if (DecimalRadio != null) parseAsDecimal = DecimalRadio.Selected;
+			}
+			convertedData = ParseDataFromInput(ValueDataEntry.Text, _valueType, parseAsDecimal);
+		}
+		catch (Exception ex)
+		{
+			MessageBoxUtility.ShowCustom($"Invalid data format for {_valueType}:\n{ex.Message}", "Error", MessageBoxIcon.Warning, MessageBoxButtons.OK);
+			return;
+		}
+
+		OnSave?.Invoke(newName, convertedData);
+		Delete();
+	}
+
+	private void HandleCancelClick()
+	{
+		Delete();
+	}
+}

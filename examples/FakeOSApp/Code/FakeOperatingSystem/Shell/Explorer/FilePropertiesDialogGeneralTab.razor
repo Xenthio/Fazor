@@ -1,0 +1,168 @@
+﻿@using System
+@using Sandbox
+@using Sandbox.UI
+@using FakeDesktop
+@using XGUI
+@using global::FakeOperatingSystem.OSFileSystem
+
+<root style="flex-direction:column">
+	<div class="top-seg seg">
+		<div class="left">
+			<div class="item-icon" @ref=Icon></div>
+		</div>
+		<div class="right">
+			<label>@Name</label>
+		</div>
+	</div>
+
+	<Seperator></Seperator>
+
+	<div class="seg">
+		<div class="left">
+			<label>Type:</label>
+		</div>
+		<div class="right">
+			<label>@(IsDirectory ? "File Folder" : "File")</label>
+		</div>
+	</div>
+	<div class="seg">
+		<div class="left">
+			<label>Location:</label>
+		</div>
+		<div class="right">
+			<label>@(FormatPath(System.IO.Path.GetDirectoryName(Path)))</label>
+		</div>
+	</div>
+	<div class="seg">
+		<div class="left">
+			<label>Size:</label>
+		</div>
+		<div class="right">
+			@{
+				// Format the size in a human-readable way
+				// Example: 70.7MB (74,160,858 bytes), 75,427,840 bytes used
+				long sizeInBytes = Size;
+				long sizeOnDisk = Size; // Assuming size on disk is the same as logical size for this VFS
+
+				<label>@($"{FormatBytes(sizeInBytes)} ({sizeInBytes:N0} bytes), {sizeOnDisk:N0} bytes used")</label>
+			}
+		</div>
+	</div>
+	@if (IsDirectory)
+	{
+		int fileCount = 0;
+		int dirCount = 0;
+		// Recursively count files and directories in the folder and subfolders
+		(fileCount, dirCount) = VirtualFileSystem.Instance.RecursiveCount(Path);
+		<div class="seg">
+			<div class="left">
+				<label>Contains:</label>
+			</div>
+			<div class="right">
+				<label>@($"{fileCount} Files, {dirCount} Folders")</label>
+			</div>
+		</div>
+	}
+
+	<Seperator></Seperator>
+
+	<div class="seg seg2">
+		<div class="left">
+			<label>MS-DOS name:</label>
+		</div>
+		<div class="right">
+			<label>@System.IO.Path.GetFileName(Path)</label>
+		</div>
+	</div>
+
+	<div class="seg seg2">
+		<div class="left">
+			<label>Created:</label>
+		</div>
+		<div class="right">
+			<label>@DateTime.Now.ToString("dddd, MMMM dd, yyyy, hh:mm:ss tt")</label>
+		</div>
+	</div>
+
+	<Seperator></Seperator>
+
+	<div class="seg seg2">
+		<div class="left">
+			<label>Attributes:</label>
+		</div>
+		<div class="right attributes">
+			<div class="attr-seg">
+				<check>Read-only</check>
+				<check>Hidden</check>
+			</div>
+			<div class="attr-seg">
+				<check>Archive</check>
+				<check class="disabled">System</check>
+			</div>
+		</div>
+	</div>
+
+	<Seperator></Seperator>
+	<div class="seg seg2">
+		<div class="left">
+		</div>
+		<div class="right">
+			<check>Enable thumbnail view</check>
+		</div>
+	</div>
+	@if (!IsDirectory)
+	{
+		var icon = FileIconHelper.GetFileIcon(Path, 32);
+		Icon.Style.SetBackgroundImage(icon);
+	}
+	else
+	{
+		var icon = FileIconHelper.GetFolderIcon(Path, 32);
+		Icon.Style.SetBackgroundImage(icon); 
+	}
+</root>
+
+
+@code {
+	public Panel Icon;
+	public string Name => GetParent().Name;
+	public string Path => GetParent().Path;
+	public bool IsDirectory => GetParent().IsDirectory;
+	public long Size => GetParent().Size;
+
+	public FilePropertiesDialog GetParent()
+	{
+		// Loop through the parent elements and their parents and so on until we find the FilePropertiesDialog
+		var parent = this.Parent;
+		while (parent != null && parent is not FilePropertiesDialog)
+		{
+			parent = parent.Parent;
+		}
+		return parent as FilePropertiesDialog;
+	}
+
+	private string FormatPath(string path)
+	{
+		path.Replace("/", "\\");
+		return path;
+	}
+
+	private string FormatBytes(long bytes)
+	{
+		string[] suffixes = { "bytes", "KB", "MB", "GB", "TB", "PB" };
+		int i = 0;
+		double dblSByte = bytes;
+
+		if (bytes == 0)
+		{
+			return "0 bytes";
+		}
+
+		while (dblSByte >= 1024 && i < suffixes.Length - 1)
+		{
+			dblSByte /= 1024;
+			i++;
+		}
+		return string.Format("{0:0.##} {1}", dblSByte, suffixes[i]);
+	}
+}
