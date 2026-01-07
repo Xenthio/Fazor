@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <!-- Import global shared assets (themes, fonts, images) -->
+  <Import Project="..\..\Assets.props" />
+  
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>FakeOSApp</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Disable console window on Windows -->
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <OutputType>WinExe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
+    <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
+    <ProjectReference Include="..\..\src\Sandbox.Compatibility\Sandbox.Compatibility.csproj" />
+    <!-- Build-time only reference for Razor/SCSS compilation -->
+    <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Project-specific Assets -->
+  <ItemGroup>
+    <Content Include="Assets\**\*" Exclude="Assets\README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>Assets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+  <!-- Include FakeOS code files -->
+  <ItemGroup>
+    <Compile Include="Code\**\*.cs" />
+    <AdditionalFiles Include="Code\**\*.razor" />
+  </ItemGroup>
+
+  <!-- Import Avalazor build targets for Razor and SCSS -->
+  <Import Project="..\..\src\Avalazor.Build\build\Avalazor.Build.targets" />
+</Project>
