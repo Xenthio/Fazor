@@ -1,0 +1,19 @@
+.Window {
+    padding-left: 5px;
+    padding-right: 5px; 
+
+    .mainarea {
+        height: 100%;
+
+        .gamelist {
+            flex-grow: 1;
+        }
+
+        .browsegames {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            width: 144px;
+            min-height:24px;
+        }
+    }
+}

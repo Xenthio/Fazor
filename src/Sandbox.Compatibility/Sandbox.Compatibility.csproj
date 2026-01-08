@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Sandbox</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Description>S&amp;box and XGUI compatibility layer for running s&amp;box UI code in Fazor/Avalazor</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
+    <ProjectReference Include="..\Avalazor.UI\Avalazor.UI.csproj" />
+  </ItemGroup>
+
+</Project>

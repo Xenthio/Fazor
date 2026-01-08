@@ -1,0 +1,64 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI; 
+@attribute [StyleSheet]
+@inherits Window
+@attribute [Alias("steamreplica")]
+
+
+<root title="Steam" hasminimise="true" hasmaximise="true" x="200" y="200" width="456" height="300">
+	<div class="window-content">
+	<div class="mainarea" style="flex-direction:column; padding:15px; padding-top:8px; padding-right:34px;">
+		<div class="menubuttonlist" style="flex-direction:column; gap:10px; padding-bottom:13px">
+			<div>
+				<button onclick=@OpenPlayGames>Play games</button>
+				<label class="info">Choose a game and start playing!</label>
+			</div>
+			<div>
+				<button>Browse games</button>
+				<label class="info">Find new games to play</label>
+			</div>
+			<div>
+				<button>Friends</button>
+				<label class="info">Find friends, chat, play together</label>
+			</div>
+			<div>
+				<button>Servers</button>
+				<label class="info">Browse multiplayer games-in-progress</label>
+			</div>
+			<div>
+				<button>Settings</button>
+				<label class="info">Change Steam options</label>
+			</div>
+			<div>
+				<button>News</button>
+				<label class="info">Keep up with the latest Steam news</label>
+			</div>
+		</div>
+		<seperator></seperator>
+		<div class="bottom">
+			<img class="logo" src="ui/valve_logo.png" />
+			<img class="logo steam" src="ui/steam_logo.png" />
+			<button class="closebutton">Close</button>
+		</div>
+	</div>
+	<resizer>
+
+		</resizer>
+	</div>
+</root>
+
+@code {
+	public GameLauncher()
+	{
+		SetTheme("/XGUI/DefaultStyles/OliveGreen.scss"); 
+	}
+	void OpenPlayGames()
+	{
+		Parent.AddChild<PlayGamesWindow>();
+	}
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(1);
+	}
+}

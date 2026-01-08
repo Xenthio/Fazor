@@ -1,0 +1,64 @@
+﻿@using Sandbox.UI
+@using XGUI
+@namespace FakeOperatingSystem
+@attribute [StyleSheet("Calculator.razor.scss")]
+@inherits Window
+
+<root title="Calculator" minwidth="220" minheight="300" defaultwidth="240" defaultheight="350" style="width: 240px; height: 350px;" theme="Computer95">
+    <div class="window-content column">
+        <!-- Display -->
+        <layoutboxinset class="calc-display-area">
+            0
+        </layoutboxinset>
+
+        <!-- Buttons Area -->
+        <div class="calc-buttons-area">
+            <div class="calc-button-row">
+                <button class="calc-button">MC</button>
+                <button class="calc-button">MR</button>
+                <button class="calc-button">MS</button>
+                <button class="calc-button">M+</button>
+            </div>
+            <div class="calc-button-row">
+                <button class="calc-button clear-button">C</button>
+                <button class="calc-button clear-entry-button">CE</button>
+                <button class="calc-button backspace-button">←</button>
+                <button class="calc-button operator-button">/</button>
+            </div>
+            <div class="calc-button-row">
+                <button class="calc-button">7</button>
+                <button class="calc-button">8</button>
+                <button class="calc-button">9</button>
+                <button class="calc-button operator-button">*</button>
+            </div>
+            <div class="calc-button-row">
+                <button class="calc-button">4</button>
+                <button class="calc-button">5</button>
+                <button class="calc-button">6</button>
+                <button class="calc-button operator-button">-</button>
+            </div>
+            <div class="calc-button-row">
+                <button class="calc-button">1</button>
+                <button class="calc-button">2</button>
+                <button class="calc-button">3</button>
+                <button class="calc-button operator-button">+</button>
+            </div>
+            <div class="calc-button-row">
+                <button class="calc-button zero-button">0</button>
+                <button class="calc-button">.</button>
+                <button class="calc-button equals-button">=</button>
+            </div>
+        </div>
+    </div>
+</root>
+
+@code {
+    // Basic calculator logic will go here
+    // For now, it's just a static UI
+
+    public Calculator()
+    {
+        // You can set an icon here if you have one
+        // SetWindowIcon("calculator_icon_name");
+    }
+}

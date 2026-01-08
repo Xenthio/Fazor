@@ -1,0 +1,15 @@
+﻿@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@attribute [StyleSheet( "/XGUI/DefaultStyles/OliveGreen.scss" )]
+@inherits Backdrop
+
+<root class="GameMenu" style="position:absolute; align-items:flex-start; justify-content:flex-end;">
+	
+	@foreach ( var i in TypeLibrary.GetTypes<Window>() )
+	{
+		<button @onclick=@( () => ConsoleSystem.Run("openpanel", i.Name))>@i.Name</button>
+	}
+	<button class="Logo"></button>
+</root>
+

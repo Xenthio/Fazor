@@ -1,0 +1,209 @@
+@using System.Collections.Generic;
+@using System.Linq;
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using FakeDesktop;
+@inherits Window
+@attribute [StyleSheet("BaseBrowser.razor.scss")]
+
+<root title="@WindowTitle" width="@Width" height="@Height" class="@WindowClass" hasminimise="true" hasmaximise="true">
+	<div class="window-content">
+		<toolbarcontainer>
+			<!-- Menu Toolbar -->
+			<toolbar @ref=MenuToolbar class="menu-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Command Toolbar -->
+			<toolbar @ref=CommandToolbar class="command-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+
+			<!-- Address Toolbar -->
+			<toolbar @ref=AddressToolbar class="address-toolbar" style="flex-shrink:0" draggable="true"></toolbar>
+		</toolbarcontainer>
+
+		<div class="row padding-top padding-bottom" style="overflow:hidden; flex-grow:1">
+			@ChildContent
+		</div>
+		<div class="status-bar" style="flex-shrink:0">
+			<div class="status-text">@StatusText</div>
+		</div>
+	</div>
+</root>
+
+@code {
+
+	[Parameter]
+	public RenderFragment ChildContent { get; set; }
+
+	[Parameter]
+	public string WindowTitle { get; set; } = "Browser";
+
+	[Parameter]
+	public string WindowClass { get; set; } = "window1";
+
+	[Parameter]
+	public int Width { get; set; } = 640;
+
+	[Parameter]
+	public int Height { get; set; } = 480;
+
+	protected Toolbar MenuToolbar;
+	protected Toolbar CommandToolbar;
+	protected Toolbar AddressToolbar;
+	protected TextEntry AddressInput;
+
+	protected string StatusText = "Ready";
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+
+		if (firstTime)
+		{
+			// Setup toolbars
+			SetupMenuToolbar();
+			SetupCommandToolbar();
+			SetupAddressToolbar();
+		}
+	}
+
+	// Close any open menu when clicking outside
+	protected override void OnMouseDown(MousePanelEvent e)
+	{
+		base.OnMouseDown(e);
+
+		// Only close if mouse is not over a menu button or menu
+		if (e.Target != null && !e.Target.HasClass("menu-item") && !e.Target.Parent.HasClass("menu-item"))
+		{
+			MenuToolbar.CloseAllMenus();
+		}
+	}
+
+	protected virtual void SetupMenuToolbar()
+	{
+		// Base menu setup
+		MenuToolbar.AddMenuItem("File", (menu) =>
+		{
+			SetupFileMenu(menu);
+		});
+
+		// Add Edit menu
+		MenuToolbar.AddMenuItem("Edit", (menu) =>
+		{
+			SetupEditMenu(menu);
+		});
+
+		// Add View menu - to be overridden by derived classes
+		MenuToolbar.AddMenuItem("View", (menu) =>
+		{
+			SetupViewMenu(menu);
+		});
+
+		// Throbber
+		AddThrobber();
+	}
+
+	public void AddThrobber()
+	{
+		var throbber = new Panel();
+		throbber.AddClass("throbber");
+		if (XGUISystem.Instance.GlobalTheme.Contains("Computer95"))
+		{ 
+			throbber.AddClass("toolbar-throbber"); 
+		}
+		MenuToolbar.AddChild(throbber);
+	}
+
+	protected virtual void SetupViewMenu(ContextMenu menu)
+	{
+		// To be implemented by derived classes
+	}
+
+	protected virtual void SetupEditMenu(ContextMenu menu)
+	{
+		// To be implemented by derived classes
+		menu.AddMenuItem("Cut", () => Log.Info("Cut"));
+		menu.AddMenuItem("Copy", () => Log.Info("Copy"));
+		menu.AddMenuItem("Paste", () => Log.Info("Paste"));
+		menu.AddSeparator();
+		menu.AddMenuItem("Select All", () => Log.Info("Select All"));
+	}
+	protected virtual void SetupFileMenu(ContextMenu menu)
+	{
+		// To be implemented by derived classes
+		menu.AddMenuItem("New", () => Log.Info("New Item"));
+		menu.AddMenuItem("Open", () => Log.Info("Open Item"));
+		menu.AddSeparator();
+		menu.AddMenuItem("Close", () => Close());
+	}
+
+	protected Panel ForwardButton;
+	protected Panel BackButton;
+	protected ToolbarButton UpButton;
+
+	protected virtual void SetupCommandToolbar()
+	{
+		// Navigation buttons
+		//CommandToolbar.AddButton("Back", "navigate_back", OnBackClicked);
+		//CommandToolbar.AddButton("Forward", "navigate_forward", OnForwardClicked);
+		ForwardButton = CommandToolbar.AddDropdownButton("Forward", "navigate_forward", OnForwardClicked, (dropdown) =>
+		{
+			dropdown.AddMenuItem("Todo, Forward History", () => Log.Info("Forward 1"));
+		});
+		BackButton = CommandToolbar.AddDropdownButton("Back", "navigate_back", OnBackClicked, (dropdown) =>
+		{
+			dropdown.AddMenuItem("Todo, Back History", () => Log.Info("Back 1"));
+		});
+
+		UpButton = CommandToolbar.AddButton("Up", "folder_up", OnUpClicked);
+	}
+
+	protected virtual void SetupAddressToolbar()
+	{
+		// Add address label
+		var addressLabel = new Label();
+		addressLabel.Text = "Address";
+		addressLabel.AddClass("address-label");
+		AddressToolbar.AddItem(addressLabel);
+
+		// Add address input
+		AddressInput = new TextEntry();
+		AddressInput.AddClass("address-input");
+		AddressInput.Style.FlexGrow = 1;
+		AddressInput.AddEventListener("onsubmit", OnAddressChanged);
+		AddressToolbar.AddItem(AddressInput);
+
+		// Add Go button
+		var goButton = AddressToolbar.AddButton("Go", null, () => OnAddressChanged());
+		goButton.AddClass("go-button");
+	}
+
+	protected virtual void OnBackClicked()
+	{
+		// To be implemented in derived classes
+	}
+
+	protected virtual void OnForwardClicked()
+	{
+		// To be implemented in derived classes
+	}
+
+	protected virtual void OnUpClicked()
+	{
+		// To be implemented in derived classes
+	}
+
+	protected virtual void OnAddressChanged()
+	{
+		// To be implemented in derived classes
+	}
+
+	protected async void PlaySingleClickSound()
+	{
+		var soundpath = XGUISoundSystem.GetSound("START");
+		var soundfile = SoundFile.Load(soundpath);
+		Sound.PlayFile(soundfile);
+		await GameTask.DelaySeconds(0.08f);
+		Sound.PlayFile(soundfile);
+	}
+}

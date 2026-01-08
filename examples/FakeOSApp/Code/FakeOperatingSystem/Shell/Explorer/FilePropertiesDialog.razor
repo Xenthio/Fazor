@@ -1,0 +1,28 @@
+@using Sandbox
+@using Sandbox.UI
+@using XGUI
+@inherits Window
+
+<root title="Properties" hasminimise="true" hasmaximise="true" width="367" height="433">
+	<div class="window-content">
+		<tabcontrol style="flex-grow:1;">
+			<tab tabName="general" slot="tab" tabtext="General" class="tab">
+				<filepropertiesdialoggeneraltab>
+
+				</filepropertiesdialoggeneraltab>
+			</tab>
+		</tabcontrol>
+		<div class="margin column dialog-buttons" style="margin-top:0px; flex-direction:row; justify-content:flex-end;">
+			<button onclick="@Close">OK</button>
+			<button onclick="@Close">Cancel</button>
+			<button onclick="@Close">Apply</button>
+		</div>
+	</div>
+</root>
+
+@code {
+	public string Name { get; set; }
+	public string Path { get; set; }
+	public bool IsDirectory { get; set; }
+	public long Size { get; set; }
+}

@@ -1,0 +1,71 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using Microsoft.AspNetCore.Components;
+@using FakeSteam;
+
+@namespace XGUI
+@inherits ListOption
+
+<root>
+	@if (Game != null)
+	{
+		<div class="icon" style=@($"background-image: url({Game.Thumb});")>
+		</div>
+		<label>
+			@Game.Title
+		</label>
+
+
+		SetClass("grey", !IsInstalled);
+		if (!FileExists && IsInstalled)
+		{
+			FileSystem.Data.WriteAllText($"installed-game-{Game.FullIdent}", "hello!");
+		}
+	}
+</root>
+
+@code {
+	public Package Game { get; set; }
+	bool IsInstalled => Game.IsMounted() || FileExists;
+	bool FileExists => FileSystem.Data.FileExists($"installed-game-{Game.FullIdent}");
+	bool _installing;
+	public bool Installing
+	{
+		get => _installing && !IsInstalled;
+		set
+		{
+			SetClass("installing", value && !IsInstalled);
+			_installing = value && !IsInstalled;
+		}
+	}
+
+	protected override void OnDoubleClick(MousePanelEvent e)
+	{
+		base.OnDoubleClick(e);
+		if (!IsInstalled)
+		{  
+			var b = new GameInstallWindow()
+			{
+				Game = Game
+			};
+			Parent.Parent.Parent.Parent.Parent.AddChild(b);
+			b.FocusWindow();
+		} else
+		{
+			LaunchGame();
+		}
+	}
+
+	void LaunchGame()
+	{
+		Log.Info("launch game?");
+		Sandbox.Game.Overlay.ShowGameModal(Game.FullIdent);
+
+		//ConsoleSystem.Run("game", gameident);
+		//MenuUtility.OpenGame(Package.FullIdent, true);
+	}
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(Game?.FullIdent, Selected, Installing, Game?.IsFavourite);
+	}
+}

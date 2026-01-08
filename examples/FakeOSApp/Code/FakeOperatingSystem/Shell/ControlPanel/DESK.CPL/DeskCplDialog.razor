@@ -1,0 +1,136 @@
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using System.IO;
+@using FakeDesktop;
+@using FakeOperatingSystem;
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem.Experiments.Ambitious.X86;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@attribute [StyleSheet]
+@inherits Window
+
+<root title="Display" minwidth="404" minheight="448" width="404" height="448" class="deskcpl-window window-font-alt" hasminimise="true" hasmaximise="true">
+	<div class="window-content">
+		<tabcontrol style="flex-grow: 1; margin-top:7px;">
+			<tab tabName="themes" slot="tab" tabtext="Themes" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1; padding:9px; padding-top:5px;">
+					<deskcpldialogthemetab>
+
+					</deskcpldialogthemetab>
+				</div>
+			</tab>
+			<tab tabName="background" slot="tab" tabtext="Background" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<deskcpldialogbackgroundtab>
+
+					</deskcpldialogbackgroundtab>
+				</div>
+			</tab>
+			@* 			<tab tabName="screensaver" slot="tab" tabtext="Screen Saver" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+				</div>
+			</tab> *@
+			<tab tabName="appearance" slot="tab" tabtext="Appearance" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<deskcpldialogappearancetab>
+
+					</deskcpldialogappearancetab>
+				</div>
+			</tab>
+			<tab tabName="effects" slot="tab" tabtext="Effects" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<deskcpldialogeffectstab>
+
+					</deskcpldialogeffectstab>
+				</div>
+			</tab>
+			@* 			<tab tabName="web" slot="tab" tabtext="Web" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+				</div>
+			</tab> *@
+			<tab tabName="settings" slot="tab" tabtext="Settings" style="flex-direction:column;">
+				<div style="flex-direction:column; flex-grow:1;">
+					<deskcpldialogsettingstab>
+
+					</deskcpldialogsettingstab>
+				</div>
+			</tab>
+		</tabcontrol>
+		<div class="window-buttons self-layout margin-top" style="margin-bottom: 8px; display: flex; justify-content: flex-end;">
+			<button class="button margin-right" onclick=@OnOKButtonClick>OK</button>
+			<button class="button margin-right" onclick=@OnCancelButtonClick>Cancel</button>
+			<button class="button margin-right" onclick=@OnApplyButtonClick>Apply</button>
+		</div>
+	</div>
+</root>
+
+@code {
+
+	public const string UserThemeRegistryPath = @"HKEY_CURRENT_USER\Control Panel\Desktop";
+	public const string UserThemeRegistryValueName = "CurrentThemeFile";
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(1);
+	}
+
+	private void ApplyThemeSettings()
+	{
+		if (!string.IsNullOrWhiteSpace(DeskCplDialogThemeTab.SelectedThemePath))
+		{
+			string selectedTheme = DeskCplDialogThemeTab.SelectedThemePath;
+
+			// Apply the theme visually
+			XGUISystem.Instance.SetGlobalTheme(selectedTheme);
+
+			// Save to registry
+			if (Registry.Instance != null)
+			{
+				Registry.Instance.SetValue(UserThemeRegistryPath, UserThemeRegistryValueName, selectedTheme);
+				Log.Info($"Theme '{selectedTheme}' saved to registry at {UserThemeRegistryPath}\\{UserThemeRegistryValueName}");
+			}
+			else
+			{
+				Log.Warning("Registry.Instance is null. Cannot save theme setting.");
+			}
+			this.FocusWindow();
+		}
+		else
+		{
+			Log.Warning("DeskCplDialogThemeTab's SelectedThemePath is null/empty. Cannot apply theme.");
+		}
+	}
+
+	private void ApplyDesktopBackgroundSettings()
+	{
+		if (DeskCplDialogBackgroundTab.CurrentCplBGTab != null)
+		{
+			DeskCplDialogBackgroundTab.CurrentCplBGTab.ApplySettings();
+		}
+		else
+		{
+			Log.Warning("DeskCplDialogBackgroundTab's SelectedWallpaperPath is null/empty. Cannot apply wallpaper.");
+		}
+
+	}
+
+	private void OnOKButtonClick()
+	{
+		ApplyThemeSettings();
+		ApplyDesktopBackgroundSettings();
+		Close();
+	}
+
+	private void OnCancelButtonClick()
+	{
+		Close();
+	}
+
+	private void OnApplyButtonClick()
+	{
+		ApplyThemeSettings();
+		ApplyDesktopBackgroundSettings();
+	}
+}

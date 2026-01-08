@@ -1,0 +1,140 @@
+TaskBar {
+	&.taskbar-root {
+		padding: 0px;
+		padding-top: 1px;
+		border-left: 0px;
+		border-right: 0px;
+		border-bottom: 0px;
+
+		&::before {
+			position: absolute;
+			border-left: 0px;
+			border-right: 0px;
+			border-bottom: 0px;
+		}
+
+		position: absolute;
+		width: 100%;
+		align-self: flex-end;
+
+		.window-content {
+			flex-direction: row;
+
+			.start-button {
+				min-width: 52px;
+				font-weight: bold;
+			}
+		}
+
+		.seperator {
+			margin-right: 2px;
+			margin-left: 2px;
+		}
+
+		.start-button {
+			height: 22px;
+		}
+
+		.quick-access {
+			align-items: center;
+			align-self: stretch;
+
+			.quick-access-btn {
+				background-color: transparent;
+				border: none;
+
+				&::before {
+					border: 0px;
+				}
+
+				height: 16px;
+				width: 16px;
+				margin-right: 6px;
+
+				&:nth-child(2) {
+					margin-left: 4px;
+				}
+
+				&:last-child {
+					margin-right: 5px;
+				}
+
+				.icon {
+					min-width: 16px;
+					min-height: 16px;
+					background-position: center;
+				}
+			}
+		}
+
+
+		.open-windows {
+			align-items: center;
+			align-self: stretch;
+
+			.window-btn {
+				justify-content: flex-start;
+				height: 22px;
+				width: 158px;
+				margin-right: 3px;
+
+				.label {
+					text-overflow: ellipsis;
+				}
+
+				&.focused {
+					font-weight: bold;
+				}
+			}
+		}
+
+		.handle {
+			position: relative;
+			margin: 0px;
+			margin-right: 4px;
+			align-self: stretch;
+			left: 0px;
+			top: 0px;
+			bottom: 0px;
+			margin-top: 2px;
+			margin-bottom: 2px;
+		}
+
+		.spacer {
+			flex-grow: 1;
+		}
+
+		.system-tray {
+			padding-left: 1px;
+			padding-right: 1px;
+			align-items: center;
+			align-self: stretch;
+
+			.tray-btn {
+				background-color: transparent;
+				border: none;
+
+				&::before {
+					border: 0px;
+				}
+
+				height: 16px;
+				width: 16px;
+				margin-left: 1px;
+				margin-right: 1px;
+
+				.icon {
+					min-width: 16px;
+					min-height: 16px;
+					background-position: center;
+				}
+			}
+
+			.clock {
+				margin-left: 6px;
+				top: 2px;
+				margin-right: 6px;
+			}
+		}
+	}
+}

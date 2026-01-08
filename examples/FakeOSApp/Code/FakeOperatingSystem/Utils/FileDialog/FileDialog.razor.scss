@@ -1,0 +1,68 @@
+FileDialog {
+	.window-content {
+		padding: 8px;
+		gap: 8px;
+	}
+
+	.nav-bar {
+		flex-shrink: 0;
+		align-items: center;
+		gap: 5px;
+		padding-bottom: 5px;
+
+		label {
+			margin-right: 5px;
+		}
+
+		.path-input {
+			flex-grow: 1;
+		}
+
+		.nav-button {
+			align-items: center;
+			justify-content: center;
+			width: 23px;
+			height: 22px;
+		}
+	}
+
+	.file-list-area {
+		gap: 8px;
+		min-height: 150px; // Ensure it has some height
+	}
+
+	.directory-tree-panel {
+		background-color: white;
+		padding: 5px;
+		// display: none; // Initially hidden, can be enabled later
+	}
+
+	.bottom-controls {
+		gap: 8px;
+		flex-shrink: 0;
+		padding-top: 5px;
+
+		.input-row {
+			align-items: center;
+			gap: 5px;
+
+			> label {
+				min-width: 80px; // "Files of type:"
+			}
+
+			.filename-input, .filetype-select {
+				flex-grow: 1;
+			}
+
+			button {
+				flex-direction: column;
+				min-width: 75px;
+			}
+		}
+
+		.buttons-row {
+			gap: 8px;
+			padding-top: 5px;
+		}
+	}
+}

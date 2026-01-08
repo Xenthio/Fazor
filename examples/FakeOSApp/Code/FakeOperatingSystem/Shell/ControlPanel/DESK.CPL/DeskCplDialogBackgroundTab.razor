@@ -1,0 +1,327 @@
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Linq;
+@using FakeOperatingSystem.Shell.Explorer
+@using global::FakeOperatingSystem
+@using global::FakeOperatingSystem.Shell
+@using global::FakeOperatingSystem.UI.Dialogs
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@using FakeOperatingSystem;
+@using global::FakeOperatingSystem.OSFileSystem;
+@using FakeDesktop;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@inherits Panel
+
+<root class="column" style="flex-grow:1; padding:5px;">
+	<div style="justify-content:center;">
+		<div class="computer-frame">
+			<div style="width:152px; height:112px; background-color:#008080;" @ref="PreviewBox">
+				<!-- Preview will be updated here -->
+			</div>
+		</div>
+	</div>
+	<div style="flex-grow:1;"></div>
+	<groupbox title="Wallpaper" style="margin: 4px; padding-left:8px; padding-right:8px;">
+		<label style="margin-bottom:5px; margin-top:2px;">Select an HTML Document or a picture:</label>
+		<div class="row">
+			<listview class="margin-bottom" style="height:96px; flex-grow:1; margin-right:11px;" @ref="BackgroundImagesListView">
+
+			</listview>
+			<div class="column">
+				<button style="width:75px; height:23px;" class="margin-bottom" @onclick=OnBrowseButtonClick>Browse...</button>
+				<button style="width:75px; height:23px;" class="margin-bottom">Pattern...</button>
+				<label>Display:</label>
+				<combobox @ref=DisplayModeComboBox>
+					<option value="center">Center</option>
+					<option value="tile">Tile</option>
+					<option value="stretch">Stretch</option>
+				</combobox>
+			</div>
+		</div>
+	</groupbox>
+</root>
+
+@code {
+
+	private ListView BackgroundImagesListView { get; set; }
+	private Panel PreviewBox { get; set; }
+	private ComboBox DisplayModeComboBox { get; set; }
+
+	private const string WallpaperRegistryPath = @"HKEY_CURRENT_USER\Control Panel\Desktop";
+	private const string WallpaperValueName = "Wallpaper";
+	private const string WallpaperStyleValueName = "WallpaperStyle"; // 0 for Center, 1 for Tile (approx), 2 for Stretch
+	private const string TileWallpaperValueName = "TileWallpaper"; // 0 for no tile, 1 for tile
+
+	private string _selectedWallpaperPath = null;
+	public static DeskCplDialogBackgroundTab CurrentCplBGTab; 
+
+	public override void Tick()
+	{
+		base.Tick();
+
+	}
+
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		if (firstTime)
+		{
+			// dumb, need to do because of stupid bug in s&box.
+			CurrentCplBGTab = this;
+
+			BackgroundImagesListView.OnItemSelected += OnWallpaperSelected;
+			DisplayModeComboBox.ValueChanged += (value) => UpdatePreviewDisplay();
+			PopulateWallpaperList();
+			LoadCurrentWallpaperSettings();
+		}
+	}
+
+	private void PopulateWallpaperList()
+	{
+		if (BackgroundImagesListView == null) return;
+
+		BackgroundImagesListView.ClearList();
+		BackgroundImagesListView.ViewMode = ListView.ListViewMode.List;
+		BackgroundImagesListView.AddItem("(None)", new List<string> { "(None)" });
+
+		var vfs = VirtualFileSystem.Instance;
+		var wallpaperPaths = new HashSet<string>(); // To avoid duplicates if files exist in multiple scanned locations with same path
+
+		// Define directories to scan
+		var directoriesToScan = new List<string>
+		{
+			@"C:\Windows\Web\Wallpaper",
+			@"C:\Windows" // Add the main Windows directory
+		};
+
+		foreach (var dirPath in directoriesToScan)
+		{
+			if (vfs.DirectoryExists(dirPath))
+			{
+				var imageFiles = vfs.GetFiles(dirPath)
+					.Where(f => IsSupportedImageFile(f))
+					.OrderBy(f => Path.GetFileName(f));
+
+				foreach (var filePath in imageFiles)
+				{
+					// Only add if not already added (safeguard, though GetFiles from different dirs should be unique)
+					if (wallpaperPaths.Add(filePath))
+					{
+						var displayFileName = Path.GetFileNameWithoutExtension(filePath);
+						BackgroundImagesListView.AddItem(filePath, new List<string> { displayFileName });
+					}
+				}
+			}
+			else
+			{
+				Log.Warning($"Wallpaper directory not found: {dirPath}");
+			}
+		}
+	}
+
+	private bool IsSupportedImageFile(string filePath)
+	{
+		string extension = Path.GetExtension(filePath).ToLowerInvariant();
+		return extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".bmp" || extension == ".html" || extension == ".htm";
+	}
+
+	private void OnWallpaperSelected(ListView.ListViewItem item)
+	{
+		if (item == null) return;
+
+		if (item.Data is string displayName && displayName == "(None)")
+		{
+			_selectedWallpaperPath = null; // Or a special value like "none" 
+		}
+		else if (item.SubItems.Count > 0 && !string.IsNullOrEmpty(item.SubItems[0]))
+		{
+			_selectedWallpaperPath = (string)item.Data; // data holds the full path
+		}
+		UpdatePreviewDisplay();
+		PreviewBox.Style.Dirty();
+	}
+
+	private void UpdatePreviewDisplay()
+	{
+		if (PreviewBox == null) return;
+
+
+
+		// Clear previous styles
+		PreviewBox.Style.BackgroundImage = null;
+		PreviewBox.Style.BackgroundRepeat = null;
+		PreviewBox.Style.BackgroundSizeX = null;
+		PreviewBox.Style.BackgroundSizeY = null;
+		PreviewBox.Style.BackgroundPositionX = null;
+		PreviewBox.Style.BackgroundPositionY = null;
+
+		string pathToPreview = _selectedWallpaperPath;
+		string displayMode = (string)DisplayModeComboBox?.Selected?.Value ?? "center";
+
+		if (string.IsNullOrEmpty(pathToPreview)) // Handles (None)
+		{
+			PreviewBox.Style.BackgroundColor = Color.Parse("#008080"); // Default teal for "(None)"
+		}
+		else if (VirtualFileSystem.Instance.FileExists(pathToPreview) && IsSupportedImageFile(pathToPreview))
+		{
+			var fileRes = VirtualFileSystem.Instance.ResolveMountPoint(pathToPreview);
+			PreviewBox.Style.BackgroundImage = Texture.Load(fileRes.FileSystem, fileRes.RealPath, false);
+
+			var width = PreviewBox.Style.BackgroundImage.Width;
+			var height = PreviewBox.Style.BackgroundImage.Height;
+
+			switch (displayMode.ToLowerInvariant())
+			{
+				default: // Fallback to centre
+				case "center":
+					PreviewBox.Style.BackgroundSizeX = width / 5;
+					PreviewBox.Style.BackgroundSizeY = height / 5;
+					PreviewBox.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
+					PreviewBox.Style.BackgroundPositionX = Length.Parse("center");
+					PreviewBox.Style.BackgroundPositionY = Length.Parse("center");
+					PreviewBox.Style.ImageRendering = ImageRendering.Point;
+					break;
+				case "tile":
+					PreviewBox.Style.BackgroundSizeX = width / 5;
+					PreviewBox.Style.BackgroundSizeY = height / 5;
+					PreviewBox.Style.BackgroundRepeat = BackgroundRepeat.Repeat;
+					PreviewBox.Style.Set("background-position: top left;");
+					break;
+				case "stretch":
+					PreviewBox.Style.Set("background-size: cover;"); // Cover the entire area
+					PreviewBox.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
+					PreviewBox.Style.Set("background-position: center;");
+					break;
+			}
+		}
+		else
+		{
+			PreviewBox.Style.BackgroundColor = Color.Parse("#008080"); // Fallback if path invalid
+		}
+		PreviewBox.Style.Dirty();
+	}
+
+	private async void OnBrowseButtonClick()
+	{
+		var options = new FileDialogOptions
+		{
+			Title = "Select Wallpaper",
+			Filters = new List<FileFilter> {
+				new FileFilter("Image Files", "*.bmp;*.jpg;*.jpeg;*.png"),
+				new FileFilter("HTML Documents", "*.htm;*.html"),
+				new FileFilter("All Files", "*.*")
+			},
+			InitialDirectory = @"C:\Windows\Web\Wallpaper", // Or a more general/last used path
+			Mode = DialogMode.Open // Ensure it's an open dialog
+		};
+
+		string path = await FileDialogUtility.ShowOpenFileDialogAsync(options);
+
+		if (!string.IsNullOrEmpty(path))
+		{
+			if (IsSupportedImageFile(path))
+			{
+				_selectedWallpaperPath = path;
+				UpdatePreviewDisplay();
+				//BackgroundImagesListView.ClearSelection(); // Deselect item from the list if a browsed file is chosen
+			}
+			else
+			{
+				MessageBoxUtility.ShowError("The selected file is not a supported wallpaper type.", "Invalid File");
+			}
+		}
+	}
+
+	public void ApplySettings()
+	{
+		if (Registry.Instance == null) return;
+
+		// Save selected wallpaper path to registry
+		if (string.IsNullOrEmpty(_selectedWallpaperPath) || _selectedWallpaperPath.Equals("(None)", StringComparison.OrdinalIgnoreCase))
+		{
+			Registry.Instance.SetValue(WallpaperRegistryPath, WallpaperValueName, "");
+		}
+		else
+		{
+			Registry.Instance.SetValue(WallpaperRegistryPath, WallpaperValueName, _selectedWallpaperPath);
+		}
+		// Save display mode
+		string displayMode = (string)DisplayModeComboBox.Selected.Value ?? "center"; // Default to center if not set
+
+		Log.Info($"Applying wallpaper settings: Path='{_selectedWallpaperPath}', DisplayMode='{displayMode}'");
+
+		int wallpaperStyle = 0; // Default to Center
+		int tileWallpaper = 0; // Default to no tile
+		if (displayMode == "Stretch")
+		{
+			wallpaperStyle = 2; // Stretch
+			tileWallpaper = 0; // No tile
+		}
+		else if (displayMode == "Tile")
+		{
+			wallpaperStyle = 1; // Tile
+			tileWallpaper = 1; // Tile
+		}
+		else if (displayMode == "Center")
+		{
+			wallpaperStyle = 0; // Center
+			tileWallpaper = 0; // No tile
+		}
+		Registry.Instance.SetValue(WallpaperRegistryPath, WallpaperStyleValueName, wallpaperStyle);
+		Registry.Instance.SetValue(WallpaperRegistryPath, TileWallpaperValueName, tileWallpaper);
+
+		Desktop.CurrentDesktop.InitializeDesktop(); // Reinitialize desktop to apply changes
+	}
+
+	private void LoadCurrentWallpaperSettings()
+	{
+		if (Registry.Instance == null) return;
+
+		string currentWallpaper = Registry.Instance.GetValue<string>(WallpaperRegistryPath, WallpaperValueName, null);
+		int wallpaperStyle = Registry.Instance.GetValue<int>(WallpaperRegistryPath, WallpaperStyleValueName, 0); // Default to Stretch
+		int tileWallpaper = Registry.Instance.GetValue<int>(WallpaperRegistryPath, TileWallpaperValueName, 0);
+
+		_selectedWallpaperPath = currentWallpaper;
+
+		// Select in ListView
+		ListView.ListViewItem itemToSelect = null;
+		if (string.IsNullOrEmpty(currentWallpaper) || currentWallpaper.Equals("none", StringComparison.OrdinalIgnoreCase))
+		{
+			itemToSelect = BackgroundImagesListView.Items.FirstOrDefault(i => i.Data is string dataStr && dataStr == "(None)");
+		}
+		else
+		{
+			itemToSelect = BackgroundImagesListView.Items.FirstOrDefault(i => i.SubItems.Count > 0 && i.SubItems[0] == currentWallpaper);
+		}
+
+		if (itemToSelect != null)
+		{
+			BackgroundImagesListView.SelectItem(itemToSelect);
+			// Trigger preview update for the loaded selection
+			OnWallpaperSelected(itemToSelect);
+		}
+
+
+		// Set Display ComboBox
+		if (DisplayModeComboBox != null)
+		{
+			if (wallpaperStyle == 2) // Stretch
+			{
+				DisplayModeComboBox.Value = "stretch";
+			}
+			else if (tileWallpaper == 1) // Tile
+			{
+				DisplayModeComboBox.Value = "tile";
+			}
+			else // Center (style 0 and tile 0)
+			{
+				DisplayModeComboBox.Value = "center";
+			}
+		}
+		UpdatePreviewDisplay(); // Update preview based on loaded settings
+	}
+}

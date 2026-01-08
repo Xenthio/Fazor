@@ -1,0 +1,90 @@
+@using System;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeDesktop
+@attribute [StyleSheet("MessageBox.razor.scss")]
+@inherits Window
+
+<root title="@($"About {AppName}")"
+	  minwidth="300" minheight="220"
+	  width="@Width" height="@Height"
+	  class="messagebox-window">
+
+	<div class="window-content" style="justify-content:space-between">
+		<div class="messagebox-top">
+			<XGUIIconPanel class="messagebox-icon" IconSize=@(32) IconName="info">
+			</XGUIIconPanel>
+			<div class="column" style="flex-grow:1;">
+				@if (!String.IsNullOrWhiteSpace(Message))
+				{
+					<label>@Message</label> 
+				}
+				<label>@OSName</label>
+				<label>@Copyright</label>
+				<label style="white-space:pre;">@Body</label>
+				<label> </label>
+				<label> </label>
+				<label>This product is licensed to:</label>
+				<label>@Username</label>
+				<Seperator ></Seperator>
+
+			</div>
+		</div>
+		<div style="flex-direction:row-reverse; align-self:flex-end;">
+			<button class="messagebox-button" style="min-width:72px;" onclick=@(() => Close(MessageBoxResult.OK))>OK</button>
+		</div>
+	</div>
+</root>
+
+@code {
+	public string AppName { get; set; } = "Program";
+	public string Message { get; set; } = "";
+	public string OSName { get; set; } = "XGUI-3_Test";
+	public string Copyright { get; set; } = "Copyright Xenthio";
+	public string Credits { get; set; } = "";
+
+	public string Body { get; set; } = "";
+
+	public string Username { get; set; } = "VIRTUSER";
+
+	public int Width { get; set; } = 350;
+	public int Height { get; set; } = 220;
+
+	private Action<MessageBoxResult> ResultCallback;
+
+	public AboutDialog()
+	{
+		//HasCloseButton = false; // Force user to click a button
+		//IsModal = true; // Make it modal
+		//IsDraggable = true;
+		//IsResizable = false;
+	}
+
+	public void SetCallback(Action<MessageBoxResult> callback)
+	{
+		ResultCallback = callback;
+	}
+
+	private void Close(MessageBoxResult result)
+	{
+		ResultCallback?.Invoke(result);
+		Delete();
+	}
+
+	public override void OnClose()
+	{
+		// When closed via window X button, treat as Cancel
+		ResultCallback?.Invoke(MessageBoxResult.Cancel);
+		base.OnClose();
+	}
+
+	public void PositionAtScreenCenter()
+	{
+		var screenWidth = Screen.Width;
+		var screenHeight = Screen.Height;
+		var x = (screenWidth - Width) / 2;
+		var y = (screenHeight - Height) / 2;
+		Position = new Vector2(x, y);
+	}
+}

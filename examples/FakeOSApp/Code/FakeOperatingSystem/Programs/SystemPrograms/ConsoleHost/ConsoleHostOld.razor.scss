@@ -1,0 +1,38 @@
+.console-window {
+	.console-box {
+		flex-grow: 1;
+		margin: 1px;
+		margin-top: 2px;
+		background-color: black;
+		color: #C0C0C0;
+
+
+		.console-area {
+			flex-direction: column;
+			overflow: scroll;
+			font-family: BlockZone;
+			font-size: 16px;
+			white-space: pre;
+			margin: 0px;
+			word-break: break-all;
+
+			> .label {
+				flex-shrink: 0;
+			}
+		}
+	}
+
+	.console-cursor {
+		animation: blink-animation 1s step-end infinite;
+	}
+}
+
+@keyframes blink-animation {
+	0%, 100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+}

@@ -1,0 +1,80 @@
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@inherits Panel
+
+<root class="column" style="flex-grow:1; padding: 4px 9px; padding-right:8px;">
+	<layoutboxinset style="height:193px; background-color: #008080; margin:1px; margin-bottom: 14px;">
+		<!-- Preview would be here -->
+	</layoutboxinset> 
+	<div class="column">
+		<div class="row" style="margin-bottom: 12px;">
+			<div class="column" style="flex-grow: 1">
+				<label style="height:12px;">Scheme:</label>
+				<combobox style="height:21px; margin-right:5px;">
+					<option value="winstandard">Standard</option>
+				</combobox>
+			</div>
+			<div class="column" style="margin-right:5px;">
+				<label style="height:12px;"> </label>
+				<button style="width:75px; height:23px;">Save As...</button>
+			</div>
+			<div class="column">
+				<label style="height:12px;"> </label>
+				<button style="width:75px; height:23px;">Delete</button>
+			</div>
+		</div>
+		<div class="row" style="margin-bottom: 14px;">
+			<div class="column" style="flex-grow: 1">
+				<label style="height:12px;">Item:</label>
+				<combobox style="height:21px; margin-right:5px;">
+					<option value="desktop">Desktop</option>
+				</combobox>
+			</div>
+			<div class="column" style="margin-right:5px;">
+				<label style="height:12px;">Size:</label>
+				<textentry style="width:57px; height:21px; margin-right:5px;"></textentry>
+			</div>
+			<div class="column">
+				<label style="height:12px;">Color:</label>
+				<colourdropdown style="width:42px; height:21px; margin-right:5px;"></colourdropdown>
+			</div>
+			<div class="column">
+				<label style="height:12px;">Color 2:</label>
+				<colourdropdown style="width:42px; height:21px;"></colourdropdown>
+			</div>
+		</div>
+		<div class="row">
+			<div class="column" style="flex-grow: 1">
+				<label style="height:12px;">Font:</label>
+				<combobox style="height:21px; margin-right:5px;">
+					<option value="default">Default</option>
+				</combobox>
+			</div>
+			<div class="column" style="margin-right:5px;">
+				<label style="height:12px;">Size:</label>
+				<textentry style="width:57px; height:21px; margin-right:5px;"></textentry>
+			</div>
+			<div class="column">
+				<label style="height:12px;">Color:</label>
+				<colourdropdown style="width:42px; height:21px; margin-right:5px;"></colourdropdown>
+			</div>
+			<div class="column">
+				<label style="height:12px;"> </label>
+				<button style="width:21px; height:21px;">B</button>
+			</div>
+			<div class="column">
+				<label style="height:12px;"> </label>
+				<button style="width:21px; height:21px;">I</button>
+			</div>
+		</div>
+	</div>
+</root>
+
+@code {
+}

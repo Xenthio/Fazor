@@ -1,0 +1,30 @@
+@using System;
+@using System.Collections.Generic;
+@using System.IO;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using XGUI;
+@namespace FakeOperatingSystem.Shell.ControlPanel.DeskCpl
+@inherits Panel
+
+<root class="column" style="flex-grow:1; padding:14px; padding-top:21px; padding-bottom:8px;">
+	<div style="justify-content:center;">
+		<div class="computer-frame">
+			<div style="width:152px; height:112px; background-color:#008080;">
+			</div>
+		</div>
+	</div>
+	<div style="flex-grow:1;"></div>
+	<div class="column">
+		<div class="row" >
+			<check class="disabled">Extend my Windows desktop onto this monitor.</check>
+			<div style="flex-grow:1;"></div>
+			<button style="width:78px; height:23px;">Advanced...</button>
+		</div>
+	</div>
+</root>
+
+@code {
+
+}

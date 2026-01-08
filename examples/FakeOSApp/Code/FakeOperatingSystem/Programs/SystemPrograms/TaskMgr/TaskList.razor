@@ -1,0 +1,189 @@
+@using FakeOperatingSystem.Shell.Explorer
+@using XGUI
+@using System.Collections.Generic
+@using System.Linq
+@using System
+@using Sandbox
+@using global::FakeOperatingSystem.Experiments.Ambitious.X86
+@using FakeOperatingSystem
+@using global::FakeOperatingSystem
+@attribute [Library("tasklist")]
+
+<root>
+	<ListView @ref="TaskListView"
+			  ViewMode=@ListView.ListViewMode.Details
+			  style="flex-grow:1;"
+			  @OnItemSelected=@OnTaskSelected
+			  @OnItemActivated=@OnTaskActivated>
+	</ListView>
+
+	<div style="flex-direction:row-reverse" class="div-buttons">
+		<button style="width:78px; margin-left:5px;" @onclick=@EndSelectedTask disabled="@(!CanEndOrSwitch)">New Task...</button>
+		<button style="width:78px; margin-left:5px;" @onclick=@SwitchToSelectedTask disabled="@(!CanEndOrSwitch)">Switch To</button>
+		<button style="width:78px; margin-left:5px;" @onclick=@EndSelectedTask disabled="@(!CanEndOrSwitch)">End Task</button>
+	</div>
+</root>
+
+@code {
+	private ListView TaskListView;
+	private BaseProcess SelectedTask;
+	private Window SelectedWindow;
+
+	// Store a hash of the last task list state
+	private int _lastTaskListHash = 0;
+
+	protected override void OnAfterTreeRender(bool firstRender)
+	{
+		if (firstRender)
+		{
+			SetupListView();
+		}
+		else
+		{
+			RefreshListView();
+		}
+	}
+
+	private void SetupListView()
+	{
+		if (TaskListView == null)
+			return;
+
+		TaskListView.Columns.Clear();
+		TaskListView.AddColumn("Task", "Task", 250);
+		TaskListView.AddColumn("Status", "Status", 80);
+
+		// Always force a refresh on setup
+		_lastTaskListHash = 0;
+		RefreshListView();
+	}
+
+	private void RefreshListView()
+	{
+		if (TaskListView == null)
+			return;
+
+		int currentHash = 0;
+		foreach (var (process, window) in GetApplicationWindows())
+		{
+			currentHash = System.HashCode.Combine(
+				currentHash,
+				process.ProcessId,
+				window?.Title,
+				process.Status
+			);
+		}
+
+		if (currentHash == _lastTaskListHash)
+			return;
+
+		_lastTaskListHash = currentHash;
+
+		TaskListView.Items.Clear();
+
+		foreach (var (process, window) in GetApplicationWindows())
+		{
+			var iconPath = window?.TitleBar?.TitleIcon?.Style?.BackgroundImage?.ResourcePath ?? "XGUI/Resources/95/app_default_16.png";
+			var windowTitle = window?.Title ?? process.ProcessName ?? "Window";
+
+			var subItems = new List<string>
+			{ 
+				windowTitle,
+				process.Status.ToString()
+			};
+			TaskListView.AddItem((process, window), subItems);
+
+			// Configure icon for the newly added item
+			var listViewItem = TaskListView.Items.LastOrDefault();
+			if (listViewItem?.IconPanel != null)
+			{ 
+				int iconSize = TaskListView.ViewMode == ListView.ListViewMode.Icons ? 32 : 16;
+				listViewItem.IconPanel.SetIcon($"url:{iconPath}");
+			}
+		}
+		TaskListView.UpdateItems();
+	}
+
+	// Returns tuples of (process, main window) for user-facing applications
+	private IEnumerable<(BaseProcess, Window)> GetApplicationWindows()
+	{
+		foreach (var process in ProcessManager.Instance.GetProcesses())
+		{
+			foreach (var panel in process.OwnedWindows)
+			{
+				if (panel is TaskBar)
+					continue; // Skip the taskbar
+				if (panel is Window window && window != null && window.IsValid && window.IsVisible)
+				{
+					yield return (process, window);
+				}
+			}
+		}
+	}
+
+	private void OnTaskSelected(ListView.ListViewItem item)
+	{
+		if (item?.Data is ValueTuple<BaseProcess, Window> tuple)
+		{
+			SelectedTask = tuple.Item1;
+			SelectedWindow = tuple.Item2;
+		}
+		else
+		{
+			SelectedTask = null;
+			SelectedWindow = null;
+		}
+		StateHasChanged();
+	}
+
+	private void OnTaskActivated(ListView.ListViewItem item)
+	{
+		if (item?.Data is ValueTuple<BaseProcess, Window> tuple)
+		{
+			SwitchToTask(tuple.Item2);
+		}
+	}
+
+	public void EndSelectedTask()
+	{
+		if (SelectedTask != null)
+		{
+			EndTask(SelectedTask);
+		}
+	}
+
+	public void SwitchToSelectedTask()
+	{
+		if (SelectedWindow != null)
+		{
+			SwitchToTask(SelectedWindow);
+		}
+	}
+
+	private void EndTask(BaseProcess process)
+	{
+		process.Terminate();
+		_lastTaskListHash = 0;
+		RefreshListView();
+		StateHasChanged();
+	}
+
+	private void SwitchToTask(Window window)
+	{
+		if (window != null && window.IsValid && window.IsVisible)
+		{
+			window.FocusWindow();
+		}
+		else
+		{
+			Log.Info("No visible window to switch to.");
+		}
+	}
+
+	private bool CanEndOrSwitch => SelectedTask != null && SelectedWindow != null;
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(ProcessManager.Instance.GetProcessCount());
+	}
+}
