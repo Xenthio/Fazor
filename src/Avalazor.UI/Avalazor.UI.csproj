@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- <TargetFramework>net8.0-windows</TargetFramework> -->
-		<TargetFramework>net8.0</TargetFramework>
+		<!-- <TargetFramework>net10.0-windows</TargetFramework> -->
+		<TargetFramework>net10.0</TargetFramework>
 		<!-- Use -windows to ensure Skia/D3D compat -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -15,16 +15,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Core rendering dependencies (ALL VERSIONS MUST MATCH 2.22.0) -->
-		<PackageReference Include="Silk.NET.Direct3D11" Version="2.22.0" />
-		<PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" />
+		<!-- Core windowing and input dependencies (ALL VERSIONS MUST MATCH 2.22.0) -->
 		<PackageReference Include="Silk.NET.Windowing.Sdl" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Input.Sdl" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.Input" Version="2.22.0" />
+		
+		<!-- Graphics backends -->
+		<!-- OpenGL backend (used on Linux/macOS, fallback on Windows) -->
 		<PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
-		<PackageReference Include="Silk.NET.Vulkan" Version="2.22.0" />
+		<!-- Direct3D11 backend (required for Windows - OpenGL is broken on Windows) -->
+		<PackageReference Include="Silk.NET.Direct3D11" Version="2.22.0" />
 		<PackageReference Include="Silk.NET.DXGI" Version="2.22.0" />
+		<!-- Vulkan backend (optional - only include when explicitly needed) -->
+		<PackageReference Include="Silk.NET.Vulkan" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_VULKAN_BACKEND'))" />
+		<PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" Condition="$(DefineConstants.Contains('INCLUDE_VULKAN_BACKEND'))" />
 
 		<!-- Skia -->
 		<PackageReference Include="SkiaSharp" Version="3.119.1" />
@@ -48,7 +53,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
 		<ProjectReference Include="..\Sandbox.UI.Skia\Sandbox.UI.Skia.csproj" />
-		<ProjectReference Include="..\Sandbox.UI.AI\Sandbox.UI.AI.csproj" />
+		<!-- AI renderer is optional - only include if INCLUDE_AI_RENDERER is defined -->
+		<ProjectReference Include="..\Sandbox.UI.AI\Sandbox.UI.AI.csproj" Condition="$(DefineConstants.Contains('INCLUDE_AI_RENDERER'))" />
 		<ProjectReference Include="..\Microsoft.AspNetCore.Components\Microsoft.AspNetCore.Components.csproj" />
 	</ItemGroup>
 

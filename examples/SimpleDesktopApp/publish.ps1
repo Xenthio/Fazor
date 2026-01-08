@@ -32,6 +32,7 @@ param(
     [switch]$PackAssets = $false,
     [switch]$SelfContained = $false,
     [switch]$Trimmed = $false,
+    [switch]$NativeAot = $false,
     [string]$Runtime = "",
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$RemainingArgs
@@ -54,6 +55,9 @@ if ($RemainingArgs) {
             "^(--trimmed|--Trimmed)$" {
                 $Trimmed = $true
             }
+            "^(--native-aot|--NativeAot|--nativeaot)$" {
+                $NativeAot = $true
+            }
             "^(--runtime|--Runtime)$" {
                 if ($i + 1 -lt $RemainingArgs.Count) {
                     $Runtime = $RemainingArgs[$i + 1]
@@ -67,6 +71,7 @@ if ($RemainingArgs) {
                 Write-Host "  -PackAssets, --pack-assets       Embed Assets in the executable"
                 Write-Host "  -SelfContained, --self-contained Include .NET runtime (no installation required)"
                 Write-Host "  -Trimmed, --trimmed              Enable assembly trimming (requires -SelfContained)"
+                Write-Host "  -NativeAot, --native-aot         Enable Native AOT compilation (smallest binaries, ~7-10 MB)"
                 Write-Host "  -Runtime <RID>, --runtime <RID>  Target runtime identifier (auto-detected by default)"
                 Write-Host "  -?, -h, --help                   Show this help message"
                 Write-Host ""
@@ -76,6 +81,7 @@ if ($RemainingArgs) {
                 Write-Host "  .\publish.ps1 --pack-assets                                # Embed assets (bash style)"
                 Write-Host "  .\publish.ps1 -SelfContained -Trimmed                      # Self-contained, trimmed"
                 Write-Host "  .\publish.ps1 -PackAssets -SelfContained -Trimmed          # Truly single-file"
+                Write-Host "  .\publish.ps1 -NativeAot -PackAssets                        # Native AOT (smallest, ~7-10 MB)"
                 Write-Host "  .\publish.ps1 --pack-assets --self-contained --trimmed     # Truly single-file (bash style)"
                 Write-Host ""
                 exit 0
@@ -132,11 +138,20 @@ Write-Host "  Runtime:          $Runtime" -ForegroundColor White
 Write-Host "  Pack Assets:      $PackAssets" -ForegroundColor White
 Write-Host "  Self-Contained:   $SelfContained" -ForegroundColor White
 Write-Host "  Trimmed:          $Trimmed" -ForegroundColor White
+Write-Host "  Native AOT:       $NativeAot" -ForegroundColor White
 Write-Host "  Output Dir:       $OutputDir" -ForegroundColor White
 Write-Host ""
 
 # Validate options
-if ($Trimmed -and -not $SelfContained) {
+if ($NativeAot) {
+    Write-Host "ℹ️  Native AOT mode enabled - this produces the smallest binaries (~7-10 MB)" -ForegroundColor Cyan
+    Write-Host "   Note: Some features may have limited functionality (see warnings during build)" -ForegroundColor Gray
+    # Native AOT implies self-contained and trimmed
+    $SelfContained = $true
+    $Trimmed = $true
+}
+
+if ($Trimmed -and -not $SelfContained -and -not $NativeAot) {
     Write-Host "⚠️  Warning: Trimming requires SelfContained. Enabling SelfContained." -ForegroundColor Yellow
     $SelfContained = $true
 }
@@ -153,14 +168,28 @@ $publishArgs = @(
     "-c", "Release",
     "-r", $Runtime,
     "-o", $OutputDir,
-    "--self-contained", $SelfContained.ToString().ToLower(),
-    "/p:PublishSingleFile=true",
-    "/p:IncludeNativeLibrariesForSelfExtract=true",
-    "/p:PublishReadyToRun=true"
+    "--self-contained", $SelfContained.ToString().ToLower()
 )
+
+if ($NativeAot) {
+    # Native AOT specific settings
+    $publishArgs += "/p:PublishAot=true"
+    $publishArgs += "/p:IlcOptimizationPreference=Size"
+    $publishArgs += "/p:IlcGenerateStackTraceData=false"
+    $publishArgs += "/p:StripSymbols=true"
+    # Native AOT doesn't support single-file
+} else {
+    # Single-file settings (not compatible with Native AOT)
+    $publishArgs += "/p:PublishSingleFile=true"
+    $publishArgs += "/p:IncludeNativeLibrariesForSelfExtract=true"
+    $publishArgs += "/p:PublishReadyToRun=false"  # Disabled for smaller binary size
+}
 
 if ($Trimmed) {
     $publishArgs += "/p:PublishTrimmed=true"
+    if ($NativeAot) {
+        $publishArgs += "/p:TrimMode=full"
+    }
 }
 
 # Add property to control asset packaging
@@ -204,11 +233,12 @@ Write-Host "Total directory size:   $DirSizeMB MB" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Contents:" -ForegroundColor Yellow
 Get-ChildItem -Path $OutputDir -Recurse -File | Select-Object -First 10 | ForEach-Object {
-    $size = [math]::Round($_.Length / 1MB, 2)
-    Write-Host "  $($_.Name) ($size MB)"
+    $sizeMB = [math]::Round($_.Length / 1MB, 2)
+    Write-Host "  $($_.Name) ($sizeMB MB)"
 }
-if ((Get-ChildItem -Path $OutputDir -Recurse -File).Count -gt 10) {
-    Write-Host "  ... and more" -ForegroundColor Gray
+$fileCount = (Get-ChildItem -Path $OutputDir -Recurse -File).Count
+if ($fileCount -gt 10) {
+    Write-Host "  ...and $($fileCount - 10) more files" -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -227,7 +257,7 @@ if ($PackAssets) {
 if ($SelfContained) {
     Write-Host "  [OK] .NET runtime included (no installation required)" -ForegroundColor Green
 } else {
-    Write-Host "  [INFO] Requires .NET 8 runtime on target machine" -ForegroundColor Cyan
+    Write-Host "  [INFO] Requires .NET 10 runtime on target machine" -ForegroundColor Cyan
 }
 
 Write-Host ""

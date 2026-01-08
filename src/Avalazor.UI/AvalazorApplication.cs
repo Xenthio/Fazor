@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
+#if INCLUDE_AI_RENDERER
 using Sandbox.UI.AI;
+#endif
 using Sandbox.UI.Reflection;
 using Sandbox.UI.Skia;
 
@@ -12,6 +14,7 @@ namespace Avalazor.UI;
 /// </summary>
 public static class AvalazorApplication
 {
+#if INCLUDE_AI_RENDERER
     /// <summary>
     /// Force AI renderer mode even if a display is available
     /// </summary>
@@ -28,6 +31,7 @@ public static class AvalazorApplication
     /// If not set, default AI output is printed to console.
     /// </summary>
     public static Action<RootPanel>? AIModeCallback { get; set; }
+#endif
     
     /// <summary>
     /// The window manager for opening additional native windows.
@@ -50,6 +54,7 @@ public static class AvalazorApplication
     /// </summary>
     public static bool HasDisplayEnvironment()
     {
+#if INCLUDE_AI_RENDERER
         if (ForceAIMode)
             return false;
             
@@ -57,6 +62,7 @@ public static class AvalazorApplication
         var aiMode = Environment.GetEnvironmentVariable("AVALAZOR_AI_MODE");
         if (aiMode == "1" || aiMode?.ToLower() == "true")
             return false;
+#endif
             
         // Check for common display environment indicators
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -74,11 +80,13 @@ public static class AvalazorApplication
 
     public static void Run(RootPanel rootPanel, int width = 1280, int height = 720, string title = "Avalazor Application")
     {
+#if INCLUDE_AI_RENDERER
         if (!HasDisplayEnvironment())
         {
             RunWithAIRenderer(rootPanel, width, height, title);
             return;
         }
+#endif
         
         using var window = new NativeWindow(width, height, title);
         window.RootPanel = rootPanel;
@@ -190,6 +198,7 @@ public static class AvalazorApplication
             }
             
             // Check if we have a display environment
+#if INCLUDE_AI_RENDERER
             if (!HasDisplayEnvironment())
             {
                 Console.WriteLine($"[Avalazor] No display environment detected - using AI renderer");
@@ -215,6 +224,7 @@ public static class AvalazorApplication
                 RunWithAIRenderer(rootPanel, width, height, title);
                 return;
             }
+#endif
 
             Console.WriteLine($"Creating native window from Window properties (after layout): {width}x{height}, Title: '{title}'");
             Console.WriteLine($"Root panel created: {rootPanel != null}");
@@ -249,6 +259,7 @@ public static class AvalazorApplication
         }
     }
     
+#if INCLUDE_AI_RENDERER
     /// <summary>
     /// Run the application with the AI renderer (for headless/CI environments or AI agent debugging)
     /// </summary>
@@ -558,6 +569,7 @@ public static class AvalazorApplication
     {
         throw new NotSupportedException("RunComponent is no longer supported. Use RunPanel<T> with Panel-derived components instead.");
     }
+#endif
     
     private static void PrintPanelTree(Panel panel, int depth)
     {

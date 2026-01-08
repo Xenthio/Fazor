@@ -99,12 +99,17 @@ public class NativeWindow : INativeWindow, IDisposable
                 _backend = new OpenGLBackend();
                 break;
 
+#if INCLUDE_VULKAN_BACKEND
             case GraphicsBackendType.Vulkan:
                 Console.WriteLine("Starting Vulkan backend...");
                 options.API = GraphicsAPI.DefaultVulkan; // Request Vulkan API
                 options.ShouldSwapAutomatically = false; // We handle swapchain ourselves
                 _backend = new VulkanBackend();
                 break;
+#else
+            case GraphicsBackendType.Vulkan:
+                throw new NotSupportedException("Vulkan backend was not included in this build. Add INCLUDE_VULKAN_BACKEND to DefineConstants and rebuild.");
+#endif
 
             case GraphicsBackendType.DirectX11:
                 Console.WriteLine("Starting DirectX11 backend...");

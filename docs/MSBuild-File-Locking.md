@@ -5,7 +5,7 @@
 When building .NET projects, you might encounter file locking errors like:
 
 ```
-Could not copy "obj\Release\net8.0\Avalazor.Build.dll" to "bin\Release\net8.0\Avalazor.Build.dll". 
+Could not copy "obj\Release\net10.0\Avalazor.Build.dll" to "bin\Release\net10.0\Avalazor.Build.dll". 
 Exceeded retry count of 10. Failed. 
 The file is locked by: "MSBuild.exe (46260), MSBuild.exe (8000), MSBuild.exe (42604)"
 ```
@@ -139,7 +139,7 @@ In consuming projects (like SimpleDesktopApp):
 4. **Check file permissions:**
    ```bash
    # Linux/macOS
-   ls -la bin/Release/net8.0/
+   ls -la bin/Release/net10.0/
    # Ensure your user owns the files
    ```
 

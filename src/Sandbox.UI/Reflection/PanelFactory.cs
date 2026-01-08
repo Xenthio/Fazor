@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -18,6 +19,7 @@ namespace Sandbox.UI.Reflection
 		/// <summary>
 		/// Initialize the panel type registry by scanning assemblies for Library and Alias attributes
 		/// </summary>
+		[UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Types are preserved via rd.xml descriptor")]
 		public static void Initialize()
 		{
 			if (_initialized)
@@ -96,6 +98,7 @@ namespace Sandbox.UI.Reflection
 		/// </summary>
 		/// <param name="name">The library name or alias</param>
 		/// <returns>A new Panel instance, or null if the name is not registered</returns>
+		[UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Types are preserved via rd.xml descriptor")]
 		public static Panel? Create(string name)
 		{
 			if (!_initialized)
