@@ -1,0 +1,33 @@
+<linker>
+  <!-- Preserve all Razor-generated components -->
+  <assembly fullname="SimpleDesktopApp">
+    <type fullname="SimpleDesktopApp.*" preserve="all"/>
+  </assembly>
+  
+  <!-- Preserve UI framework types needed for reflection -->
+  <assembly fullname="Sandbox.UI">
+    <type fullname="Sandbox.UI.Panel" preserve="all"/>
+    <type fullname="Sandbox.UI.RootPanel" preserve="all"/>
+    <type fullname="Sandbox.UI.Controls.*" preserve="all"/>
+    <type fullname="Sandbox.UI.Reflection.PanelFactory" preserve="all"/>
+  </assembly>
+  
+  <!-- Preserve Blazor component infrastructure -->
+  <assembly fullname="Microsoft.AspNetCore.Components">
+    <type fullname="Microsoft.AspNetCore.Components.RenderTreeBuilder" preserve="all"/>
+    <type fullname="Microsoft.AspNetCore.Components.ComponentBase" preserve="all"/>
+  </assembly>
+  
+  <!-- Preserve SkiaSharp rendering types -->
+  <assembly fullname="SkiaSharp">
+    <type fullname="SkiaSharp.*" preserve="Methods"/>
+  </assembly>
+  
+  <!-- Preserve Silk.NET windowing and input -->
+  <assembly fullname="Silk.NET.Windowing.Sdl">
+    <type fullname="Silk.NET.Windowing.*" preserve="Methods"/>
+  </assembly>
+  <assembly fullname="Silk.NET.Input.Sdl">
+    <type fullname="Silk.NET.Input.*" preserve="Methods"/>
+  </assembly>
+</linker>

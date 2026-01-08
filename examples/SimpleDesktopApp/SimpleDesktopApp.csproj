@@ -15,9 +15,9 @@
     <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
-  <!-- Single-file publish configuration -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <!-- Enable single-file publishing -->
+  <!-- Single-file publish configuration (disabled for Native AOT) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(PublishAot)' != 'true'">
+    <!-- Enable single-file publishing (not compatible with Native AOT) -->
     <PublishSingleFile>true</PublishSingleFile>
     <!-- Include native libraries inside the single-file bundle -->
     <!-- PathResolver workaround in NativeWindow.cs enables finding extracted DLLs -->
@@ -28,6 +28,10 @@
     <!-- Disable ReadyToRun for smaller binary size -->
     <!-- R2R precompiles code for faster startup but increases size significantly -->
     <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <!-- Release configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <!-- Trim unused assemblies to reduce size -->
     <PublishTrimmed>false</PublishTrimmed>
     <!-- Self-contained = false to use framework-dependent deployment (smaller) -->
@@ -48,6 +52,11 @@
     <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
     <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->
     <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Native AOT / Trimming configuration -->
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="rd.xml" />
   </ItemGroup>
 
   <!-- Project-specific Assets with conditional packaging -->
