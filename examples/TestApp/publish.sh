@@ -181,7 +181,7 @@ fi
 if [[ "$SELF_CONTAINED" == "true" ]]; then
     echo "  ✓ .NET runtime included (no installation required)"
 else
-    echo "  ⓘ Requires .NET 8 runtime on target machine"
+    echo "  ⓘ Requires .NET 10 runtime on target machine"
 fi
 
 echo ""

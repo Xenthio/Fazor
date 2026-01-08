@@ -51,7 +51,7 @@ New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 # - PublishSingleFile: Creates a single executable
 # - IncludeNativeLibrariesForSelfExtract: true = embed native libs (PathResolver workaround enables this)
 # - PublishReadyToRun: Pre-compiles for better startup performance
-# - SelfContained: false = requires .NET 8 runtime (smaller), true = includes runtime (larger)
+# - SelfContained: false = requires .NET 10 runtime (smaller), true = includes runtime (larger)
 dotnet publish $Project `
     -c Release `
     -r $Runtime `

@@ -104,8 +104,8 @@ publish/
 
 | Configuration | Exe Size | Total Size | Runtime Required |
 |---------------|----------|------------|------------------|
-| Default | 69MB | 71MB (exe + assets) | .NET 8 |
-| --pack-assets | 71MB | 71MB (exe only) | .NET 8 |
+| Default | 69MB | 71MB (exe + assets) | .NET 10 |
+| --pack-assets | 71MB | 71MB (exe only) | .NET 10 |
 | --self-contained | 85MB | 87MB (exe + assets) | None |
 | --self-contained --trimmed | 80MB | 82MB (exe + assets) | None |
 | --pack-assets --self-contained --trimmed | 80MB | 80MB (exe only) | None |
@@ -187,8 +187,8 @@ Assets are extracted alongside the executable. The app looks for them in the `As
 
 | Configuration | Size | Requirements |
 |---------------|------|--------------|
-| Debug build (separate DLLs) | ~218MB | .NET 8 Runtime |
-| Release single-file (framework-dependent) | ~71MB (69MB exe + 2MB assets) | .NET 8 Runtime |
+| Debug build (separate DLLs) | ~218MB | .NET 10 Runtime |
+| Release single-file (framework-dependent) | ~71MB (69MB exe + 2MB assets) | .NET 10 Runtime |
 | Release single-file (self-contained) | ~85-90MB | None |
 
 ## CI/CD Integration

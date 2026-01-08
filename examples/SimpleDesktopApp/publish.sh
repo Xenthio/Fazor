@@ -200,7 +200,7 @@ if [ -f "$OUTPUT_DIR/SimpleDesktopApp" ]; then
     if [ "$SELF_CONTAINED" = true ]; then
         echo "  [OK] .NET runtime included (no installation required)"
     else
-        echo "  [!]  Requires .NET 8.0 runtime on target machine"
+        echo "  [!]  Requires .NET 10.0 runtime on target machine"
     fi
     
     if [ "$NATIVE_AOT" = true ]; then

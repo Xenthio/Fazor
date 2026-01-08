@@ -257,7 +257,7 @@ if ($PackAssets) {
 if ($SelfContained) {
     Write-Host "  [OK] .NET runtime included (no installation required)" -ForegroundColor Green
 } else {
-    Write-Host "  [INFO] Requires .NET 8 runtime on target machine" -ForegroundColor Cyan
+    Write-Host "  [INFO] Requires .NET 10 runtime on target machine" -ForegroundColor Cyan
 }
 
 Write-Host ""
