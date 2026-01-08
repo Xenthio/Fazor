@@ -234,7 +234,8 @@ Write-Host ""
 Write-Host "Contents:" -ForegroundColor Yellow
 Get-ChildItem -Path $OutputDir -Recurse -File | Select-Object -First 10 | ForEach-Object {
     $size = [math]::Round($_.Length / 1MB, 2)
-    Write-Host ("  {0} ({1} MB)" -f $_.Name, $size)
+    $line = "  {0} ({1} MB)" -f $_.Name, $size
+    Write-Host $line
 }
 if ((Get-ChildItem -Path $OutputDir -Recurse -File).Count -gt 10) {
     Write-Host "  (and more files...)" -ForegroundColor Gray
