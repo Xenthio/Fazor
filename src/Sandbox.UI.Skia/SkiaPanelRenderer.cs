@@ -339,14 +339,14 @@ public class SkiaPanelRenderer : IPanelRenderer
         canvas.Translate(originX, originY);
         
         // Convert Matrix4x4 to SKMatrix (2D affine transform)
-        // SKMatrix is row-major 3x3: [scaleX, skewX, transX; skewY, scaleY, transY; persp0, persp1, persp2]
+        // SKMatrix constructor: (scaleX, skewY, transX, skewX, scaleY, transY, persp0, persp1, persp2)
+        // Matrix layout: [scaleX skewX transX; skewY scaleY transY; persp0 persp1 persp2]
         // Matrix4x4 in .NET uses row vectors with translation in row 4 (M41, M42, M43)
-        // For 2D affine: scale/skew from rows 1-2, translation from row 4
         var m = panel.TransformMatrix;
         var skMatrix = new SKMatrix(
-            m.M11, m.M12, m.M41,  // Row 0: scaleX, skewX, transX (translation from M41!)
-            m.M21, m.M22, m.M42,  // Row 1: skewY, scaleY, transY (translation from M42!)
-            0,     0,     1       // Row 2: perspective (fixed for 2D affine)
+            m.M11, m.M21, m.M41,  // scaleX, skewY (from M21!), transX
+            m.M12, m.M22, m.M42,  // skewX (from M12!), scaleY, transY
+            0,     0,     1       // persp0, persp1, persp2 (fixed for 2D affine)
         );
         canvas.Concat(ref skMatrix);
         
