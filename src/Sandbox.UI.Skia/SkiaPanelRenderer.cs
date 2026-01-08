@@ -325,10 +325,11 @@ public class SkiaPanelRenderer : IPanelRenderer
         if (style.Transform?.IsEmpty() ?? true) return false;
         if (panel.TransformMatrix == System.Numerics.Matrix4x4.Identity) return false;
         
-        // Calculate transform origin point (default is 0,0 - top-left of panel)
+        // Calculate transform origin point (default is 50% 50% - center of panel, per CSS spec)
         // S&box: origin.x += style.TransformOriginX.Value.GetPixels( panel.Box.Rect.Width, 0.0f );
-        float originX = panel.Box.Rect.Left + (style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? 0f);
-        float originY = panel.Box.Rect.Top + (style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? 0f);
+        // When TransformOriginX/Y are not set, CSS defaults to 50% (center), not 0 (top-left)
+        float originX = panel.Box.Rect.Left + (style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f));
+        float originY = panel.Box.Rect.Top + (style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f));
         
         // Apply transform with origin: translate(origin) * transform * translate(-origin)
         // This matches S&box's Matrix.CreateTranslation approach
