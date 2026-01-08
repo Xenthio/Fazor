@@ -233,12 +233,12 @@ Write-Host "Total directory size:   $DirSizeMB MB" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Contents:" -ForegroundColor Yellow
 Get-ChildItem -Path $OutputDir -Recurse -File | Select-Object -First 10 | ForEach-Object {
-    $size = [math]::Round($_.Length / 1MB, 2)
-    $line = "  {0} ({1} MB)" -f $_.Name, $size
-    Write-Host $line
+    $sizeMB = [math]::Round($_.Length / 1MB, 2)
+    Write-Host "  $($_.Name) ($sizeMB MB)"
 }
-if ((Get-ChildItem -Path $OutputDir -Recurse -File).Count -gt 10) {
-    Write-Host "  (and more files...)" -ForegroundColor Gray
+$fileCount = (Get-ChildItem -Path $OutputDir -Recurse -File).Count
+if ($fileCount -gt 10) {
+    Write-Host "  ...and $($fileCount - 10) more files" -ForegroundColor Gray
 }
 
 Write-Host ""
