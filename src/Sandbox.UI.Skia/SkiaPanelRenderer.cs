@@ -326,21 +326,27 @@ public class SkiaPanelRenderer : IPanelRenderer
         if (panel.TransformMatrix == System.Numerics.Matrix4x4.Identity) return false;
         
         // Calculate transform origin point (default is 50% 50% - center of panel, per CSS spec)
-        // S&box: origin.x += style.TransformOriginX.Value.GetPixels( panel.Box.Rect.Width, 0.0f );
-        // When TransformOriginX/Y are not set, CSS defaults to 50% (center), not 0 (top-left)
-        float originX = panel.Box.Rect.Left + (style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f));
-        float originY = panel.Box.Rect.Top + (style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f));
+        // The origin is calculated relative to the panel's top-left corner
+        float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
+        float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
+        
+        // The absolute position of the transform origin in screen space
+        float originX = panel.Box.Rect.Left + originOffsetX;
+        float originY = panel.Box.Rect.Top + originOffsetY;
         
         // Apply transform with origin: translate(origin) * transform * translate(-origin)
         // This matches S&box's Matrix.CreateTranslation approach
         canvas.Translate(originX, originY);
         
-        // Convert Matrix4x4 to SKMatrix (use 2D portion)
+        // Convert Matrix4x4 to SKMatrix (2D affine transform)
+        // SKMatrix is row-major 3x3: [scaleX, skewX, translateX; skewY, scaleY, translateY; perspX, perspY, perspW]
+        // Matrix4x4 rows: M11-M14 (row1), M21-M24 (row2), M31-M34 (row3), M41-M44 (row4)
+        // For 2D transform from 4x4, we use: row1(M11,M12,M14), row2(M21,M22,M24), row4(M41,M42,M44)
         var m = panel.TransformMatrix;
         var skMatrix = new SKMatrix(
-            m.M11, m.M21, m.M41,  // First row (scaleX, skewY, translateX)
-            m.M12, m.M22, m.M42,  // Second row (skewX, scaleY, translateY)
-            m.M14, m.M24, m.M44   // Perspective row
+            m.M11, m.M12, m.M14,  // First row (scaleX, skewX, translateX)
+            m.M21, m.M22, m.M24,  // Second row (skewY, scaleY, translateY)
+            m.M41, m.M42, m.M44   // Perspective row
         );
         canvas.Concat(ref skMatrix);
         
