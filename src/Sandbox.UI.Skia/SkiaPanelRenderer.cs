@@ -330,13 +330,14 @@ public class SkiaPanelRenderer : IPanelRenderer
         float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
         float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
         
-        // The absolute position of the transform origin in screen space
-        float originX = panel.Box.Rect.Left + originOffsetX;
-        float originY = panel.Box.Rect.Top + originOffsetY;
-        
-        // Apply transform with origin: translate(origin) * transform * translate(-origin)
-        // This matches S&box's Matrix.CreateTranslation approach
-        canvas.Translate(originX, originY);
+        // Apply transform with origin in LOCAL coordinates:
+        // 1. Move canvas to panel position
+        // 2. Move to transform origin (relative to panel)
+        // 3. Apply transform
+        // 4. Move back from transform origin
+        // This way the transform is applied around the correct point relative to the element
+        canvas.Translate(panel.Box.Rect.Left, panel.Box.Rect.Top);
+        canvas.Translate(originOffsetX, originOffsetY);
         
         // Convert Matrix4x4 to SKMatrix (2D affine transform)
         // SKMatrix constructor: (scaleX, skewY, transX, skewX, scaleY, transY, persp0, persp1, persp2)
@@ -350,7 +351,8 @@ public class SkiaPanelRenderer : IPanelRenderer
         );
         canvas.Concat(ref skMatrix);
         
-        canvas.Translate(-originX, -originY);
+        canvas.Translate(-originOffsetX, -originOffsetY);
+        canvas.Translate(-panel.Box.Rect.Left, -panel.Box.Rect.Top);
         
         // Update GlobalMatrix for child panels
         panel.LocalMatrix = panel.TransformMatrix;
