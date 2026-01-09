@@ -333,21 +333,19 @@ public class SkiaPanelRenderer : IPanelRenderer
         // Apply transform with origin in LOCAL coordinates:
         // 1. Move canvas to panel position
         // 2. Move to transform origin (relative to panel)
-        // 3. Apply transform
+        // 3. Apply transform (WITHOUT translation components - those come from CSS translate(), not transform-origin)
         // 4. Move back from transform origin
-        // This way the transform is applied around the correct point relative to the element
         canvas.Translate(panel.Box.Rect.Left, panel.Box.Rect.Top);
         canvas.Translate(originOffsetX, originOffsetY);
         
-        // Convert Matrix4x4 to SKMatrix (2D affine transform)
-        // SKMatrix constructor: (scaleX, skewY, transX, skewX, scaleY, transY, persp0, persp1, persp2)
-        // Matrix layout: [scaleX skewX transX; skewY scaleY transY; persp0 persp1 persp2]
-        // Matrix4x4 in .NET uses row vectors with translation in row 4 (M41, M42, M43)
+        // Convert Matrix4x4 to SKMatrix - extract only scale/skew, ignore translation
+        // The transform matrix may have translation from CSS translate(), but transform-origin
+        // is handled by our canvas translations above
         var m = panel.TransformMatrix;
         var skMatrix = new SKMatrix(
-            m.M11, m.M21, m.M41,  // scaleX, skewY (from M21!), transX
-            m.M12, m.M22, m.M42,  // skewX (from M12!), scaleY, transY
-            0,     0,     1       // persp0, persp1, persp2 (fixed for 2D affine)
+            m.M11, m.M21, 0,      // scaleX, skewY, transX=0 (ignore M41)
+            m.M12, m.M22, 0,      // skewX, scaleY, transY=0 (ignore M42)
+            0,     0,     1       // persp0, persp1, persp2
         );
         canvas.Concat(ref skMatrix);
         
