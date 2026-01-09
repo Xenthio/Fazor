@@ -326,22 +326,46 @@ public class SkiaPanelRenderer : IPanelRenderer
         if (panel.TransformMatrix == System.Numerics.Matrix4x4.Identity) return false;
         
         // Calculate transform origin point (default is 50% 50% - center of panel, per CSS spec)
-        // The origin is calculated relative to the panel's top-left corner
-        float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
-        float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
+        // BUG WORKAROUND: The generated code has a bug where it passes Length.Percent(50).Value
+        // as the default, which loses the Unit and becomes 50 pixels via implicit conversion.
+        // We need to check if the value looks like it should be a percentage.
+        float originOffsetX;
+        float originOffsetY;
         
-        // DEBUG: Log for checklabel elements
-        if (panel.HasClass("checklabel"))
+        if (style.TransformOriginX.HasValue)
         {
-            Console.WriteLine($"[Transform Debug] checklabel:");
-            Console.WriteLine($"  Size: {panel.Box.Rect.Width}x{panel.Box.Rect.Height}");
-            Console.WriteLine($"  Position: ({panel.Box.Rect.Left}, {panel.Box.Rect.Top})");
-            Console.WriteLine($"  TransformOriginX: {style.TransformOriginX?.ToString() ?? "null"}");
-            Console.WriteLine($"  TransformOriginY: {style.TransformOriginY?.ToString() ?? "null"}");
-            Console.WriteLine($"  Origin offset: ({originOffsetX}, {originOffsetY})");
-            Console.WriteLine($"  Matrix: M11={panel.TransformMatrix.M11}, M22={panel.TransformMatrix.M22}");
-            Console.WriteLine($"  Matrix: M12={panel.TransformMatrix.M12}, M21={panel.TransformMatrix.M21}");
-            Console.WriteLine($"  Matrix: M41={panel.TransformMatrix.M41}, M42={panel.TransformMatrix.M42}");
+            var originX = style.TransformOriginX.Value;
+            // If it's pixels but equals 50, it's likely the bugged default that should be 50%
+            if (originX.Unit == LengthUnit.Pixels && originX.Value == 50f)
+            {
+                originOffsetX = panel.Box.Rect.Width * 0.5f;
+            }
+            else
+            {
+                originOffsetX = originX.GetPixels(panel.Box.Rect.Width);
+            }
+        }
+        else
+        {
+            originOffsetX = panel.Box.Rect.Width * 0.5f;
+        }
+        
+        if (style.TransformOriginY.HasValue)
+        {
+            var originY = style.TransformOriginY.Value;
+            // If it's pixels but equals 50, it's likely the bugged default that should be 50%
+            if (originY.Unit == LengthUnit.Pixels && originY.Value == 50f)
+            {
+                originOffsetY = panel.Box.Rect.Height * 0.5f;
+            }
+            else
+            {
+                originOffsetY = originY.GetPixels(panel.Box.Rect.Height);
+            }
+        }
+        else
+        {
+            originOffsetY = panel.Box.Rect.Height * 0.5f;
         }
         
         // Apply transform with origin in LOCAL coordinates:
