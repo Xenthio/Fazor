@@ -330,19 +330,16 @@ public class SkiaPanelRenderer : IPanelRenderer
         float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
         float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
         
-        // DEBUG: Log for checklabel elements
-        if (panel.HasClass("checklabel"))
-        {
-            Console.WriteLine($"[Transform Debug] checklabel:");
-            Console.WriteLine($"  Size: {panel.Box.Rect.Width}x{panel.Box.Rect.Height}");
-            Console.WriteLine($"  Position: ({panel.Box.Rect.Left}, {panel.Box.Rect.Top})");
-            Console.WriteLine($"  TransformOriginX: {style.TransformOriginX?.ToString() ?? "null"}");
-            Console.WriteLine($"  TransformOriginY: {style.TransformOriginY?.ToString() ?? "null"}");
-            Console.WriteLine($"  Origin offset: ({originOffsetX}, {originOffsetY})");
-            Console.WriteLine($"  Matrix: M11={panel.TransformMatrix.M11}, M22={panel.TransformMatrix.M22}");
-            Console.WriteLine($"  Matrix: M12={panel.TransformMatrix.M12}, M21={panel.TransformMatrix.M21}");
-            Console.WriteLine($"  Matrix: M41={panel.TransformMatrix.M41}, M42={panel.TransformMatrix.M42}");
-        }
+        // DEBUG: Log all transforms to see what's happening
+        Console.WriteLine($"[Transform Debug] Panel: {panel.GetType().Name}, Classes: {string.Join(", ", panel.Classes)}");
+        Console.WriteLine($"  Size: {panel.Box.Rect.Width}x{panel.Box.Rect.Height}");
+        Console.WriteLine($"  Position: ({panel.Box.Rect.Left}, {panel.Box.Rect.Top})");
+        Console.WriteLine($"  TransformOriginX: {style.TransformOriginX?.ToString() ?? "null"}");
+        Console.WriteLine($"  TransformOriginY: {style.TransformOriginY?.ToString() ?? "null"}");
+        Console.WriteLine($"  Origin offset: ({originOffsetX}, {originOffsetY})");
+        Console.WriteLine($"  Matrix: M11={panel.TransformMatrix.M11}, M22={panel.TransformMatrix.M22}");
+        Console.WriteLine($"  Matrix: M12={panel.TransformMatrix.M12}, M21={panel.TransformMatrix.M21}");
+        Console.WriteLine($"  Matrix: M41={panel.TransformMatrix.M41}, M42={panel.TransformMatrix.M42}");
         
         // Apply transform with origin in LOCAL coordinates:
         // 1. Move canvas to panel position
