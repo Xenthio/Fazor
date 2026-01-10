@@ -151,7 +151,7 @@ dotnet run
 
 Or in AI mode (headless):
 ```bash
-AVALAZOR_AI_MODE=1 dotnet run
+FAZOR_AI_MODE=1 dotnet run
 ```
 
 ## Compatibility with s&box

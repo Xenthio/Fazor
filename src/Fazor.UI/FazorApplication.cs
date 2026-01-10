@@ -59,7 +59,7 @@ public static class FazorApplication
             return false;
             
         // Check environment variable override
-        var aiMode = Environment.GetEnvironmentVariable("AVALAZOR_AI_MODE");
+        var aiMode = Environment.GetEnvironmentVariable("FAZOR_AI_MODE");
         if (aiMode == "1" || aiMode?.ToLower() == "true")
             return false;
 #endif
@@ -278,7 +278,7 @@ public static class FazorApplication
         
         // Default AI mode output
         Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("║           AVALAZOR AI RENDERER MODE                          ║");
+        Console.WriteLine("║             FAZOR AI RENDERER MODE                           ║");
         Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
         Console.WriteLine($"Application: {title}");
         Console.WriteLine($"Viewport: {width}x{height}");
@@ -327,7 +327,7 @@ public static class FazorApplication
             Console.WriteLine("- Use AIHelper.Snapshot(rootPanel) to get current UI state");
             Console.WriteLine("- Use AIHelper.WhatIsAt(rootPanel, x, y) to inspect coordinates");
             Console.WriteLine("- Use AIHelper.FindByClass(rootPanel, \"classname\") to find elements");
-            Console.WriteLine("- Set AVALAZOR_AI_MODE=0 or provide a DISPLAY to use GUI mode");
+            Console.WriteLine("- Set FAZOR_AI_MODE=0 or provide a DISPLAY to use GUI mode");
             Console.WriteLine(new string('═', 60));
         }
     }

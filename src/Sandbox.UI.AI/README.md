@@ -164,7 +164,7 @@ var imagePath = AIHelper.Screenshot(rootPanel);
 
 ## Notes
 
-- Screenshots are saved to a temp directory by default (`/tmp/avalazor-ai-debug/` or equivalent)
+- Screenshots are saved to a temp directory by default (`/tmp/fazor-ai-debug/` or equivalent)
 - PNG files are git-ignored by default (see root .gitignore)
 - Text measurement uses estimation - for pixel-perfect layout, use the Skia renderer
 - The bitmap renderer uses `SkiaPanelRenderer` internally, so screenshots are high-fidelity and match the main UI renderer

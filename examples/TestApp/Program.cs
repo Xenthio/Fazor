@@ -13,7 +13,7 @@ class Program
         // The framework now automatically detects if a display is available
         // and uses the AI renderer when running in headless environments (CI, SSH, etc.)
         // 
-        // To force AI mode: set AVALAZOR_AI_MODE=1 environment variable
+        // To force AI mode: set FAZOR_AI_MODE=1 environment variable
         // Or programmatically: Fazor.UI.FazorApplication.ForceAIMode = true;
         
         // Enable Panel Inspector in separate windows mode
