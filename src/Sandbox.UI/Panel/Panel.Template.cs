@@ -20,6 +20,8 @@ public partial class Panel
 
     /// <summary>
     /// Loads stylesheets from [StyleSheet] attributes.
+    /// If an attribute has no name specified, it will automatically look for a stylesheet
+    /// with the same name as the component (e.g., MainWindow.razor -> MainWindow.scss).
     /// </summary>
     /// <returns>True if any attribute exists and we loaded from it, otherwise false</returns>
     private bool LoadStyleSheetFromAttribute()
@@ -41,6 +43,13 @@ public partial class Panel
         foreach (var attr in attrs)
         {
             var path = attr.Name;
+            
+            // If no path specified, use the type name + .scss
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = type.Name + ".scss";
+            }
+            
             var fullPath = ResolveStyleSheetPath(path, type);
             if (fullPath != null)
             {
@@ -184,5 +193,30 @@ public partial class Panel
                     yield return entryDir;
             }
         }
+    }
+
+    /// <summary>
+    /// Checks if a stylesheet was loaded from a [StyleSheet] attribute.
+    /// Used by SetTheme to avoid removing attribute-based stylesheets.
+    /// </summary>
+    /// <param name="styleSheet">The stylesheet to check</param>
+    /// <returns>True if the stylesheet was loaded from an attribute, false otherwise</returns>
+    protected bool IsStyleSheetFromAttribute(StyleSheet styleSheet)
+    {
+        if (_loadedTemplateStylesheets == null || styleSheet?.FileName == null)
+            return false;
+
+        // Check if the stylesheet's filename is in our tracked list
+        // Normalize paths for comparison (replace backslashes, trim)
+        var fileName = styleSheet.FileName.Replace('\\', '/').Trim();
+        
+        return _loadedTemplateStylesheets.Any(path =>
+        {
+            var trackedPath = path.Replace('\\', '/').Trim();
+            // Check for exact match or if one ends with the other (handles absolute vs relative paths)
+            return trackedPath == fileName || 
+                   trackedPath.EndsWith(fileName) || 
+                   fileName.EndsWith(trackedPath);
+        });
     }
 }
