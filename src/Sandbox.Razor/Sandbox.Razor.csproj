@@ -5,6 +5,20 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1701;1702;1591;NETSDK1138</NoWarn>
+
+    <!-- NuGet Package Metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Fazor.Razor</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <Description>Razor file transpilation engine for Fazor. Converts .razor files to C# code with full IntelliSense support. Based on Microsoft.AspNetCore.Razor.Language from s&amp;box.</Description>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;compiler;transpiler;code-generation</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

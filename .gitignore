@@ -433,3 +433,4 @@ src/Avalazor.UI/Native/yoga.tar.gz
 **/avalazor-ai-debug/
 *.ai-debug.png
 ui-snapshot-*.png
+nupkgs/

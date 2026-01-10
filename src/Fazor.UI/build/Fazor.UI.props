@@ -1,0 +1,24 @@
+<Project>
+  <!-- 
+    Fazor.UI NuGet Package Build Integration
+    This file is automatically imported when you reference the Fazor.UI package
+  -->
+  
+  <PropertyGroup>
+    <!-- Path to Fazor assets in the NuGet package -->
+    <FazorAssetsPath>$(MSBuildThisFileDirectory)..\content\</FazorAssetsPath>
+  </PropertyGroup>
+
+  <!-- 
+    Note: Assets (themes, fonts) are NOT automatically included.
+    To use themes, copy the Assets folder from the Fazor repository to your project
+    and configure it as Content:
+    
+    <ItemGroup>
+      <Content Include="Assets\**\*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  -->
+
+</Project>

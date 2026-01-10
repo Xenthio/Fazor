@@ -10,6 +10,9 @@
     <PackageId>Microsoft.AspNetCore.Components</PackageId>
     <NoWarn>1701;1702;1591</NoWarn>
 	  <LangVersion>latest</LangVersion>
+
+    <!-- Mark as not packable - this is embedded in Fazor projects -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   
 </Project>

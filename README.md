@@ -11,6 +11,20 @@
 - **XGUI Theme System**: Complete controls and themes ported from XGUI-3 - use them as-is or create your own
 - **Cross-Platform**: Runs on Windows, macOS, and Linux
 - **Zero Boilerplate**: Minimal setup required - you can only work with Razor
+- **NuGet Package Distribution**: Use Fazor as a library in your own projects
+
+## 📦 Using Fazor as a Library
+
+Fazor is available as NuGet packages! Add it to your existing projects:
+
+```bash
+dotnet add package Fazor.UI
+dotnet add package Fazor.Build
+```
+
+**See [NuGet Usage Guide](docs/NuGet-Usage.md) for complete instructions on using Fazor in your projects.**
+
+Perfect for adding desktop UI to existing applications like game launchers, tools, or utilities!
 
 ## 🚀 Quick Start
 

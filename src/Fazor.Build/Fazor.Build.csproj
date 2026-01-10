@@ -8,6 +8,19 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <!-- Prevent output assembly from being locked by MSBuild -->
     <GenerateDependencyFile>true</GenerateDependencyFile>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>Fazor.Build</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <Description>MSBuild integration for Fazor. Provides automatic Razor transpilation and SCSS compilation at build time. Required for Fazor projects.</Description>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;msbuild;build;scss;compiler</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

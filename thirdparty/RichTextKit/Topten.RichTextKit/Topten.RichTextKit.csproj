@@ -6,6 +6,9 @@
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+
+    <!-- This is a third-party dependency - embed in parent packages -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
