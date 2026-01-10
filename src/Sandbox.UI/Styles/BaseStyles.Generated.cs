@@ -3623,8 +3623,8 @@ public abstract partial class BaseStyles
 		if ( !_fontstyle.HasValue ) _fontstyle = UI.FontStyle.None;
 		if ( !_transform.HasValue ) _transform = new UI.PanelTransform();
 		if ( !_texttransform.HasValue ) _texttransform = UI.TextTransform.None;
-		if ( !_transformoriginx.HasValue ) _transformoriginx = Length.Percent( 50 ).Value;
-		if ( !_transformoriginy.HasValue ) _transformoriginy = Length.Percent( 50 ).Value;
+		if ( !_transformoriginx.HasValue ) _transformoriginx = Length.Percent( 50 );
+		if ( !_transformoriginy.HasValue ) _transformoriginy = Length.Percent( 50 );
 		if ( !_letterspacing.HasValue ) _letterspacing = Length.Percent( 0 ).Value;
 		if ( !_lineheight.HasValue ) _lineheight = Length.Percent( 100 ).Value;
 		if ( !_wordspacing.HasValue ) _wordspacing = Length.Percent( 0 ).Value;
