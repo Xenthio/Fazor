@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>BL0006;CS0649;CS0414;CS1591</NoWarn>
+    <RootNamespace>Fazor.Controls</RootNamespace>
+    <AssemblyName>Fazor.Controls</AssemblyName>
+
+    <!-- NuGet Package Metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Fazor.Controls</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <Description>Extended UI controls for Fazor - ports of XGUI-3 controls including TreeView, ListView, Toolbar, ContextMenu, and more.</Description>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;desktop;ui;controls;xgui;treeview;listview;toolbar</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
+  </ItemGroup>
+
+</Project>
