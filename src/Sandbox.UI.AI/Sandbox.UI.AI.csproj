@@ -5,6 +5,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>AI-focused rendering backend for Sandbox.UI that outputs structured text and optional bitmap representations for AI agent debugging and interaction</Description>
+
+    <!-- NuGet Package Metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Fazor.Sandbox.UI.AI</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;desktop;ui;ai;debugging;headless</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

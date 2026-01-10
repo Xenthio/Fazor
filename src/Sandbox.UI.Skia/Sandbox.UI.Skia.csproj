@@ -7,6 +7,20 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Sandbox.UI.Skia</RootNamespace>
     <AssemblyName>Sandbox.UI.Skia</AssemblyName>
+
+    <!-- NuGet Package Metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Fazor.Sandbox.UI.Skia</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <Description>SkiaSharp rendering backend for Fazor Sandbox.UI. Provides 2D graphics rendering for desktop applications.</Description>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;desktop;ui;skia;rendering</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

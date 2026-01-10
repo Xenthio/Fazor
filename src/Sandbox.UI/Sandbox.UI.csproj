@@ -5,9 +5,23 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>BL0006;CS0649;CS0414</NoWarn>
+    <NoWarn>BL0006;CS0649;CS0414;CS1591</NoWarn>
     <RootNamespace>Sandbox.UI</RootNamespace>
     <AssemblyName>Sandbox.UI</AssemblyName>
+
+    <!-- NuGet Package Metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Fazor.Sandbox.UI</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Xenthio</Authors>
+    <Company>Xenthio</Company>
+    <Description>Core UI framework for Fazor - renderer-agnostic port of s&amp;box's UI framework. Contains Panel system, styling engine, layout (Yoga), and controls.</Description>
+    <PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;razor;desktop;ui;sandbox;panel;styling</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

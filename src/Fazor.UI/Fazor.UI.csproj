@@ -7,7 +7,22 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<NoWarn>BL0006;CS0649;CS0414</NoWarn>
+		<NoWarn>BL0006;CS0649;CS0414;CS1591</NoWarn>
+
+		<!-- NuGet Package Metadata -->
+		<IsPackable>true</IsPackable>
+		<PackageId>Fazor.UI</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>Xenthio</Authors>
+		<Company>Xenthio</Company>
+		<Description>Fazor - Desktop Blazor/Razor Framework for building cross-platform desktop applications using only C# and Razor syntax with SCSS styling. Main runtime library with window management, input handling, and rendering.</Description>
+		<PackageProjectUrl>https://github.com/Xenthio/Fazor</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Xenthio/Fazor</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>blazor;razor;desktop;ui;cross-platform;skia;xaml-alternative;scss</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(TargetFramework.Contains('-windows'))">
@@ -60,9 +75,14 @@
 
 	<!-- Include Yoga native libraries for all platforms -->
 	<ItemGroup>
-		<None Include="Native/yoga.dll" CopyToOutputDirectory="PreserveNewest" Link="yoga.dll" CopyToPublishDirectory="PreserveNewest" />
-		<None Include="Native/libyoga.so" CopyToOutputDirectory="PreserveNewest" Link="libyoga.so" CopyToPublishDirectory="PreserveNewest" />
-		<None Include="Native/libyoga.dylib" CopyToOutputDirectory="PreserveNewest" Link="libyoga.dylib" CopyToPublishDirectory="PreserveNewest" />
+		<None Include="Native/yoga.dll" CopyToOutputDirectory="PreserveNewest" Link="yoga.dll" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/win/native" />
+		<None Include="Native/libyoga.so" CopyToOutputDirectory="PreserveNewest" Link="libyoga.so" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/linux/native" />
+		<None Include="Native/libyoga.dylib" CopyToOutputDirectory="PreserveNewest" Link="libyoga.dylib" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/osx/native" />
+	</ItemGroup>
+
+	<!-- Include README in package -->
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>
