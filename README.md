@@ -18,8 +18,8 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Xenthio/UITest.git
-cd UITest
+git clone https://github.com/Xenthio/Fazor.git
+cd Fazor
 ```
 
 2. Initialize submodules:
@@ -66,7 +66,7 @@ If issues persist, you may need to do a fresh clone:
 ```bash
 cd ..
 rm -rf UITest
-git clone --recurse-submodules https://github.com/Xenthio/UITest.git
+git clone --recurse-submodules https://github.com/Xenthio/Fazor.git
 cd UITest
 ```
 
