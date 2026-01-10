@@ -326,52 +326,13 @@ public class SkiaPanelRenderer : IPanelRenderer
         if (panel.TransformMatrix == System.Numerics.Matrix4x4.Identity) return false;
         
         // Calculate transform origin point (default is 50% 50% - center of panel, per CSS spec)
-        // BUG WORKAROUND: The generated code has a bug where it passes Length.Percent(50).Value
-        // as the default, which loses the Unit and becomes 50 pixels via implicit conversion.
-        // We need to check if the value looks like it should be a percentage.
-        float originOffsetX;
-        float originOffsetY;
-        
-        if (style.TransformOriginX.HasValue)
-        {
-            var originX = style.TransformOriginX.Value;
-            // If it's pixels but equals 50, it's likely the bugged default that should be 50%
-            if (originX.Unit == LengthUnit.Pixels && originX.Value == 50f)
-            {
-                originOffsetX = panel.Box.Rect.Width * 0.5f;
-            }
-            else
-            {
-                originOffsetX = originX.GetPixels(panel.Box.Rect.Width);
-            }
-        }
-        else
-        {
-            originOffsetX = panel.Box.Rect.Width * 0.5f;
-        }
-        
-        if (style.TransformOriginY.HasValue)
-        {
-            var originY = style.TransformOriginY.Value;
-            // If it's pixels but equals 50, it's likely the bugged default that should be 50%
-            if (originY.Unit == LengthUnit.Pixels && originY.Value == 50f)
-            {
-                originOffsetY = panel.Box.Rect.Height * 0.5f;
-            }
-            else
-            {
-                originOffsetY = originY.GetPixels(panel.Box.Rect.Height);
-            }
-        }
-        else
-        {
-            originOffsetY = panel.Box.Rect.Height * 0.5f;
-        }
+        float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
+        float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
         
         // Apply transform with origin in LOCAL coordinates:
         // 1. Move canvas to panel position
         // 2. Move to transform origin (relative to panel)
-        // 3. Apply transform (WITHOUT translation components - those come from CSS translate(), not transform-origin)
+        // 3. Apply transform (includes translation from CSS translate())
         // 4. Move back from transform origin
         canvas.Translate(panel.Box.Rect.Left, panel.Box.Rect.Top);
         canvas.Translate(originOffsetX, originOffsetY);
