@@ -3,7 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
-# Avalazor Generated Files
+# Fazor Generated Files
+**/Fazor/Generated/
 **/Avalazor/Generated/
 **/*.razor.g.cs
 **/*.scss.stamp
