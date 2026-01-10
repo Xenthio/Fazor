@@ -1,6 +1,6 @@
 # Fazor AI Instructions
 
-You are working with **Fazor** (formerly Fazor, internal rename yet to happen), a desktop UI framework that implements a Blazor/Razor-like system for building cross-platform desktop applications using **only C# and Razor syntax** with SCSS styling. It is heavily inspired by and compatible with the S&box UI system.
+You are working with **Fazor** (formerly Avalazor, internal rename yet to happen), a desktop UI framework that implements a Blazor/Razor-like system for building cross-platform desktop applications using **only C# and Razor syntax** with SCSS styling. It is heavily inspired by and compatible with the S&box UI system.
 
 ## 🏗 Architecture Overview
 
@@ -153,7 +153,7 @@ When running in headless environments (CI, SSH, no display), the framework autom
 
 ### How It Works
 - The framework detects display availability via `DISPLAY`/`WAYLAND_DISPLAY` environment variables (Linux/macOS) or assumes display on Windows
-- Set `AVALAZOR_AI_MODE=1` environment variable to force AI mode
+- Set `FAZOR_AI_MODE=1` environment variable to force AI mode
 - Programmatically: `FazorApplication.ForceAIMode = true`
 
 ### Features
