@@ -1,6 +1,6 @@
 # Fazor AI Instructions
 
-You are working with **Fazor** (formerly Avalazor, internal rename yet to happen), a desktop UI framework that implements a Blazor/Razor-like system for building cross-platform desktop applications using **only C# and Razor syntax** with SCSS styling. It is heavily inspired by and compatible with the S&box UI system.
+You are working with **Fazor** (formerly Avalazor), a desktop UI framework that implements a Blazor/Razor-like system for building cross-platform desktop applications using **only C# and Razor syntax** with SCSS styling. It is heavily inspired by and compatible with the S&box UI system.
 
 ## 🏗 Architecture Overview
 
