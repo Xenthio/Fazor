@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Fazor.UI\Fazor.UI.csproj" />
+    <ProjectReference Include="..\..\src\Fazor.Controls\Fazor.Controls.csproj" />
     <!-- Sandbox.UI.AI is optional - only needed for headless/AI debugging mode -->
     <!-- <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" /> -->
     <!-- Build-time only reference - ensures Fazor.Build is compiled before this project -->
