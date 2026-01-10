@@ -1120,19 +1120,23 @@ public class Window : Panel
     public string CurrentTheme { get; protected set; } = "";
 
     /// <summary>
-    /// Set the theme for this window by loading a stylesheet
+    /// Set the theme for this window by loading a stylesheet.
+    /// Preserves stylesheets loaded via [StyleSheet] attributes to avoid overriding component-specific styles.
     /// </summary>
     public void SetTheme(string theme)
     {
         var parent = this.Parent;
 
-        // Remove existing style sheets (except .razor.scss ones) 
-        foreach (var style in AllStyleSheets.ToList())
+        // Remove existing style sheets (except .razor.scss, .cs.scss, and component stylesheets) 
+        var sheetsToRemove = AllStyleSheets.ToList()
+            .Where(style => !style.FileName.EndsWith(".razor.scss") 
+                         && !style.FileName.EndsWith(".cs.scss")
+                         && !IsStyleSheetFromAttribute(style));
+        
+        foreach (var style in sheetsToRemove)
         {
-            if (!style.FileName.EndsWith(".razor.scss") && !style.FileName.EndsWith(".cs.scss"))
-            {
-                StyleSheet.Remove(style.FileName);
-            }
+            // Remove theme stylesheets
+            StyleSheet.Remove(style.FileName);
         }
 
         CurrentTheme = theme;

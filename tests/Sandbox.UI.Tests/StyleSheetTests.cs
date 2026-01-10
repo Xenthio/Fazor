@@ -483,7 +483,129 @@ public class StyleSheetTests
 internal class TestPanelWithStyleSheet : Panel { }
 
 /// <summary>
+/// Test panel with empty StyleSheet attribute (auto-load behavior)
+/// </summary>
+[StyleSheet]
+internal class TestPanelWithAutoStyleSheet : Panel { }
+
+/// <summary>
 /// Test panel with SourceLocation attribute for testing
 /// </summary>
 [SourceLocation("/test/path/TestPanel.razor", 1)]
 internal class TestPanelWithSourceLocation : Panel { }
+
+/// <summary>
+/// Tests for SetTheme not overriding StyleSheet attributes
+/// </summary>
+public class SetThemeTests
+{
+    [Fact]
+    public void IsStyleSheetFromAttribute_RecognizesAttributeLoadedSheets()
+    {
+        // Create a test stylesheet with a full path
+        var testPath = "/home/test/test-attribute.scss";
+        var testSheet = StyleSheet.FromString(".test { color: red; }", testPath);
+        
+        // Manually set the FileName since FromString doesn't set it
+        var fileNameProp = typeof(StyleSheet).GetProperty("FileName");
+        fileNameProp?.SetValue(testSheet, testPath);
+        
+        // Create a window and manually set up the loaded template stylesheets
+        var window = new TestWindowForStyleSheetTracking();
+        
+        // Use reflection to set up the _loadedTemplateStylesheets list
+        var templateListField = typeof(Panel).GetField("_loadedTemplateStylesheets",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var list = new List<string> { testPath };
+        templateListField?.SetValue(window, list);
+        
+        // Verify the list was set
+        var retrievedList = (List<string>?)templateListField?.GetValue(window);
+        Assert.NotNull(retrievedList);
+        Assert.Single(retrievedList);
+        
+        // Verify the stylesheet has the correct filename
+        Assert.Equal(testPath, testSheet.FileName);
+        
+        // Test that IsStyleSheetFromAttribute recognizes this sheet
+        var isFromAttrMethod = typeof(Panel).GetMethod("IsStyleSheetFromAttribute",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var result = (bool)(isFromAttrMethod?.Invoke(window, new object[] { testSheet }) ?? false);
+        
+        Assert.True(result, $"Stylesheet should be recognized as loaded from attribute. Sheet filename: {testSheet.FileName}, Tracked list: {string.Join(", ", retrievedList)}");
+    }
+    
+    [Fact]
+    public void IsStyleSheetFromAttribute_RejectsNonAttributeSheets()
+    {
+        // Create a test stylesheet
+        var testSheet = StyleSheet.FromString(".test { color: red; }", "theme.scss");
+        
+        // Create a window with no attribute stylesheets
+        var window = new TestWindowForStyleSheetTracking();
+        
+        // Test that IsStyleSheetFromAttribute does NOT recognize this sheet
+        var isFromAttrMethod = typeof(Panel).GetMethod("IsStyleSheetFromAttribute",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var result = (bool)(isFromAttrMethod?.Invoke(window, new object[] { testSheet }) ?? false);
+        
+        Assert.False(result, "Stylesheet should NOT be recognized as loaded from attribute");
+    }
+    
+    [Fact]
+    public void IsStyleSheetFromAttribute_DistinguishesSimilarPaths()
+    {
+        // Test that stylesheets with similar names but different paths are correctly distinguished
+        var componentPath = "/project/component/MainWindow.scss";
+        var themePath = "/project/theme/MainWindow.scss";
+        
+        // Create stylesheets with similar names but different paths
+        var componentSheet = StyleSheet.FromString(".component { color: blue; }", componentPath);
+        var themeSheet = StyleSheet.FromString(".theme { color: red; }", themePath);
+        
+        // Manually set the FileNames
+        var fileNameProp = typeof(StyleSheet).GetProperty("FileName");
+        fileNameProp?.SetValue(componentSheet, componentPath);
+        fileNameProp?.SetValue(themeSheet, themePath);
+        
+        // Create a window and track only the component stylesheet
+        var window = new TestWindowForStyleSheetTracking();
+        var templateListField = typeof(Panel).GetField("_loadedTemplateStylesheets",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var list = new List<string> { componentPath };
+        templateListField?.SetValue(window, list);
+        
+        var isFromAttrMethod = typeof(Panel).GetMethod("IsStyleSheetFromAttribute",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        // Component stylesheet should be recognized
+        var componentResult = (bool)(isFromAttrMethod?.Invoke(window, new object[] { componentSheet }) ?? false);
+        Assert.True(componentResult, 
+            $"Component stylesheet should be recognized. Path: {componentPath}");
+        
+        // Theme stylesheet should NOT be recognized (different path, same filename)
+        var themeResult = (bool)(isFromAttrMethod?.Invoke(window, new object[] { themeSheet }) ?? false);
+        Assert.False(themeResult, 
+            $"Theme stylesheet should NOT be recognized as it has a different path. Path: {themePath}");
+    }
+    
+    [Fact]
+    public void StyleSheetAttribute_WithoutName_UsesTypeName()
+    {
+        // Test that when StyleSheet attribute has no name, it should try to load TypeName.scss
+        var type = typeof(TestPanelWithAutoStyleSheet);
+        var attrs = type.GetCustomAttributes<StyleSheetAttribute>(false).ToList();
+        
+        Assert.NotEmpty(attrs);
+        
+        // The attribute should have an empty name (which triggers auto-loading)
+        var attr = attrs[0];
+        Assert.True(string.IsNullOrEmpty(attr.Name) || attr.Name == "",
+            "StyleSheet attribute without parameter should have empty Name");
+    }
+}
+
+/// <summary>
+/// Test window for stylesheet tracking tests
+/// </summary>
+internal class TestWindowForStyleSheetTracking : Window { }

@@ -20,6 +20,8 @@ public partial class Panel
 
     /// <summary>
     /// Loads stylesheets from [StyleSheet] attributes.
+    /// If an attribute has no name specified, it will automatically look for a stylesheet
+    /// with the same name as the component (e.g., MainWindow.razor -> MainWindow.scss).
     /// </summary>
     /// <returns>True if any attribute exists and we loaded from it, otherwise false</returns>
     private bool LoadStyleSheetFromAttribute()
@@ -41,6 +43,13 @@ public partial class Panel
         foreach (var attr in attrs)
         {
             var path = attr.Name;
+            
+            // If no path specified, use the type name + .scss
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = type.Name + ".scss";
+            }
+            
             var fullPath = ResolveStyleSheetPath(path, type);
             if (fullPath != null)
             {
@@ -184,5 +193,36 @@ public partial class Panel
                     yield return entryDir;
             }
         }
+    }
+
+    /// <summary>
+    /// Checks if a stylesheet is one of this panel's template/component stylesheets.
+    /// This includes stylesheets loaded via [StyleSheet] attributes and those
+    /// auto-loaded by <see cref="LoadStyleSheetAuto"/>.
+    /// Used by SetTheme to avoid removing component/template stylesheets.
+    /// </summary>
+    /// <param name="styleSheet">The stylesheet to check.</param>
+    /// <returns>
+    /// True if the stylesheet was loaded as a template/component stylesheet for this panel
+    /// (either from a [StyleSheet] attribute or via LoadStyleSheetAuto); false otherwise.
+    /// </returns>
+    protected bool IsStyleSheetFromAttribute(StyleSheet styleSheet)
+    {
+        if (_loadedTemplateStylesheets == null || styleSheet?.FileName == null)
+            return false;
+
+        // Check if the stylesheet's filename is in our tracked list
+        // Normalize paths for comparison (replace backslashes, trim)
+        var fileName = styleSheet.FileName.Replace('\\', '/').Trim();
+        
+        return _loadedTemplateStylesheets.Any(path =>
+        {
+            var trackedPath = path.Replace('\\', '/').Trim();
+            
+            // Use exact comparison after normalization. Both values are expected to be
+            // fully resolved absolute paths (see ResolveStyleSheetPath), so suffix-based
+            // matching is too permissive and can cause false positives.
+            return string.Equals(trackedPath, fileName, StringComparison.OrdinalIgnoreCase);
+        });
     }
 }
