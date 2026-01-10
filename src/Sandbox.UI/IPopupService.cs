@@ -60,7 +60,7 @@ public interface IPopupService
 
 /// <summary>
 /// Provider for the current popup service instance.
-/// Set by the application framework (e.g., Avalazor.UI) at startup.
+/// Set by the application framework (e.g., Fazor.UI) at startup.
 /// </summary>
 public static class PopupServiceProvider
 {

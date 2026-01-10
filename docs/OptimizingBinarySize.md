@@ -1,6 +1,6 @@
 # Optimizing Binary Size
 
-This document explains how to reduce the size of published Avalazor binaries.
+This document explains how to reduce the size of published Fazor binaries.
 
 ## Default Configuration
 

@@ -1,6 +1,6 @@
-# Avalazor Default Styles
+# Fazor Default Styles
 
-This stylesheet provides s&box-compatible default styles to make XGUI themes work correctly with Avalazor.
+This stylesheet provides s&box-compatible default styles to make XGUI themes work correctly with Fazor.
 
 ## Purpose
 
@@ -38,7 +38,7 @@ Some elements override the flex default to behave naturally:
 Import this at the start of your main stylesheet or component:
 
 ```scss
-@import "/themes/Avalazor.Defaults.scss";
+@import "/themes/Fazor.Defaults.scss";
 
 .my-component {
     // Your styles here
@@ -50,14 +50,14 @@ Import this at the start of your main stylesheet or component:
 XGUI themes now work correctly without manual flex declarations:
 
 ```razor
-@attribute [StyleSheet("/themes/Avalazor.Defaults.scss")]
+@attribute [StyleSheet("/themes/Fazor.Defaults.scss")]
 @attribute [StyleSheet("/XGUI/DefaultStyles/OliveGreen.scss")]
 ```
 
 Or import it in your SCSS:
 
 ```scss
-@import "/themes/Avalazor.Defaults.scss";
+@import "/themes/Fazor.Defaults.scss";
 @import "/XGUI/DefaultStyles/OliveGreen.scss";
 
 // Your custom styles
@@ -76,7 +76,7 @@ Without these defaults, you'd need to add `display: flex` to every single elemen
 
 ## Comparison
 
-**Without Avalazor.Defaults.scss:**
+**Without Fazor.Defaults.scss:**
 ```scss
 .my-window {
     display: flex;  // Need to add manually
@@ -94,7 +94,7 @@ Without these defaults, you'd need to add `display: flex` to every single elemen
 }
 ```
 
-**With Avalazor.Defaults.scss:**
+**With Fazor.Defaults.scss:**
 ```scss
 .my-window {
     // flex is already default!

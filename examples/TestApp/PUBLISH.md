@@ -175,7 +175,7 @@ This error should no longer occur with the latest code. Native libraries are now
 See: https://github.com/dotnet/Silk.NET/issues/2157
 
 ### "Could not copy ... The file is locked by MSBuild.exe"
-This is fixed in the current version. The issue occurred when MSBuild loaded the Avalazor.Build.dll multiple times. The fix uses `GenerateDependencyFile` and proper isolated loading.
+This is fixed in the current version. The issue occurred when MSBuild loaded the Fazor.Build.dll multiple times. The fix uses `GenerateDependencyFile` and proper isolated loading.
 
 ### Native library not found
 Native libraries are now embedded in the single-file executable. Only Assets remain on disk for file system access.

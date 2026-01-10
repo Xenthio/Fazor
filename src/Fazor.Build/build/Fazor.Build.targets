@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- Default Configuration if not set -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <!-- Determine the path to the build tasks DLL -->
+    <!-- Default to the local build output; packaged/alternative setups should override FazorBuildTasksPath externally -->
+    <FazorBuildTasksPath Condition="'$(FazorBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\bin\$(Configuration)\net10.0\Fazor.Build.dll</FazorBuildTasksPath>
+    <FazorGeneratedPath Condition="'$(FazorGeneratedPath)' == ''">$(IntermediateOutputPath)Fazor\Generated\</FazorGeneratedPath>
+    <!-- Path to the themes folder - can be overridden by projects -->
+    <FazorThemesPath Condition="'$(FazorThemesPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\themes\</FazorThemesPath>
+  </PropertyGroup>
+
+  <!-- UsingTask declarations - assembly will be loaded when tasks are executed -->
+  <!-- MSBuild 16.0+ automatically uses isolated loading when a .deps.json file is present. The PrivateAssets="all" attribute on ProjectReferences in the .csproj ensures this .deps.json includes all dependencies used by these tasks. -->
+  <UsingTask TaskName="Fazor.Build.TranspileRazorTask" AssemblyFile="$(FazorBuildTasksPath)" />
+
+  <ItemGroup>
+    <!-- Include all .razor files -->
+    <FazorRazorFiles Include="**\*.razor" Exclude="$(BaseIntermediateOutputPath)**;$(BaseOutputPath)**;bin\**;obj\**" />
+    <!-- Include all .scss files for copying to output -->
+    <FazorScssFiles Include="**\*.scss" Exclude="$(BaseIntermediateOutputPath)**;$(BaseOutputPath)**;bin\**;obj\**" />
+    <!-- Include theme SCSS files from the themes folder -->
+    <FazorThemeFiles Include="$(FazorThemesPath)**\*.scss" Condition="Exists('$(FazorThemesPath)')" />
+  </ItemGroup>
+
+  <!-- Transpile Razor files before BeforeCompile (earlier than CoreCompile) -->
+  <Target Name="FazorTranspileRazor" 
+          BeforeTargets="BeforeCompile;ResolveReferences" 
+          DependsOnTargets="ResolveProjectReferences"
+          Inputs="@(FazorRazorFiles)" 
+          Outputs="$(FazorGeneratedPath)razor.stamp" 
+          Condition="'@(FazorRazorFiles)' != '' AND Exists('$(FazorBuildTasksPath)')">
+    <!-- Note: Exists() check is defensive - DLL should exist due to DependsOnTargets="ResolveProjectReferences" -->
+    <Message Importance="High" Text="Fazor: Transpiling @(FazorRazorFiles->Count()) Razor file(s)..." />
+    <MakeDir Directories="$(FazorGeneratedPath)" />
+    
+    <TranspileRazorTask 
+      RazorFiles="@(FazorRazorFiles)"
+      RootNamespace="$(RootNamespace)"
+      OutputPath="$(FazorGeneratedPath)"
+      UseFolderNamespacing="true">
+      <Output TaskParameter="GeneratedFiles" ItemName="FazorGeneratedRazor" />
+    </TranspileRazorTask>
+
+    <!-- Add generated files to compilation -->
+    <ItemGroup>
+      <Compile Include="@(FazorGeneratedRazor)" />
+    </ItemGroup>
+
+    <Touch Files="$(FazorGeneratedPath)razor.stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Copy SCSS source files to output directory for runtime loading by StyleParser -->
+  <Target Name="FazorCopyScssToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <FazorScssContent Include="@(FazorScssFiles)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FazorScssContent)" DestinationFolder="$(OutputPath)%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="High" Text="Fazor: Copied @(FazorScssContent->Count()) SCSS file(s) to output" Condition="'@(FazorScssContent)' != ''" />
+  </Target>
+
+  <!-- Copy theme SCSS files to output directory -->
+  <Target Name="FazorCopyThemesToOutput" AfterTargets="Build" Condition="Exists('$(FazorThemesPath)')">
+    <Copy SourceFiles="@(FazorThemeFiles)" DestinationFolder="$(OutputPath)themes\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="High" Text="Fazor: Copied @(FazorThemeFiles->Count()) theme file(s) to output/themes" Condition="'@(FazorThemeFiles)' != ''" />
+  </Target>
+
+  <!-- Clean generated files -->
+  <Target Name="FazorCleanGenerated" BeforeTargets="Clean">
+    <RemoveDir Directories="$(FazorGeneratedPath)" />
+  </Target>
+
+</Project>

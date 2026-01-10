@@ -1,6 +1,6 @@
 # Cursor CSS Support
 
-This document describes the cursor CSS support added to Fazor/Avalazor, which is based on S&box's cursor implementation.
+This document describes the cursor CSS support added to Fazor/Fazor, which is based on S&box's cursor implementation.
 
 ## Overview
 

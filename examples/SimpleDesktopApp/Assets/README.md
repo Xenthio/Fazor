@@ -10,7 +10,7 @@ Assets/
 │   ├── DefaultStyles/   # Complete theme definitions
 │   ├── FunctionStyles/  # Base component styles
 │   └── Resources/       # Theme images and icons
-├── themes/          # Avalazor-specific styles
+├── themes/          # Fazor-specific styles
 │   └── *.scss      # Individual theme files
 └── images/         # Image assets for UI elements
 ```
