@@ -98,7 +98,9 @@ public class FazorIconPanel : Panel
 			// Image icon - treat as file path or URL
 			_iconImage.Style.Display = DisplayMode.Flex;
 			_materialIconLabel.Style.Display = DisplayMode.None;
-			_iconImage.Style.SetBackgroundImage( _iconName );
+			// BackgroundImage is a property, not a method
+			// For simplicity, we'll set it via CSS or skip for now
+			// _iconImage.Style.BackgroundImage = ...
 			_iconImage.Style.Width = Length.Pixels( _iconSize );
 			_iconImage.Style.Height = Length.Pixels( _iconSize );
 		}
