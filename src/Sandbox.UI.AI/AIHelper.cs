@@ -15,7 +15,7 @@ public static class AIHelper
     /// <summary>
     /// Default output directory for bitmap snapshots
     /// </summary>
-    public static string OutputDirectory { get; set; } = Path.Combine(Path.GetTempPath(), "avalazor-ai-debug");
+    public static string OutputDirectory { get; set; } = Path.Combine(Path.GetTempPath(), "fazor-ai-debug");
 
     /// <summary>
     /// Get or create the shared renderer instance

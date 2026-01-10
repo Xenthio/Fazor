@@ -8,6 +8,6 @@ class Program
     public static void Main(string[] args)
     {
         // Simple desktop app - runs the About window
-        Avalazor.UI.AvalazorApplication.RunPanel<About>();
+        Fazor.UI.FazorApplication.RunPanel<About>();
     }
 }

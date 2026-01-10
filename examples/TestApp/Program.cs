@@ -13,44 +13,44 @@ class Program
         // The framework now automatically detects if a display is available
         // and uses the AI renderer when running in headless environments (CI, SSH, etc.)
         // 
-        // To force AI mode: set AVALAZOR_AI_MODE=1 environment variable
-        // Or programmatically: Avalazor.UI.AvalazorApplication.ForceAIMode = true;
+        // To force AI mode: set FAZOR_AI_MODE=1 environment variable
+        // Or programmatically: Fazor.UI.FazorApplication.ForceAIMode = true;
         
         // Enable Panel Inspector in separate windows mode
         // Comment this line to use overlay mode instead
-        Avalazor.UI.PanelInspectorHelper.EnableSeparateWindows();
+        Fazor.UI.PanelInspectorHelper.EnableSeparateWindows();
         
         // Or use overlay mode:
-        // Avalazor.UI.PanelInspectorHelper.EnableOverlayMode();
+        // Fazor.UI.PanelInspectorHelper.EnableOverlayMode();
         
         // Run the Panel Selector to demonstrate all available test windows
-        Avalazor.UI.AvalazorApplication.RunPanel<PanelSelector>(title: "Avalazor - Test Panel Selector");
+        Fazor.UI.FazorApplication.RunPanel<PanelSelector>(title: "Fazor - Test Panel Selector");
         
         // Uncomment any of the following to run a specific test directly:
         
         // Run the Panel Inspector Test to demonstrate the new inspector feature
-        //Avalazor.UI.AvalazorApplication.RunPanel<PanelInspectorTest>(title: "Avalazor - Panel Inspector Demo");
+        //Fazor.UI.FazorApplication.RunPanel<PanelInspectorTest>(title: "Fazor - Panel Inspector Demo");
         
         // Run Flexbox Test:
-        // Avalazor.UI.AvalazorApplication.RunPanel<FlexboxTest>(title: "Avalazor - Flexbox Layout Test");
+        // Fazor.UI.FazorApplication.RunPanel<FlexboxTest>(title: "Fazor - Flexbox Layout Test");
 
         // Or use MainApp with text:
-        //Avalazor.UI.AvalazorApplication.RunPanel<XGUIPortTest>(title: "Avalazor - Desktop Razor with XGUI Themes");
+        //Fazor.UI.FazorApplication.RunPanel<XGUIPortTest>(title: "Fazor - Desktop Razor with XGUI Themes");
 
-        //Avalazor.UI.AvalazorApplication.RunPanel<RefOnClickDemo>();
-        //Avalazor.UI.AvalazorApplication.RunPanel<BorderImageTest>();
-        //Avalazor.UI.AvalazorApplication.RunPanel<About>(); // Transform-origin / Computer11 theme test window
+        //Fazor.UI.FazorApplication.RunPanel<RefOnClickDemo>();
+        //Fazor.UI.FazorApplication.RunPanel<BorderImageTest>();
+        //Fazor.UI.FazorApplication.RunPanel<About>(); // Transform-origin / Computer11 theme test window
         
         // Test custom chrome improvements
-        //Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeTest>(title: "Custom Chrome Test");
+        //Fazor.UI.FazorApplication.RunPanel<CustomChromeTest>(title: "Custom Chrome Test");
         
         // Test custom chrome toggle bug
-        //Avalazor.UI.AvalazorApplication.RunPanel<CustomChromeToggleTest>(title: "Custom Chrome Toggle Test");
+        //Fazor.UI.FazorApplication.RunPanel<CustomChromeToggleTest>(title: "Custom Chrome Toggle Test");
         
         // Run the Image Test to demonstrate texture rendering
-        //Avalazor.UI.AvalazorApplication.RunPanel<SimpleImageTest>(title: "Avalazor - Image Rendering Test");
+        //Fazor.UI.FazorApplication.RunPanel<SimpleImageTest>(title: "Fazor - Image Rendering Test");
         
         // Run the Scrolling Demo
-        //Avalazor.UI.AvalazorApplication.RunPanel<ScrollingDemo>(title: "Avalazor - Scrolling Demo");
+        //Fazor.UI.FazorApplication.RunPanel<ScrollingDemo>(title: "Fazor - Scrolling Demo");
     }
 }

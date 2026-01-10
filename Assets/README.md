@@ -10,8 +10,8 @@ Assets/
 │   ├── DefaultStyles/    # Complete theme definitions
 │   ├── FunctionStyles/   # Base component styles  
 │   └── Resources/        # Theme images and icons
-├── themes/          # Avalazor-specific styles
-│   ├── Avalazor.Defaults.scss
+├── themes/          # Fazor-specific styles
+│   ├── Fazor.Defaults.scss
 │   └── PanelInspector.scss
 └── fonts/           # Font files (.ttf, .otf)
 ```
@@ -50,7 +50,7 @@ Image paths in themes like `url("XGUI/Resources/icon.png")` resolve correctly to
 - **Purpose**: Built-in, shared resources used across multiple projects
 - **Examples**: 
   - XGUI theme system
-  - Default Avalazor styles
+  - Default Fazor styles
   - Built-in fonts (Roboto, etc.)
   - Common icons and UI elements
 - **Location**: Root of solution (`/Assets/`)
@@ -82,7 +82,7 @@ When loading stylesheets or images, the framework searches in this order:
 
 This means:
 - `[StyleSheet("/XGUI/DefaultStyles/MyTheme.scss")]` resolves to `Assets/XGUI/DefaultStyles/MyTheme.scss`
-- `[StyleSheet("/themes/Avalazor.Defaults.scss")]` resolves to `Assets/themes/Avalazor.Defaults.scss`
+- `[StyleSheet("/themes/Fazor.Defaults.scss")]` resolves to `Assets/themes/Fazor.Defaults.scss`
 - Project-specific assets in `ProjectName/Assets/` override global ones
 - Old code referencing direct paths continues to work
 

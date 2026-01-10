@@ -36,13 +36,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Avalazor.UI\Avalazor.UI.csproj" />
+    <ProjectReference Include="..\..\src\Fazor.UI\Fazor.UI.csproj" />
     <!-- Sandbox.UI.AI is optional - only needed for headless/AI debugging mode -->
     <!-- <ProjectReference Include="..\..\src\Sandbox.UI.AI\Sandbox.UI.AI.csproj" /> -->
-    <!-- Build-time only reference - ensures Avalazor.Build is compiled before this project -->
+    <!-- Build-time only reference - ensures Fazor.Build is compiled before this project -->
     <!-- ReferenceOutputAssembly=false prevents the assembly from being referenced, only ensures build order -->
-    <!-- File locking prevention is handled by GenerateDependencyFile=true in Avalazor.Build.csproj -->
-    <ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" ReferenceOutputAssembly="false" />
+    <!-- File locking prevention is handled by GenerateDependencyFile=true in Fazor.Build.csproj -->
+    <ProjectReference Include="..\..\src\Fazor.Build\Fazor.Build.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!-- Project-specific Assets with conditional packaging -->
@@ -73,6 +73,6 @@
     </Otherwise>
   </Choose>
 
-  <!-- Import Avalazor build targets for Razor and SCSS -->
-  <Import Project="..\..\src\Avalazor.Build\build\Avalazor.Build.targets" />
+  <!-- Import Fazor build targets for Razor and SCSS -->
+  <Import Project="..\..\src\Fazor.Build\build\Fazor.Build.targets" />
 </Project>

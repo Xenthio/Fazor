@@ -5,17 +5,17 @@ You are working with **Fazor** (formerly Avalazor, internal rename yet to happen
 ## 🏗 Architecture Overview
 
 - **Core Philosophy**: "Razor-Only Development". No XAML, no AXAML. UI is defined in `.razor` files which are transpiled to C# classes inheriting from `Sandbox.UI.Panel`.
-- **Rendering**: Uses **SkiaSharp** for rendering via `Avalazor.UI` and `Sandbox.UI.Skia`.
-- **Layout**: Uses Facebook's **Yoga** layout engine (Flexbox) via `Avalazor.UI/Native`.
+- **Rendering**: Uses **SkiaSharp** for rendering via `Fazor.UI` and `Sandbox.UI.Skia`.
+- **Layout**: Uses Facebook's **Yoga** layout engine (Flexbox) via `Fazor.UI/Native`.
 - **Windowing**: Uses **Silk.NET** for window management and input handling.
 - **Styling**: Full SCSS support. Styles are parsed and applied to Panels.
 - **Component System**: Components are `Panel`s. The root of the application is a `RootPanel`.
 - **S&box mirroring**: The UI system is designed to be as close to S&box's UI system as possible for compatibility and ease of porting. Code should be ported from S&box wherever possible.
 
 ### Key Projects
-- `Avalazor.UI`: The main runtime library. Handles window creation, input, and the bridge between native windowing and the UI system.
+- `Fazor.UI`: The main runtime library. Handles window creation, input, and the bridge between native windowing and the UI system.
 - `Sandbox.UI`: The core UI framework (Panel system, Styling, Events). Ported/adapted from S&box.
-- `Avalazor.Build`: MSBuild tasks for transpiling Razor to C# and handling SCSS.
+- `Fazor.Build`: MSBuild tasks for transpiling Razor to C# and handling SCSS.
 - `SimpleDesktopApp`: Example application demonstrating usage.
 
 ## 🧩 Component Structure (`Panel`)
@@ -90,17 +90,17 @@ Every UI component is a `Panel` (in `Sandbox.UI`).
 - **Flexbox** is the layout model.
 
 ### Running the App
-- The entry point uses `AvalazorApplication.RunPanel<MainApp>()`.
+- The entry point uses `FazorApplication.RunPanel<MainApp>()`.
 - **Do not** use `RunComponent<T>`, it is deprecated.
-- Ensure `Avalazor.Build` is built before the app project (handled by project references).
+- Ensure `Fazor.Build` is built before the app project (handled by project references).
 
 ## ⚠️ Important Conventions & Gotchas
 
 - **Namespace**: Most UI core classes are in `Sandbox.UI` (compatibility with S&box).
-- **Transpilation**: Razor files are transpiled to `.razor.g.cs` in `obj/` or `Avalazor/Generated/`. If you see errors about missing classes, ensure the build has run to generate these.
+- **Transpilation**: Razor files are transpiled to `.razor.g.cs` in `obj/` or `Fazor/Generated/`. If you see errors about missing classes, ensure the build has run to generate these.
 - **Input Handling**: Input is event-based (`OnClick`, etc.). `RootPanel` dispatches input to children.
 - **Threading**: UI operations should generally happen on the main thread.
-- **Native Dependencies**: The project requires the native Yoga library. The build script should handle this, but be aware of `Avalazor.UI/Native`.
+- **Native Dependencies**: The project requires the native Yoga library. The build script should handle this, but be aware of `Fazor.UI/Native`.
 - **S&box Compatibility**: Many APIs mirror S&box's UI system. If you know S&box UI, you know Fazor.
 - **Porting Strategy**: When implementing features or fixing bugs, prefer porting code directly from S&box (https://github.com/Facepunch/sbox-public) (specifically `Sandbox.Engine/Systems/UI`) whenever possible. Maintain the same class names, method signatures, and behavior to ensure compatibility and ease of porting. Some controls may come from XGUI-3 (https://github.com/Xenthio/XGUI-3).
 - **Fix considerations**: When fixing bugs and changing something from s&box, consider "Is it like that in S&box?" and check the S&box source, if it isn't, the problem you're trying to fix might lie elsewhere, possibly from something else that doesn't match s&box.
@@ -118,7 +118,7 @@ Every UI component is a `Panel` (in `Sandbox.UI`).
 ## 🎓 Lessons Learned (Session Knowledge)
 
 ### Text Measurement
-- **Text measurement must be initialized early**: `SkiaPanelRenderer.EnsureInitialized()` must be called in `AvalazorApplication`'s static constructor, BEFORE any panels are created. Otherwise, layout happens before the renderer's text measurement function is registered.
+- **Text measurement must be initialized early**: `SkiaPanelRenderer.EnsureInitialized()` must be called in `FazorApplication`'s static constructor, BEFORE any panels are created. Otherwise, layout happens before the renderer's text measurement function is registered.
 - **Add buffer to text measurements**: S&box uses `Math.Ceiling()` + 1px buffer on text width. Without this, text gets cut off by word-wrapping due to off-by-one issues.
 - **Process whitespace before measuring**: Raw text like `"\n     Hello"` must have whitespace collapsed to match what will actually be rendered.
 
@@ -153,8 +153,8 @@ When running in headless environments (CI, SSH, no display), the framework autom
 
 ### How It Works
 - The framework detects display availability via `DISPLAY`/`WAYLAND_DISPLAY` environment variables (Linux/macOS) or assumes display on Windows
-- Set `AVALAZOR_AI_MODE=1` environment variable to force AI mode
-- Programmatically: `AvalazorApplication.ForceAIMode = true`
+- Set `FAZOR_AI_MODE=1` environment variable to force AI mode
+- Programmatically: `FazorApplication.ForceAIMode = true`
 
 ### Features
 - **Structured text output**: Panel hierarchy, layout info, styles, and content
@@ -171,8 +171,8 @@ When running in headless environments (CI, SSH, no display), the framework autom
 ### Using AI Renderer for Debugging
 ```csharp
 // Force AI mode even with display
-AvalazorApplication.ForceAIMode = true;
-AvalazorApplication.RunPanel<MyApp>();
+FazorApplication.ForceAIMode = true;
+FazorApplication.RunPanel<MyApp>();
 
 // Or use AIHelper directly for inspection
 var snapshot = AIHelper.Snapshot(rootPanel);

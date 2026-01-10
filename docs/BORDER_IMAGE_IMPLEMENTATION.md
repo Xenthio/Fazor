@@ -1,6 +1,6 @@
 # Border-Image and Background-Image Implementation
 
-This document describes the implementation of CSS `border-image` and `background-image` properties in Fazor/Avalazor, ported from s&box's UI system.
+This document describes the implementation of CSS `border-image` and `background-image` properties in Fazor, ported from s&box's UI system.
 
 ## Overview
 
@@ -151,7 +151,7 @@ dotnet run
 
 Or in AI mode (headless):
 ```bash
-AVALAZOR_AI_MODE=1 dotnet run
+FAZOR_AI_MODE=1 dotnet run
 ```
 
 ## Compatibility with s&box

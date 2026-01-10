@@ -1,6 +1,6 @@
 # Graphics Backend Selection
 
-Avalazor supports multiple graphics backends for rendering the UI:
+Fazor supports multiple graphics backends for rendering the UI:
 
 ## Available Backends
 
@@ -48,7 +48,7 @@ The DirectX 11 backend provides:
 ### In Code
 
 ```csharp
-using Avalazor.UI;
+using Fazor.UI;
 
 // OpenGL (default)
 var window = new NativeWindow(

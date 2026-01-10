@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Sandbox.UI.Skia" />
-    <InternalsVisibleTo Include="Avalazor.UI" />
+    <InternalsVisibleTo Include="Fazor.UI" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,15 +23,15 @@
 
   <!-- Copy native Yoga library to output directory -->
   <ItemGroup>
-    <None Include="..\Avalazor.UI\Native\libyoga.so" Condition="Exists('..\Avalazor.UI\Native\libyoga.so')">
+    <None Include="..\Fazor.UI\Native\libyoga.so" Condition="Exists('..\Fazor.UI\Native\libyoga.so')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>libyoga.so</Link>
     </None>
-    <None Include="..\Avalazor.UI\Native\libyoga.dylib" Condition="Exists('..\Avalazor.UI\Native\libyoga.dylib')">
+    <None Include="..\Fazor.UI\Native\libyoga.dylib" Condition="Exists('..\Fazor.UI\Native\libyoga.dylib')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>libyoga.dylib</Link>
     </None>
-    <None Include="..\Avalazor.UI\Native\yoga.dll" Condition="Exists('..\Avalazor.UI\Native\yoga.dll')">
+    <None Include="..\Fazor.UI\Native\yoga.dll" Condition="Exists('..\Fazor.UI\Native\yoga.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>yoga.dll</Link>
     </None>

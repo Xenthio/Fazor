@@ -5,7 +5,7 @@
 When building .NET projects, you might encounter file locking errors like:
 
 ```
-Could not copy "obj\Release\net10.0\Avalazor.Build.dll" to "bin\Release\net10.0\Avalazor.Build.dll". 
+Could not copy "obj\Release\net10.0\Fazor.Build.dll" to "bin\Release\net10.0\Fazor.Build.dll". 
 Exceeded retry count of 10. Failed. 
 The file is locked by: "MSBuild.exe (46260), MSBuild.exe (8000), MSBuild.exe (42604)"
 ```
@@ -17,7 +17,7 @@ This happens when:
 
 ## Solutions Implemented
 
-### 1. Isolated Assembly Loading (Avalazor.Build.csproj)
+### 1. Isolated Assembly Loading (Fazor.Build.csproj)
 
 ```xml
 <PropertyGroup>
@@ -42,16 +42,16 @@ This happens when:
 In consuming projects (like SimpleDesktopApp):
 
 ```xml
-<ProjectReference Include="..\..\src\Avalazor.Build\Avalazor.Build.csproj" 
+<ProjectReference Include="..\..\src\Fazor.Build\Fazor.Build.csproj" 
                   ReferenceOutputAssembly="false" 
-                  OutputItemType="AvalazorBuildReference" />
+                  OutputItemType="FazorBuildReference" />
 ```
 
 **How it works:**
 - `ReferenceOutputAssembly="false"` tells MSBuild not to reference the assembly in the consuming project
 - Ensures build order while avoiding unnecessary assembly references
 
-### 3. Native Library Inclusion (Avalazor.UI.csproj)
+### 3. Native Library Inclusion (Fazor.UI.csproj)
 
 ```xml
 <ItemGroup>
@@ -146,7 +146,7 @@ In consuming projects (like SimpleDesktopApp):
 5. **Try building with MSBuild directly:**
    ```bash
    # Sometimes `msbuild` behaves differently than `dotnet build`
-   msbuild Avalazor.sln -t:Rebuild -p:Configuration=Release
+   msbuild Fazor.sln -t:Rebuild -p:Configuration=Release
    ```
 
 ## CI/CD Configuration
