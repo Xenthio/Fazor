@@ -80,9 +80,15 @@
 		<None Include="Native/libyoga.dylib" CopyToOutputDirectory="PreserveNewest" Link="libyoga.dylib" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/osx/native" />
 	</ItemGroup>
 
+	<!-- Include build props in package -->
+	<ItemGroup>
+		<None Include="build\Fazor.UI.props" Pack="true" PackagePath="build\" />
+	</ItemGroup>
+
 	<!-- Include README in package -->
 	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\docs\NuGet-Usage.md" Pack="true" PackagePath="docs\" />
 	</ItemGroup>
 
 </Project>
