@@ -196,11 +196,16 @@ public partial class Panel
     }
 
     /// <summary>
-    /// Checks if a stylesheet was loaded from a [StyleSheet] attribute.
-    /// Used by SetTheme to avoid removing attribute-based stylesheets.
+    /// Checks if a stylesheet is one of this panel's template/component stylesheets.
+    /// This includes stylesheets loaded via [StyleSheet] attributes and those
+    /// auto-loaded by <see cref="LoadStyleSheetAuto"/>.
+    /// Used by SetTheme to avoid removing component/template stylesheets.
     /// </summary>
-    /// <param name="styleSheet">The stylesheet to check</param>
-    /// <returns>True if the stylesheet was loaded from an attribute, false otherwise</returns>
+    /// <param name="styleSheet">The stylesheet to check.</param>
+    /// <returns>
+    /// True if the stylesheet was loaded as a template/component stylesheet for this panel
+    /// (either from a [StyleSheet] attribute or via LoadStyleSheetAuto); false otherwise.
+    /// </returns>
     protected bool IsStyleSheetFromAttribute(StyleSheet styleSheet)
     {
         if (_loadedTemplateStylesheets == null || styleSheet?.FileName == null)
@@ -213,10 +218,11 @@ public partial class Panel
         return _loadedTemplateStylesheets.Any(path =>
         {
             var trackedPath = path.Replace('\\', '/').Trim();
-            // Check for exact match or if one ends with the other (handles absolute vs relative paths)
-            return trackedPath == fileName || 
-                   trackedPath.EndsWith(fileName) || 
-                   fileName.EndsWith(trackedPath);
+            
+            // Use exact comparison after normalization. Both values are expected to be
+            // fully resolved absolute paths (see ResolveStyleSheetPath), so suffix-based
+            // matching is too permissive and can cause false positives.
+            return string.Equals(trackedPath, fileName, StringComparison.OrdinalIgnoreCase);
         });
     }
 }

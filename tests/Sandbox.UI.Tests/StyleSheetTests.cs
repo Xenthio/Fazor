@@ -553,6 +553,43 @@ public class SetThemeTests
     }
     
     [Fact]
+    public void IsStyleSheetFromAttribute_DistinguishesSimilarPaths()
+    {
+        // Test that stylesheets with similar names but different paths are correctly distinguished
+        var componentPath = "/project/component/MainWindow.scss";
+        var themePath = "/project/theme/MainWindow.scss";
+        
+        // Create stylesheets with similar names but different paths
+        var componentSheet = StyleSheet.FromString(".component { color: blue; }", componentPath);
+        var themeSheet = StyleSheet.FromString(".theme { color: red; }", themePath);
+        
+        // Manually set the FileNames
+        var fileNameProp = typeof(StyleSheet).GetProperty("FileName");
+        fileNameProp?.SetValue(componentSheet, componentPath);
+        fileNameProp?.SetValue(themeSheet, themePath);
+        
+        // Create a window and track only the component stylesheet
+        var window = new TestWindowForStyleSheetTracking();
+        var templateListField = typeof(Panel).GetField("_loadedTemplateStylesheets",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var list = new List<string> { componentPath };
+        templateListField?.SetValue(window, list);
+        
+        var isFromAttrMethod = typeof(Panel).GetMethod("IsStyleSheetFromAttribute",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        // Component stylesheet should be recognized
+        var componentResult = (bool)(isFromAttrMethod?.Invoke(window, new object[] { componentSheet }) ?? false);
+        Assert.True(componentResult, 
+            $"Component stylesheet should be recognized. Path: {componentPath}");
+        
+        // Theme stylesheet should NOT be recognized (different path, same filename)
+        var themeResult = (bool)(isFromAttrMethod?.Invoke(window, new object[] { themeSheet }) ?? false);
+        Assert.False(themeResult, 
+            $"Theme stylesheet should NOT be recognized as it has a different path. Path: {themePath}");
+    }
+    
+    [Fact]
     public void StyleSheetAttribute_WithoutName_UsesTypeName()
     {
         // Test that when StyleSheet attribute has no name, it should try to load TypeName.scss

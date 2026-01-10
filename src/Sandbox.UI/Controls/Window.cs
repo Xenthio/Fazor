@@ -1127,17 +1127,14 @@ public class Window : Panel
     {
         var parent = this.Parent;
 
-        // Remove existing style sheets (except .razor.scss, .cs.scss, and attribute-loaded ones) 
-        foreach (var style in AllStyleSheets.ToList())
+        // Remove existing style sheets (except .razor.scss, .cs.scss, and component stylesheets) 
+        var sheetsToRemove = AllStyleSheets.ToList()
+            .Where(style => !style.FileName.EndsWith(".razor.scss") 
+                         && !style.FileName.EndsWith(".cs.scss")
+                         && !IsStyleSheetFromAttribute(style));
+        
+        foreach (var style in sheetsToRemove)
         {
-            // Skip component-generated stylesheets
-            if (style.FileName.EndsWith(".razor.scss") || style.FileName.EndsWith(".cs.scss"))
-                continue;
-
-            // Skip stylesheets loaded from [StyleSheet] attributes
-            if (IsStyleSheetFromAttribute(style))
-                continue;
-
             // Remove theme stylesheets
             StyleSheet.Remove(style.FileName);
         }
