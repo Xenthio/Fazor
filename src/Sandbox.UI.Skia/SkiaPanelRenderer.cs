@@ -325,25 +325,31 @@ public class SkiaPanelRenderer : IPanelRenderer
         if (style.Transform?.IsEmpty() ?? true) return false;
         if (panel.TransformMatrix == System.Numerics.Matrix4x4.Identity) return false;
         
-        // Calculate transform origin point (default is 0,0 - top-left of panel)
-        // S&box: origin.x += style.TransformOriginX.Value.GetPixels( panel.Box.Rect.Width, 0.0f );
-        float originX = panel.Box.Rect.Left + (style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? 0f);
-        float originY = panel.Box.Rect.Top + (style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? 0f);
+        // Calculate transform origin point (default is 50% 50% - center of panel, per CSS spec)
+        float originOffsetX = style.TransformOriginX?.GetPixels(panel.Box.Rect.Width) ?? (panel.Box.Rect.Width * 0.5f);
+        float originOffsetY = style.TransformOriginY?.GetPixels(panel.Box.Rect.Height) ?? (panel.Box.Rect.Height * 0.5f);
         
-        // Apply transform with origin: translate(origin) * transform * translate(-origin)
-        // This matches S&box's Matrix.CreateTranslation approach
-        canvas.Translate(originX, originY);
+        // Apply transform with origin in LOCAL coordinates:
+        // 1. Move canvas to panel position
+        // 2. Move to transform origin (relative to panel)
+        // 3. Apply transform (includes translation from CSS translate())
+        // 4. Move back from transform origin
+        canvas.Translate(panel.Box.Rect.Left, panel.Box.Rect.Top);
+        canvas.Translate(originOffsetX, originOffsetY);
         
-        // Convert Matrix4x4 to SKMatrix (use 2D portion)
+        // Convert Matrix4x4 to SKMatrix
+        // Include translation components (M41/M42) from CSS translate() function
+        // Transform-origin is handled separately by our canvas translations above
         var m = panel.TransformMatrix;
         var skMatrix = new SKMatrix(
-            m.M11, m.M21, m.M41,  // First row (scaleX, skewY, translateX)
-            m.M12, m.M22, m.M42,  // Second row (skewX, scaleY, translateY)
-            m.M14, m.M24, m.M44   // Perspective row
+            m.M11, m.M21, m.M41,  // scaleX, skewY, transX (from CSS translate())
+            m.M12, m.M22, m.M42,  // skewX, scaleY, transY (from CSS translate())
+            0,     0,     1       // persp0, persp1, persp2
         );
         canvas.Concat(ref skMatrix);
         
-        canvas.Translate(-originX, -originY);
+        canvas.Translate(-originOffsetX, -originOffsetY);
+        canvas.Translate(-panel.Box.Rect.Left, -panel.Box.Rect.Top);
         
         // Update GlobalMatrix for child panels
         panel.LocalMatrix = panel.TransformMatrix;
