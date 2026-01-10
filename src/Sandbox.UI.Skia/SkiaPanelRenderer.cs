@@ -376,13 +376,13 @@ public class SkiaPanelRenderer : IPanelRenderer
         canvas.Translate(panel.Box.Rect.Left, panel.Box.Rect.Top);
         canvas.Translate(originOffsetX, originOffsetY);
         
-        // Convert Matrix4x4 to SKMatrix - extract only scale/skew, ignore translation
-        // The transform matrix may have translation from CSS translate(), but transform-origin
-        // is handled by our canvas translations above
+        // Convert Matrix4x4 to SKMatrix
+        // Include translation components (M41/M42) from CSS translate() function
+        // Transform-origin is handled separately by our canvas translations above
         var m = panel.TransformMatrix;
         var skMatrix = new SKMatrix(
-            m.M11, m.M21, 0,      // scaleX, skewY, transX=0 (ignore M41)
-            m.M12, m.M22, 0,      // skewX, scaleY, transY=0 (ignore M42)
+            m.M11, m.M21, m.M41,  // scaleX, skewY, transX (from CSS translate())
+            m.M12, m.M22, m.M42,  // skewX, scaleY, transY (from CSS translate())
             0,     0,     1       // persp0, persp1, persp2
         );
         canvas.Concat(ref skMatrix);
