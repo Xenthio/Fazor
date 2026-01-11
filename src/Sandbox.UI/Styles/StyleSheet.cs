@@ -5,6 +5,12 @@ public class StyleSheet
 	public static List<StyleSheet> Loaded { get; internal set; } = new List<StyleSheet>();
 
 	/// <summary>
+	/// Event raised when any stylesheet is hotloaded.
+	/// Used by the UI system to invalidate all panel styles.
+	/// </summary>
+	public static event Action? OnStyleSheetsHotloaded;
+
+	/// <summary>
 	/// Between sessions we clear the stylesheets, so one gamemode can't accidentally
 	/// use cached values from another.
 	/// </summary>
@@ -20,6 +26,7 @@ public class StyleSheet
 
 	public List<StyleBlock> Nodes { get; set; } = new List<StyleBlock>();
 	public string FileName { get; internal set; }
+	internal FileWatcher? Watcher { get; private set; }
 	public List<string> IncludedFiles { get; set; } = new List<string>();
 	public Dictionary<string, string> Variables;
 	public Dictionary<string, KeyFrames> KeyFrames = new Dictionary<string, KeyFrames>( StringComparer.OrdinalIgnoreCase );
@@ -29,7 +36,8 @@ public class StyleSheet
 	/// </summary>
 	public void Release()
 	{
-		// File watching not implemented in this port
+		Watcher?.Dispose();
+		Watcher = null;
 	}
 
 	public static StyleSheet FromFile( string filename, IEnumerable<(string key, string value)> variables = null, bool failSilently = false )
@@ -46,6 +54,7 @@ public class StyleSheet
 
 		sheet.AddVariables( variables );
 		sheet.FileName = filename;
+		sheet.AddWatcher( filename );
 
 		Loaded.Add( sheet );
 
@@ -55,6 +64,7 @@ public class StyleSheet
 	internal void AddFilename( string filename )
 	{
 		IncludedFiles.Add( filename );
+		Watcher?.AddFile( filename );
 	}
 
 	public static StyleSheet FromString( string styles, string filename = "none", IEnumerable<(string key, string value)> variables = null )
@@ -210,5 +220,56 @@ public class StyleSheet
 	public void AddKeyFrames( KeyFrames frames )
 	{
 		KeyFrames[frames.Name] = frames;
+	}
+
+	/// <summary>
+	/// Set up file watching for this stylesheet (DEBUG builds only).
+	/// </summary>
+	private void AddWatcher( string name )
+	{
+#if DEBUG
+		Watcher?.Dispose();
+		Watcher = null;
+
+		var fullPath = name;
+		if ( !System.IO.Path.IsPathRooted( fullPath ) )
+		{
+			fullPath = System.IO.Path.GetFullPath( name );
+		}
+
+		if ( !System.IO.File.Exists( fullPath ) )
+			return;
+
+		// Store the filename for reloading
+		var watchFileName = fullPath;
+
+		Watcher = new FileWatcher();
+		Watcher.AddFile( fullPath );
+
+		// Add any included files to the watcher
+		foreach ( var file in IncludedFiles )
+		{
+			var includePath = file;
+			if ( !System.IO.Path.IsPathRooted( includePath ) )
+			{
+				// Try relative to the main stylesheet
+				var dir = System.IO.Path.GetDirectoryName( fullPath );
+				if ( !string.IsNullOrEmpty( dir ) )
+				{
+					includePath = System.IO.Path.Combine( dir, file );
+				}
+			}
+			Watcher.AddFile( includePath );
+		}
+
+		Watcher.OnChanges += ( watcher ) =>
+		{
+			Console.WriteLine( $"[StyleSheet] Hotloading: {watchFileName}" );
+			UpdateFromFile( watchFileName, true );
+			
+			// Notify the UI system that stylesheets have changed
+			OnStyleSheetsHotloaded?.Invoke();
+		};
+#endif
 	}
 }
