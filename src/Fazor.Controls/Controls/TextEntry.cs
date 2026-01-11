@@ -1,4 +1,5 @@
 using Sandbox;
+using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
@@ -119,7 +120,8 @@ public class TextEntry : Panel
     /// <summary>
     /// Called when text is changed
     /// </summary>
-    public event Action<string>? OnTextEdited;
+    [Parameter]
+    public Action<string>? OnTextEdited { get; set; }
     /// <summary>
     /// TextEntry always has content (it needs DrawContent to be called for caret rendering)
     /// </summary>

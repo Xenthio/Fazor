@@ -1,0 +1,145 @@
+@namespace TestApp
+@using Sandbox.UI;
+@using Fazor.Controls;
+@using System;
+@inherits Panel
+
+<root class="value-binding-test">
+	<div class="container">
+		<h2>Value Binding Test</h2>
+		
+		<!-- Pattern 1: Using ValueChanged parameter (S&box standard) -->
+		<groupbox title="Pattern 1: ValueChanged Parameter (Recommended)">
+			<div class="test-section">
+				<label>CheckBox with ValueChanged:</label>
+				<check value="@checkboxValue1" ValueChanged="@OnCheckboxChanged1">Enable Feature</check>
+				<label>Value: @checkboxValue1</label>
+			</div>
+			
+			<div class="test-section">
+				<label>ComboBox with ValueChanged:</label>
+				<combobox value="@comboValue1" ValueChanged="@OnComboChanged1">
+					<option value="optionA">Option A</option>
+					<option value="optionB">Option B</option>
+					<option value="optionC">Option C</option>
+				</combobox>
+				<label>Selected: @comboValue1</label>
+			</div>
+			
+			<div class="test-section">
+				<label>TextEntry with OnTextEdited:</label>
+				<textentry value="@textValue1" OnTextEdited="@OnTextChanged1" placeholder="Type something..." />
+				<label>Text: @textValue1</label>
+			</div>
+			
+			<div class="test-section">
+				<label>Slider with ValueChanged:</label>
+				<slider value="@sliderValue" ValueChanged="@OnSliderChanged" min="0" max="100" step="1" />
+				<label>Value: @sliderValue</label>
+			</div>
+		</groupbox>
+		
+		<!-- Pattern 2: Inline lambda (for quick prototyping) -->
+		<groupbox title="Pattern 2: Inline Lambda">
+			<div class="test-section">
+				<label>CheckBox with inline lambda:</label>
+				<check value="@checkboxValue2" ValueChanged="@HandleCheckboxChange">Enable Feature</check>
+				<label>Value: @checkboxValue2</label>
+			</div>
+			
+			<div class="test-section">
+				<label>TextEntry with inline lambda:</label>
+				<textentry value="@textValue2" OnTextEdited="@HandleTextChange" placeholder="Type something..." />
+				<label>Text: @textValue2</label>
+			</div>
+		</groupbox>
+	</div>
+</root>
+
+<style>
+	.value-binding-test {
+		padding: 20px;
+		background: #1e1e1e;
+		color: #ffffff;
+	}
+	
+	.container {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		max-width: 800px;
+	}
+	
+	h2 {
+		margin: 0 0 20px 0;
+		font-size: 24px;
+	}
+	
+	.test-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 10px;
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 4px;
+		margin-bottom: 10px;
+	}
+	
+	.test-section label {
+		font-weight: bold;
+	}
+</style>
+
+@code {
+	// Pattern 1: ValueChanged parameter (method references)
+	private bool checkboxValue1 = false;
+	private string comboValue1 = "optionA";
+	private string textValue1 = "";
+	private float sliderValue = 50f;
+	
+	private void OnCheckboxChanged1(bool value)
+	{
+		checkboxValue1 = value;
+		Console.WriteLine($"Pattern 1 - Checkbox changed: {value}");
+		StateHasChanged();
+	}
+	
+	private void OnComboChanged1(string value)
+	{
+		comboValue1 = value;
+		Console.WriteLine($"Pattern 1 - Combo changed: {value}");
+		StateHasChanged();
+	}
+	
+	private void OnTextChanged1(string value)
+	{
+		textValue1 = value;
+		Console.WriteLine($"Pattern 1 - Text changed: {value}");
+		StateHasChanged();
+	}
+	
+	private void OnSliderChanged(float value)
+	{
+		sliderValue = value;
+		Console.WriteLine($"Pattern 1 - Slider changed: {value}");
+		StateHasChanged();
+	}
+	
+	// Pattern 2: Inline lambda (using Action<T> delegates)
+	private bool checkboxValue2 = false;
+	private string textValue2 = "";
+	
+	private Action<bool> HandleCheckboxChange => (val) =>
+	{
+		checkboxValue2 = val;
+		Console.WriteLine($"Pattern 2 - Checkbox changed (lambda): {val}");
+		StateHasChanged();
+	};
+	
+	private Action<string> HandleTextChange => (val) =>
+	{
+		textValue2 = val;
+		Console.WriteLine($"Pattern 2 - Text changed (lambda): {val}");
+		StateHasChanged();
+	};
+}

@@ -1,4 +1,5 @@
 using Sandbox;
+using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
@@ -77,7 +78,8 @@ public class SliderScaleEntry : Panel
     /// <summary>
     /// Called when the value changes
     /// </summary>
-    public event Action<float>? ValueChanged;
+    [Parameter]
+    public Action<float>? ValueChanged { get; set; }
     private bool _isUpdating = false;
     public SliderScaleEntry()
     {

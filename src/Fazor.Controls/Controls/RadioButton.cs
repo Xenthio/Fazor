@@ -1,4 +1,5 @@
 using Sandbox;
+using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
@@ -93,7 +94,8 @@ public class RadioButton : Panel
     /// <summary>
     /// Called when the selection state changes
     /// </summary>
-    public event Action<bool>? ValueChanged;
+    [Parameter]
+    public Action<bool>? ValueChanged { get; set; }
     public virtual void OnValueChanged()
     {
         UpdateState();
@@ -115,7 +117,8 @@ public class RadioButton : Panel
     /// <summary>
     /// Called when radio button is selected
     /// </summary>
-    public event Action? OnSelected;
+    [Parameter]
+    public Action? OnSelected { get; set; }
     /// <summary>
     /// Called when radio button is deselected
     /// </summary>
