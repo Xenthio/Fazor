@@ -1,5 +1,6 @@
-namespace Sandbox.UI;
-
+using Sandbox;
+using Sandbox.UI;
+namespace Fazor.Controls;
 /// <summary>
 /// A panel containing an icon, typically a material icon.
 /// Based on s&box's IconPanel.
@@ -12,7 +13,6 @@ public class IconPanel : Label
         AddClass("iconpanel");
         ElementName = "iconpanel";
     }
-
     public IconPanel(string icon, string? classes = null) : this()
     {
         Text = icon;

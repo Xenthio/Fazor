@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Sandbox.UI;
+using Fazor.Controls;
 using Xunit;
 
 namespace Sandbox.UI.Tests;

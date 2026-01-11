@@ -67,6 +67,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
+		<ProjectReference Include="..\Fazor.Controls\Fazor.Controls.csproj" />
 		<ProjectReference Include="..\Sandbox.UI.Skia\Sandbox.UI.Skia.csproj" />
 		<!-- AI renderer is optional - only include if INCLUDE_AI_RENDERER is defined -->
 		<ProjectReference Include="..\Sandbox.UI.AI\Sandbox.UI.AI.csproj" Condition="$(DefineConstants.Contains('INCLUDE_AI_RENDERER'))" />

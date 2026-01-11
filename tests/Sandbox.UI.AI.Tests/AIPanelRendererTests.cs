@@ -1,4 +1,5 @@
 using Sandbox.UI;
+using Fazor.Controls;
 using Sandbox.UI.AI;
 using Xunit;
 

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Numerics;
 using Sandbox.UI;
+using Fazor.Controls;
 
 namespace Sandbox.UI.Skia;
 

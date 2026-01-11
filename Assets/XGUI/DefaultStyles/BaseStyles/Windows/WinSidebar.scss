@@ -1,0 +1,49 @@
+.Sidebar {
+	margin: 6px;
+	flex-direction: row;
+	justify-content: flex-start;
+
+	> .tabs {
+		flex-direction: column;
+		min-height: 0px;
+		background-color: $window;
+		border-top: 1px solid $button-shadow;
+		border-left: 1px solid $button-shadow;
+		border-bottom: 1px solid $button-highlight;
+		border-right: 1px solid $button-highlight;
+
+		> .button {
+			background-color: $window;
+			border: 0px;
+			border-radius: 0px;
+			padding: 2px;
+			padding-left: 6px;
+			width: 120px;
+			height: 18px;
+			align-items: center;
+			justify-content: flex-start;
+
+			> .label {
+				text-align: left;
+			}
+
+			&.active {
+				background-color: $highlight;
+				color: $highlight-text;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $button-face;
+		border-top: 1px solid $button-highlight;
+		border-left: 1px solid $button-highlight;
+		border-bottom: 1px solid $button-dark-shadow;
+		border-right: 1px solid $button-dark-shadow;
+		padding: 5px;
+	}
+}

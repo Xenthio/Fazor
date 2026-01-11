@@ -1,4 +1,6 @@
-namespace Sandbox.UI;
+using Sandbox;
+using Sandbox.UI;
+namespace Fazor.Controls;
 
 /// <summary>
 /// Base class for windows in the application.
@@ -85,7 +87,7 @@ public class Window : Panel
     /// Internal method to set window dimensions from auto-sizing without marking them as explicitly set.
     /// Used by the application framework when computing automatic window size from content.
     /// </summary>
-    internal void SetAutoComputedSize(int? width = null, int? height = null)
+    public void SetAutoComputedSize(int? width = null, int? height = null)
     {
         if (width.HasValue)
         {
@@ -1093,7 +1095,7 @@ public class Window : Panel
                 }
                 
                 // Request layout update to position titlebar correctly
-                SetNeedsPreLayout();
+                Style.Dirty();
             }
             else if (!shouldHaveCustomChrome && currentlyHasCustomChrome)
             {
@@ -1109,7 +1111,7 @@ public class Window : Panel
                 }
                 
                 // Request layout update
-                SetNeedsPreLayout();
+                Style.Dirty();
             }
         }
     }
@@ -1149,7 +1151,7 @@ public class Window : Panel
             return;
         }
         
-        var styleToApply = UI.StyleSheet.FromFile(resolvedPath);
+        var styleToApply = Sandbox.UI.StyleSheet.FromFile(resolvedPath);
 
         // Apply the new style
         StyleSheet.Add(styleToApply);

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Sandbox.UI\Sandbox.UI.csproj" />
+    <ProjectReference Include="..\..\src\Fazor.Controls\Fazor.Controls.csproj" />
     <ProjectReference Include="..\..\src\Sandbox.UI.Skia\Sandbox.UI.Skia.csproj" />
   </ItemGroup>
 
