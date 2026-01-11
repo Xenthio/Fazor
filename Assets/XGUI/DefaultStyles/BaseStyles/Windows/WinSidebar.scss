@@ -4,42 +4,32 @@
 	justify-content: flex-start;
 
 	> .tabs {
-		z-index: 1;
-		// This wrapper aligns the tabs vertically
 		flex-direction: column;
 		min-height: 0px;
+		background-color: $window;
+		border-top: 1px solid $button-shadow;
+		border-left: 1px solid $button-shadow;
+		border-bottom: 1px solid $button-highlight;
+		border-right: 1px solid $button-highlight;
 
 		> .button {
-			border-top: 1px solid $button-highlight;
-			border-left: 1px solid $button-highlight;
-			border-bottom: 1px solid $button-dark-shadow;
-			border-right: 1px solid $button-highlight;
+			background-color: $window;
+			border: 0px;
 			border-radius: 0px;
-			border-top-left-radius: 3px;
-			border-bottom-left-radius: 3px;
-			padding: 0px;
-			padding-top: 6px;
-			padding-bottom: 6px;
-			padding-right: 1px;
-			// Move unselected ones right
-			width: 80px;
+			padding: 2px;
+			padding-left: 6px;
+			width: 120px;
+			height: 18px;
 			align-items: center;
-			height: 21px;
-			left: 4px;
-			z-index: -10;
+			justify-content: flex-start;
 
 			> .label {
-				text-align: center;
-				flex-grow: 1;
+				text-align: left;
 			}
 
 			&.active {
-				padding-right: 3px;
-				// Offset left when selected
-				left: 1px;
-				z-index: 15000;
-				border-right: 0px;
-				width: 83px;
+				background-color: $highlight;
+				color: $highlight-text;
 			}
 
 			&:hover {

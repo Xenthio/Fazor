@@ -40,6 +40,7 @@ class Program
         //Fazor.UI.FazorApplication.RunPanel<RefOnClickDemo>();
         //Fazor.UI.FazorApplication.RunPanel<BorderImageTest>();
         //Fazor.UI.FazorApplication.RunPanel<About>(); // Transform-origin / Computer11 theme test window
+        Fazor.UI.FazorApplication.RunPanel<FazorControlsTest>();
         
         // Test custom chrome improvements
         //Fazor.UI.FazorApplication.RunPanel<CustomChromeTest>(title: "Custom Chrome Test");
