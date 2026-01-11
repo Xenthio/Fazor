@@ -1,4 +1,5 @@
 using Sandbox;
+using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
@@ -82,7 +83,8 @@ public class CheckBox : Panel
     /// <summary>
     /// Called when the value changes
     /// </summary>
-    public event Action<bool>? ValueChanged;
+    [Parameter]
+    public Action<bool>? ValueChanged { get; set; }
     public virtual void OnValueChanged()
     {
         UpdateState();
@@ -104,11 +106,13 @@ public class CheckBox : Panel
     /// <summary>
     /// Called when checkbox is checked
     /// </summary>
-    public event Action? OnChecked;
+    [Parameter]
+    public Action? OnChecked { get; set; }
     /// <summary>
     /// Called when checkbox is unchecked
     /// </summary>
-    public event Action? OnUnchecked;
+    [Parameter]
+    public Action? OnUnchecked { get; set; }
     protected virtual void UpdateState()
     {
         SetClass("checked", Checked);

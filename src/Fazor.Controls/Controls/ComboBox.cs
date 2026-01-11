@@ -1,4 +1,5 @@
 using Sandbox;
+using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ public class ComboBox : Button
     /// <summary>
     /// Called when the value has been changed.
     /// </summary>
+    [Parameter]
     public Action<string>? ValueChanged { get; set; }
     /// <summary>
     /// Called just before opening, allows options to be dynamic.
