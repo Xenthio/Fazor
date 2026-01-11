@@ -108,6 +108,7 @@ public struct TransitionDesc
 
 		p = p.SkipWhitespaceAndNewlines();
 		t.Property = p.ReadWord( null, true ).ToLower();
+		t.Property = StyleParser.GetPropertyFromAlias( t.Property );
 		if ( p.IsEnd ) return t;
 		p = p.SkipWhitespaceAndNewlines();
 		if ( p.IsEnd ) return t;

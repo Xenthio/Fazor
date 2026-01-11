@@ -237,8 +237,8 @@ public partial class Panel
     {
         bool old = IsVisible;
 
-        // Match S&box's CalcVisible behavior - also consider active transitions
-        IsVisibleSelf = ComputedStyle?.Display != DisplayMode.None && (ComputedStyle?.Opacity ?? 1f) > 0;
+        // Match S&box's CalcVisible behavior exactly
+        IsVisibleSelf = ComputedStyle?.CalcVisible() ?? false;
         IsVisibleSelf = IsVisibleSelf || HasActiveTransitions;
         IsVisible = IsVisibleSelf && (Parent?.IsVisible ?? true);
 

@@ -165,3 +165,35 @@ These are files that exist in Fazor but not in S&box's UI system. Many are becau
 - `GetLetterAtScreenPosition()` - Get letter at screen pos
 - `GetCaretRect()` - Get caret rectangle
 - `hoveredNode` - Hovered HTML node for rich text
+
+## 6. Implementation Differences Fixed in This PR
+
+### StyleParser.cs
+- **S&box**: Uses `GetPropertyFromAlias()` for CSS property aliasing - ✅ IMPLEMENTED
+- **Aliases**: `color -> font-color`, `background-image-tint -> background-tint`
+
+### Styles.Set.cs  
+- **S&box**: Uses `StyleParser.GetPropertyFromAlias(property)` at start - ✅ IMPLEMENTED
+- **Fazor**: Was using hardcoded `if (property == "color")` check - ✅ FIXED
+
+### Panel.Layout.cs UpdateVisibility
+- **S&box**: Uses `ComputedStyle?.CalcVisible() ?? false` - ✅ FIXED
+- **Fazor**: Was manually checking `Display` and `Opacity`
+
+### TextBlockWrapper (Fazor) vs TextBlock (S&box)
+
+Fazor's TextBlockWrapper has:
+- ✅ Basic text measurement
+- ✅ Caret positioning (GetCaretRect)
+- ✅ Hit testing (HitTest)
+- ✅ Selection rendering
+- ✅ Font smoothing options
+
+Missing features from S&box's TextBlock:
+- ⏳ HTML text parsing (`SetHtml`)
+- ⏳ Text gradients (linear/radial)
+- ⏳ Text effects/shadows
+- ⏳ Text decoration (underline, strikethrough)
+- ⏳ Letter spacing and word spacing
+- ⏳ Line height
+- ⏳ Text transform (uppercase/lowercase)
