@@ -1,5 +1,7 @@
 using System.Text;
 using SkiaSharp;
+using Sandbox.UI;
+using Fazor.Controls;
 
 namespace Sandbox.UI.AI;
 

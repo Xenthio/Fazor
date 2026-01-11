@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
+    <ProjectReference Include="..\Fazor.Controls\Fazor.Controls.csproj" />
     <ProjectReference Include="..\..\thirdparty\RichTextKit\Topten.RichTextKit\Topten.RichTextKit.csproj" />
   </ItemGroup>
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Sandbox.UI;
+using Fazor.Controls;
 #if INCLUDE_AI_RENDERER
 using Sandbox.UI.AI;
 #endif
@@ -118,7 +119,7 @@ public static class FazorApplication
             rootPanel.Layout();
 
             // Re-read window properties AFTER layout (Razor attributes are now processed)
-            if (panel is Sandbox.UI.Window windowPanel)
+            if (panel is Fazor.Controls.Window windowPanel)
             {
                 // Check if width/height were explicitly set
                 bool needsAutoWidth = !windowPanel.IsWindowWidthExplicit;
@@ -205,7 +206,7 @@ public static class FazorApplication
                 
                 // Mark any top-level Window as a root window so it fills the viewport
                 // instead of using its Position/Size as embedded window coordinates
-                if (panel is Sandbox.UI.Window win)
+                if (panel is Fazor.Controls.Window win)
                 {
                     win.IsRootWindow = true;
                     
@@ -237,7 +238,7 @@ public static class FazorApplication
             var nativeWindow = new NativeWindow(width, height, title);
             
             // If panel is a Window, give it a reference to the native window
-            if (panel is Sandbox.UI.Window winPanel)
+            if (panel is Fazor.Controls.Window winPanel)
             {
                 winPanel.SetNativeWindow(nativeWindow);
             }

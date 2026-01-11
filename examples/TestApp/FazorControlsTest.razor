@@ -1,0 +1,255 @@
+@namespace TestApp
+@using Sandbox.UI;
+@using Fazor.Controls
+@using System.Collections.Generic;
+@inherits Window
+@attribute [StyleSheet( "/XGUI/DefaultStyles/Computer11.scss" )]
+
+<root title="Fazor.Controls Demo" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="800" windowheight="600">
+	<div class="window-content">
+		
+		<tabcontrol>
+			<tab tabName="treeview" slot="tab" tabtext="TreeView">
+				<div style="width:100%;height:500px;padding:10px;">
+					<label style="margin-bottom:10px;">TreeView Control - Hierarchical data with expand/collapse</label>
+					<div style="border:1px solid #ccc;padding:5px;height:400px;">
+						@if (DemoTreeView != null)
+						{
+							@DemoTreeView
+						}
+					</div>
+					<div style="margin-top:10px;">
+						<label>Selected: @SelectedTreeNodeText</label>
+					</div>
+				</div>
+			</tab>
+			
+			<tab tabName="listview" slot="tab" tabtext="ListView">
+				<div style="width:100%;height:500px;padding:10px;">
+					<label style="margin-bottom:10px;">ListView Control - Three view modes with sorting</label>
+					<div style="margin-bottom:10px;">
+						<button @onclick="@(() => SetListViewMode(ListView.ListViewMode.Details))">Details View</button>
+						<button @onclick="@(() => SetListViewMode(ListView.ListViewMode.List))">List View</button>
+						<button @onclick="@(() => SetListViewMode(ListView.ListViewMode.Icons))">Icons View</button>
+					</div>
+					<div style="border:1px solid #ccc;padding:5px;height:350px;">
+						@if (DemoListView != null)
+						{
+							@DemoListView
+						}
+					</div>
+					<div style="margin-top:10px;">
+						<label>Selected: @SelectedListItemText</label>
+					</div>
+				</div>
+			</tab>
+			
+			<tab tabName="sidebar" slot="tab" tabtext="Sidebar">
+				<div style="width:100%;height:500px;padding:10px;">
+					<label style="margin-bottom:10px;">Sidebar Control - TabContainer styled as sidebar</label>
+					<div style="border:1px solid #ccc;padding:5px;height:400px;display:flex;flex-direction:row;">
+						<sidebar style="width:200px;">
+							<tab tabName="section1" slot="tab" tabtext="Section 1">
+								<div style="padding:10px;">
+									<label>Section 1 Content</label>
+									<p>This is the first section of the sidebar demo.</p>
+								</div>
+							</tab>
+							<tab tabName="section2" slot="tab" tabtext="Section 2">
+								<div style="padding:10px;">
+									<label>Section 2 Content</label>
+									<p>This is the second section with different content.</p>
+								</div>
+							</tab>
+							<tab tabName="section3" slot="tab" tabtext="Section 3">
+								<div style="padding:10px;">
+									<label>Section 3 Content</label>
+									<p>More content in the third section.</p>
+								</div>
+							</tab>
+						</sidebar>
+					</div>
+				</div>
+			</tab>
+			
+			<tab tabName="layout" slot="tab" tabtext="Layout">
+				<div style="width:100%;height:500px;padding:10px;">
+					<label style="margin-bottom:10px;">Layout Controls - Separators and LayoutBoxes</label>
+					<div style="border:1px solid #ccc;padding:10px;">
+						<layoutbox style="padding:10px;background-color:#f0f0f0;">
+							<label>LayoutBox Container</label>
+							<p>Content inside a layout box</p>
+						</layoutbox>
+						
+						<separator style="margin:10px 0;"></separator>
+						
+						<layoutboxinset style="padding:10px;background-color:#e0e0e0;">
+							<label>LayoutBoxInset Container</label>
+							<p>Content inside an inset layout box</p>
+						</layoutboxinset>
+						
+						<separator style="margin:10px 0;"></separator>
+						
+						<div style="display:flex;flex-direction:row;gap:10px;">
+							<div style="flex:1;padding:10px;background-color:#d0d0d0;">
+								<label>Left Column</label>
+							</div>
+							<separatorvertical style="width:2px;height:100px;"></separatorvertical>
+							<div style="flex:1;padding:10px;background-color:#d0d0d0;">
+								<label>Right Column</label>
+							</div>
+						</div>
+					</div>
+				</div>
+			</tab>
+			
+			<tab tabName="about" slot="tab" tabtext="About">
+				<div style="width:100%;height:500px;padding:10px;">
+					<label style="font-weight:bold;margin-bottom:10px;">Fazor.Controls Library</label>
+					<p>This library provides desktop UI controls ported from XGUI-3.</p>
+					<br />
+					<label style="font-weight:bold;">Available Controls:</label>
+					<ul>
+						<li>TreeView - Hierarchical tree with expand/collapse</li>
+						<li>ListView - List/Details/Icons view with sorting</li>
+						<li>Sidebar - Vertical tab navigation</li>
+						<li>Separator/SeparatorVertical - Visual dividers</li>
+						<li>LayoutBox/LayoutBoxInset - Container panels</li>
+					</ul>
+					<br />
+					<label style="font-weight:bold;">Features:</label>
+					<ul>
+						<li>Full event support for selection, activation, drag</li>
+						<li>Icon support via FazorIconPanel</li>
+						<li>Theme management via FazorPanel</li>
+						<li>Positioning utilities via FazorPopup</li>
+					</ul>
+				</div>
+			</tab>
+		</tabcontrol>
+		
+		<resizer></resizer>
+	</div>
+</root>
+
+@code {
+	private TreeView? DemoTreeView;
+	private ListView? DemoListView;
+	private string SelectedTreeNodeText = "None";
+	private string SelectedListItemText = "None";
+
+	protected override void OnAfterTreeRender(bool firstTime)
+	{
+		base.OnAfterTreeRender(firstTime);
+		
+		if (firstTime)
+		{
+			InitializeTreeView();
+			InitializeListView();
+		}
+	}
+
+	private void InitializeTreeView()
+	{
+		DemoTreeView = new TreeView();
+		
+		// Add root nodes
+		var root1 = DemoTreeView.AddRootNode("Documents", "material:folder");
+		root1.AddChild("Resume.pdf", "material:description");
+		root1.AddChild("Cover Letter.doc", "material:description");
+		
+		var projectsNode = root1.AddChild("Projects", "material:folder");
+		projectsNode.AddChild("Project A", "material:folder");
+		projectsNode.AddChild("Project B", "material:folder");
+		
+		var root2 = DemoTreeView.AddRootNode("Pictures", "material:folder");
+		root2.AddChild("Vacation 2023", "material:folder");
+		root2.AddChild("Family Photos", "material:folder");
+		
+		var root3 = DemoTreeView.AddRootNode("Downloads", "material:folder");
+		root3.AddChild("installer.exe", "material:description");
+		root3.AddChild("document.pdf", "material:description");
+		
+		// Event handlers
+		DemoTreeView.OnNodeSelected = (node) => {
+			SelectedTreeNodeText = node?.Text ?? "None";
+			StateHasChanged();
+		};
+		
+		DemoTreeView.OnNodeActivated = (node) => {
+			if (node != null && node.ChildNodes.Count > 0)
+			{
+				// Just toggle expand without creating an event
+				if (node.IsExpanded)
+					node.Collapse();
+				else
+					node.Expand();
+			}
+		};
+	}
+
+	private void InitializeListView()
+	{
+		DemoListView = new ListView();
+		
+		// Add columns
+		DemoListView.AddColumn("Name", "name", 200);
+		DemoListView.AddColumn("Type", "type", 100);
+		DemoListView.AddColumn("Size", "size", 100);
+		DemoListView.AddColumn("Modified", "modified", 150);
+		
+		// Add items
+		var items = new List<(string, string, string, string)>
+		{
+			("Document.pdf", "PDF File", "2.5 MB", "2024-01-15"),
+			("Spreadsheet.xlsx", "Excel File", "1.2 MB", "2024-01-14"),
+			("Presentation.pptx", "PowerPoint", "5.8 MB", "2024-01-13"),
+			("Image.png", "PNG Image", "856 KB", "2024-01-12"),
+			("Video.mp4", "Video", "45.2 MB", "2024-01-11"),
+			("Archive.zip", "ZIP Archive", "12.3 MB", "2024-01-10"),
+			("Code.cs", "C# Source", "15 KB", "2024-01-09"),
+			("Notes.txt", "Text File", "3 KB", "2024-01-08")
+		};
+		
+		foreach (var item in items)
+		{
+			var subItems = new List<string> { item.Item1, item.Item2, item.Item3, item.Item4 };
+			DemoListView.AddItem(item, subItems);
+		}
+		
+		// Event handler
+		DemoListView.OnItemSelected = (item) => {
+			if (item != null && item.SubItems.Count > 0)
+			{
+				SelectedListItemText = item.SubItems[0];
+			}
+			else
+			{
+				SelectedListItemText = "None";
+			}
+			StateHasChanged();
+		};
+		
+		DemoListView.OnItemActivated = (item) => {
+			if (item != null && item.SubItems.Count > 0)
+			{
+				SelectedListItemText = $"{item.SubItems[0]} (Double-clicked)";
+				StateHasChanged();
+			}
+		};
+	}
+
+	private void SetListViewMode(ListView.ListViewMode mode)
+	{
+		if (DemoListView != null)
+		{
+			DemoListView.ViewMode = mode;
+			StateHasChanged();
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(SelectedTreeNodeText, SelectedListItemText);
+	}
+}

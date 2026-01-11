@@ -1,11 +1,10 @@
-namespace Sandbox.UI;
-
+using Sandbox.UI;
+namespace Fazor.Controls;
 /// <summary>
 /// A single tab content panel within a TabContainer.
 /// The tab markup should include slot="tab" and attributes for tabname, tabtext, and optionally tabicon.
 /// Based on XGUI-3 pattern.
 /// </summary>
-[Library("tab")]
 public class Tab : Panel
 {
     public Tab()
@@ -13,7 +12,6 @@ public class Tab : Panel
         AddClass("tab");
         ElementName = "tab";
     }
-
     public override void SetProperty(string name, string value)
     {
         // Tab properties are handled by TabContainer.OnTemplateSlot
@@ -23,7 +21,6 @@ public class Tab : Panel
             // Ignore slot attribute - it's used for positioning in markup
             return;
         }
-
         base.SetProperty(name, value);
     }
 }

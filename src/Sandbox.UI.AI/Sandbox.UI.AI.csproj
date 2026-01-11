@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sandbox.UI\Sandbox.UI.csproj" />
+    <ProjectReference Include="..\Fazor.Controls\Fazor.Controls.csproj" />
     <ProjectReference Include="..\Sandbox.UI.Skia\Sandbox.UI.Skia.csproj" />
     <PackageReference Include="SkiaSharp" Version="3.119.1" />
   </ItemGroup>

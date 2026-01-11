@@ -1,4 +1,5 @@
 using Sandbox.UI;
+using Fazor.Controls;
 using Fazor.UI.PanelInspector;
 
 namespace Fazor.UI;

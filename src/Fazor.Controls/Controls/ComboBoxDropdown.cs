@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 
-namespace Sandbox.UI;
+using Sandbox.UI;
+namespace Fazor.Controls;
 
 /// <summary>
 /// The dropdown popup for a ComboBox control.

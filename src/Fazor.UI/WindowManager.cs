@@ -1,4 +1,5 @@
 using Sandbox.UI;
+using Fazor.Controls;
 using Sandbox.UI.Reflection;
 using System.Threading;
 
@@ -47,7 +48,7 @@ public class WindowManager : IDisposable
                 var panel = new T();
 
                 // Extract window properties if the panel is a Window
-                if (panel is Sandbox.UI.Window windowPanel)
+                if (panel is Fazor.Controls.Window windowPanel)
                 {
                     // Create RootPanel and add the window panel
                     var rootPanel = new RootPanel();

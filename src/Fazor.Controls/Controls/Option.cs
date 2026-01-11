@@ -1,4 +1,5 @@
-namespace Sandbox.UI;
+using Sandbox.UI;
+namespace Fazor.Controls;
 
 /// <summary>
 /// An option for a <see cref="ComboBox"/>.
