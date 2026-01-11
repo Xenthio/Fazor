@@ -264,7 +264,7 @@ public class StyleSheet
 
 		Watcher.OnChanges += ( watcher ) =>
 		{
-			Console.WriteLine( $"[StyleSheet] Hotloading: {watchFileName}" );
+			Log.Info( $"[StyleSheet] Hotloading: {watchFileName}" );
 			UpdateFromFile( watchFileName, true );
 			
 			// Notify the UI system that stylesheets have changed

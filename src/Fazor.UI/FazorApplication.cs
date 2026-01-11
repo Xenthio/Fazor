@@ -249,7 +249,7 @@ public static class FazorApplication
             // Set up hotloading: when stylesheets change, dirty all styles on the root panel
             StyleSheet.OnStyleSheetsHotloaded += () =>
             {
-                Console.WriteLine("[Hotload] Stylesheets changed - refreshing all panel styles");
+                Sandbox.UI.Log.Info("[Hotload] Stylesheets changed - refreshing all panel styles");
                 rootPanel.DirtyAllStyles();
             };
 #endif
