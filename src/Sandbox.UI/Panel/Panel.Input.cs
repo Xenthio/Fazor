@@ -17,6 +17,13 @@ public partial class Panel
                 return default;
 
             var mp = root.MousePos;
+
+            // Apply GlobalMatrix transform if present (matches S&box)
+            if (GlobalMatrix.HasValue)
+            {
+                mp = GlobalMatrix.Value.Transform(mp);
+            }
+
             return mp - Box.Rect.Position;
         }
     }
@@ -27,12 +34,11 @@ public partial class Panel
     /// </summary>
     public virtual Vector2 GetTransformPosition(Vector2 pos)
     {
-        // TODO: Implement LocalMatrix transform when we add transform support
-        return pos;
+        return LocalMatrix?.Transform(pos) ?? pos;
     }
 
     /// <summary>
-    /// Whether given screen position is within this panel.
+    /// Whether given screen position is within this panel. This will accurately handle border radius as well.
     /// </summary>
     /// <param name="pos">The position to test, in screen coordinates.</param>
     public bool IsInside(Vector2 pos)
@@ -41,6 +47,53 @@ public partial class Panel
 
         if (pos.x < rect.Left || pos.x > rect.Right) return false;
         if (pos.y < rect.Top || pos.y > rect.Bottom) return false;
+
+        var s = ComputedStyle;
+        if (s == null) return true;
+
+        // Adjust position relative to the rect for border-radius testing
+        pos.x -= rect.Left;
+        pos.y -= rect.Top;
+
+        // Test top-left corner radius
+        if (s.BorderTopLeftRadius.HasValue && s.BorderTopLeftRadius.Value.Unit > 0)
+        {
+            var r = s.BorderTopLeftRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
+            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var c = new Vector2(r, r);
+            if (pos.x < c.x && pos.y < c.y && Vector2.Distance(pos, c) > r)
+                return false;
+        }
+
+        // Test top-right corner radius
+        if (s.BorderTopRightRadius.HasValue && s.BorderTopRightRadius.Value.Unit > 0)
+        {
+            var r = s.BorderTopRightRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
+            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var c = new Vector2(rect.Width - r, r);
+            if (pos.x > c.x && pos.y < c.y && Vector2.Distance(pos, c) > r)
+                return false;
+        }
+
+        // Test bottom-right corner radius
+        if (s.BorderBottomRightRadius.HasValue && s.BorderBottomRightRadius.Value.Unit > 0)
+        {
+            var r = s.BorderBottomRightRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
+            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var c = new Vector2(rect.Width - r, rect.Height - r);
+            if (pos.x > c.x && pos.y > c.y && Vector2.Distance(pos, c) > r)
+                return false;
+        }
+
+        // Test bottom-left corner radius
+        if (s.BorderBottomLeftRadius.HasValue && s.BorderBottomLeftRadius.Value.Unit > 0)
+        {
+            var r = s.BorderBottomLeftRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
+            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var c = new Vector2(r, rect.Height - r);
+            if (pos.x < c.x && pos.y > c.y && Vector2.Distance(pos, c) > r)
+                return false;
+        }
 
         return true;
     }
@@ -258,5 +311,20 @@ public partial class Panel
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// Transform a ray in 3D space to a position on the panel. This is used for world panel input.
+    /// </summary>
+    /// <param name="ray">The ray in 3D world space to test against this panel.</param>
+    /// <param name="position">Position on the panel where the intersection happened, local to the panel's top left corner.</param>
+    /// <param name="distance">Distance from the ray's origin to the intersection in 3D space.</param>
+    /// <returns>Return true if a hit/intersection was detected.</returns>
+    public virtual bool RayToLocalPosition(Ray ray, out Vector2 position, out float distance)
+    {
+        position = default;
+        distance = default;
+
+        return false;
     }
 }

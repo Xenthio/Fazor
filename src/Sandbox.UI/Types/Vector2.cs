@@ -22,6 +22,7 @@ public struct Vector2
     public static Vector2 operator *(Vector2 a, float b) => new(a.x * b, a.y * b);
     public static Vector2 operator /(Vector2 a, float b) => new(a.x / b, a.y / b);
     public static Vector2 operator *(float a, Vector2 b) => new(a * b.x, a * b.y);
+    public static Vector2 operator -(Vector2 a) => new(-a.x, -a.y);
 
     public static bool operator ==(Vector2 a, Vector2 b) => a.x == b.x && a.y == b.y;
     public static bool operator !=(Vector2 a, Vector2 b) => !(a == b);
@@ -35,6 +36,29 @@ public struct Vector2
     public bool IsNearZeroLength => Math.Abs(x) < 0.0001f && Math.Abs(y) < 0.0001f;
 
     public float Length => MathF.Sqrt(x * x + y * y);
+    
+    /// <summary>
+    /// Returns a normalized version of this vector (length of 1).
+    /// </summary>
+    public Vector2 Normal
+    {
+        get
+        {
+            var len = Length;
+            if (len < 0.0001f) return Zero;
+            return new Vector2(x / len, y / len);
+        }
+    }
+    
+    /// <summary>
+    /// Calculate the distance between two vectors.
+    /// </summary>
+    public static float Distance(Vector2 a, Vector2 b)
+    {
+        var dx = a.x - b.x;
+        var dy = a.y - b.y;
+        return MathF.Sqrt(dx * dx + dy * dy);
+    }
     
     public Vector2 SnapToGrid(float gridSize)
     {

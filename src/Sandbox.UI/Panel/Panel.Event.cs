@@ -180,6 +180,22 @@ public partial class Panel
     {
         e.This = this;
 
+        // Handle copy/cut/paste events (matches S&box)
+        if (e is CopyEvent || e is CutEvent)
+        {
+            var text = GetClipboardValue(e is CutEvent);
+            if (text != null)
+            {
+                // Clipboard operations handled by platform layer
+                // TODO: Add clipboard support
+            }
+        }
+
+        if (e is PasteEvent paste)
+        {
+            OnPaste(paste.ClipboardValue ?? "");
+        }
+
         if (e is MousePanelEvent mpe)
         {
             if (e.Is("onclick")) OnClick(mpe);
@@ -196,6 +212,12 @@ public partial class Panel
             {
                 razorTreeDirty = true;
             }
+        }
+
+        // Handle drag events (matches S&box)
+        if (e is DragEvent de)
+        {
+            InternalDragEvent(de);
         }
 
         if (e.Is("onfocus")) OnFocus(e);

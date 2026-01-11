@@ -237,18 +237,40 @@ public partial class Panel
     {
         bool old = IsVisible;
 
+        // Match S&box's CalcVisible behavior - also consider active transitions
         IsVisibleSelf = ComputedStyle?.Display != DisplayMode.None && (ComputedStyle?.Opacity ?? 1f) > 0;
+        IsVisibleSelf = IsVisibleSelf || HasActiveTransitions;
         IsVisible = IsVisibleSelf && (Parent?.IsVisible ?? true);
 
         if (old == IsVisible) return;
 
-        IndexesDirty = true;
+        if (Parent != null)
+        {
+            Parent.IndexesDirty = true;
+        }
 
         var c = _children?.Count ?? 0;
         for (int i = 0; i < c; i++)
         {
             _children![i].UpdateVisibility();
         }
+
+        try
+        {
+            OnVisibilityChanged();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Warning in OnVisibilityChanged: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Called when the visibility of the current panel changes. This could be because our own style changed, or a parent style.
+    /// You can check visibility using <see cref="IsVisible"/> and <see cref="IsVisibleSelf"/>.
+    /// </summary>
+    protected virtual void OnVisibilityChanged()
+    {
     }
 
     /// <summary>
