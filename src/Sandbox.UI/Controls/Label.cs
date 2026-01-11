@@ -39,6 +39,16 @@ public partial class Label : Panel
     /// </summary>
     internal object? _textBlockWrapper;
 
+    // S&box fields for text measurement optimization
+    int layoutStateHash;
+    bool sizeFinalized;
+    Vector2 availableSpace;
+
+    // Cache reflection PropertyInfo to avoid repeated lookups
+    private static System.Reflection.PropertyInfo? _isTruncatedProperty;
+    private static System.Reflection.PropertyInfo? _blockSizeProperty;
+    private static Type? _cachedWrapperType;
+
     public override bool HasContent => true;
 
     /// <summary>
@@ -63,10 +73,60 @@ public partial class Label : Panel
         AddClass(classname);
     }
 
+    /// <summary>
+    /// Helper to check if text block wrapper is truncated using reflection.
+    /// Caches property info to avoid repeated reflection overhead.
+    /// </summary>
+    private bool IsTextBlockTruncated()
+    {
+        if (_textBlockWrapper == null)
+            return false;
+
+        var wrapperType = _textBlockWrapper.GetType();
+
+        // Cache PropertyInfo on first use to avoid repeated reflection
+        if (_cachedWrapperType != wrapperType)
+        {
+            _cachedWrapperType = wrapperType;
+            _isTruncatedProperty = wrapperType.GetProperty("IsTruncated");
+            _blockSizeProperty = wrapperType.GetProperty("BlockSize");
+        }
+
+        if (_isTruncatedProperty == null)
+            return false;
+
+        return (bool?)_isTruncatedProperty.GetValue(_textBlockWrapper) ?? false;
+    }
+
+    /// <summary>
+    /// Helper to get the cached block size from text block wrapper using reflection.
+    /// Returns null if not available.
+    /// </summary>
+    private Vector2? GetCachedBlockSize()
+    {
+        if (_textBlockWrapper == null || _blockSizeProperty == null)
+            return null;
+
+        var blockSize = _blockSizeProperty.GetValue(_textBlockWrapper);
+        return blockSize as Vector2?;
+    }
+
     Vector2 MeasureText(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
     {
         if (string.IsNullOrEmpty(_text))
             return new Vector2(2, 10);
+
+        // Store available space for layout state hash calculation (s&box mechanism)
+        availableSpace = new Vector2(width, height);
+
+        // S&box optimization: If size is finalized and text is truncated, use cached size
+        // This prevents text from staying squished after window resize
+        if (sizeFinalized && IsTextBlockTruncated())
+        {
+            var cachedSize = GetCachedBlockSize();
+            if (cachedSize.HasValue)
+                return cachedSize.Value;
+        }
 
         // Process whitespace before measuring to get accurate dimensions
         // This ensures the layout matches what will actually be rendered
@@ -213,6 +273,20 @@ public partial class Label : Panel
             StringInfo.String = effectiveText;
             YogaNode?.MarkDirty();
         }
+
+        // S&box mechanism: Track layout state changes to detect when text needs remeasuring
+        // This prevents text from staying squished after window resize
+        bool isTruncated = IsTextBlockTruncated();
+        
+        // Multiply availableSpace.x by 100 to get better hash granularity for width changes
+        // (matches S&box implementation - converts float to int with 2 decimal places of precision)
+        int newStateHash = HashCode.Combine((int)(availableSpace.x * 100), ScaleToScreen, isTruncated);
+
+        if (newStateHash != layoutStateHash)
+        {
+            layoutStateHash = newStateHash;
+            sizeFinalized = false;
+        }
     }
 
     public override void FinalLayout(Vector2 offset)
@@ -221,6 +295,14 @@ public partial class Label : Panel
 
         if (!IsVisible) return;
         if (ComputedStyle == null) return;
+
+        // S&box mechanism: After final layout, mark size as finalized and request one more layout pass
+        // This ensures text gets remeasured properly after window resize
+        if (!sizeFinalized)
+        {
+            sizeFinalized = true;
+            YogaNode?.MarkDirty();
+        }
 
         _textRect = Box.RectInner;
 
