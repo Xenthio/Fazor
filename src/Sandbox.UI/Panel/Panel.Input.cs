@@ -193,6 +193,9 @@ public partial class Panel
     /// </summary>
     public virtual string? GetClipboardValue(bool cut)
     {
+        if (AllowChildSelection)
+            return CollectSelectedChildrenText(this);
+
         if (Parent != null)
             return Parent.GetClipboardValue(cut);
 

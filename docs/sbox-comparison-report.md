@@ -54,15 +54,18 @@ This report documents the differences between Fazor's Sandbox.UI and S&box's UI 
 
 ### Panel.Children.cs
 - **S&box**: Has `PanelCreator Add` property for quick child creation - ✅ IMPLEMENTED
-- **S&box**: Throws exception in RemoveChild if child not found
-- **S&box**: Has UnsignedMod for looping in GetChild
+- **S&box**: Throws exception in RemoveChild if child not found - ✅ FIXED
+- **S&box**: Has UnsignedMod for looping in GetChild - ✅ Equivalent implementation
 
 ### Panel.Input.cs
 - **S&box**: `MousePosition` uses GlobalMatrix transform - ✅ IMPLEMENTED
 - **S&box**: `IsInside` includes border-radius hit testing - ✅ IMPLEMENTED
 - **S&box**: Has `RayToLocalPosition` for world panel input - ✅ IMPLEMENTED
-- **S&box**: `GetClipboardValue` supports `AllowChildSelection`
+- **S&box**: `GetClipboardValue` supports `AllowChildSelection` - ✅ FIXED
 - **Fazor**: Has extra `GetPanelAt` method (useful but not in S&box)
+
+### Panel.Order.cs
+- **S&box**: `MoveAfterSibling` passes `previousSibling.SiblingIndex` - ✅ FIXED
 
 ### Panel.Event.cs
 - **S&box**: Full reflection-based `InitializeEvents()` with `PanelEventAttribute` - ✅ IMPLEMENTED
@@ -74,6 +77,9 @@ This report documents the differences between Fazor's Sandbox.UI and S&box's UI 
 - **S&box**: Has `backgroundRenderDirty` tracking - N/A (Fazor uses different renderer)
 - **S&box**: Has detailed `HasBackdropFilter` and `HasFilter` calculations - N/A
 - **S&box**: Uses `CalcVisible()` from ComputedStyle - ✅ IMPLEMENTED (HasActiveTransitions check)
+
+### Styles.cs
+- **S&box**: Logs errors for invalid CSS properties - ✅ FIXED (was silently ignoring)
 
 ### Label.cs
 - **S&box**: Uses internal `TextBlock` class for rich text rendering - ⏳ TextBlock not yet ported
@@ -95,11 +101,10 @@ This report documents the differences between Fazor's Sandbox.UI and S&box's UI 
 - **Fazor**: Has cursor retrieval method - Fazor addition
 
 ### Styles.cs
-- **S&box**: Uses `StyleParser.GetPropertyFromAlias` for property aliases
-- **S&box**: Logs errors for invalid properties
-- **Fazor**: Silently ignores invalid properties
-- **Fazor**: Has `BackgroundGradient` property
-- **Fazor**: Has `GetCustomProperty` method
+- **S&box**: Uses `StyleParser.GetPropertyFromAlias` for property aliases - ✅ IMPLEMENTED
+- **S&box**: Logs errors for invalid properties - ✅ FIXED
+- **Fazor**: Has `BackgroundGradient` property - Fazor addition
+- **Fazor**: Has `GetCustomProperty` method - Fazor addition
 
 ## 3. Extra Files in Fazor (49 files)
 

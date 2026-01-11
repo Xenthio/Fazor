@@ -115,6 +115,10 @@ public partial class Panel
             IndexesDirty = true;
             SetNeedsPreLayout();
         }
+        else
+        {
+            throw new Exception("Removed Child but didn't have child!");
+        }
     }
 
     /// <summary>

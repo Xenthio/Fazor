@@ -161,8 +161,7 @@ public partial class Styles : BaseStyles
 			bool wasSuccessful = Set( property, value );
 			if ( !wasSuccessful )
 			{
-				// Silently ignore unsupported CSS properties to avoid console spam
-				// Console.WriteLine( $"{value} is not valid with {property} {p.FileAndLine}" );
+				Log.Error( $"{value} is not valid with {property} {p.FileAndLine}" );
 			}
 
 			var prop = new IStyleBlock.StyleProperty
