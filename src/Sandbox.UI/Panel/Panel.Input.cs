@@ -55,11 +55,16 @@ public partial class Panel
         pos.x -= rect.Left;
         pos.y -= rect.Top;
 
+        // Pre-calculate common values for radius calculations
+        var halfSize = (rect.Width + rect.Height) * 0.5f;
+        var maxRadiusX = rect.Width / 2.0f;
+        var maxRadiusY = rect.Height / 2.0f;
+
         // Test top-left corner radius
         if (s.BorderTopLeftRadius.HasValue && s.BorderTopLeftRadius.Value.Unit > 0)
         {
-            var r = s.BorderTopLeftRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
-            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var r = s.BorderTopLeftRadius.Value.GetPixels(halfSize);
+            r = MathF.Min(MathF.Min(r, maxRadiusX), maxRadiusY);
             var c = new Vector2(r, r);
             if (pos.x < c.x && pos.y < c.y && Vector2.Distance(pos, c) > r)
                 return false;
@@ -68,8 +73,8 @@ public partial class Panel
         // Test top-right corner radius
         if (s.BorderTopRightRadius.HasValue && s.BorderTopRightRadius.Value.Unit > 0)
         {
-            var r = s.BorderTopRightRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
-            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var r = s.BorderTopRightRadius.Value.GetPixels(halfSize);
+            r = MathF.Min(MathF.Min(r, maxRadiusX), maxRadiusY);
             var c = new Vector2(rect.Width - r, r);
             if (pos.x > c.x && pos.y < c.y && Vector2.Distance(pos, c) > r)
                 return false;
@@ -78,8 +83,8 @@ public partial class Panel
         // Test bottom-right corner radius
         if (s.BorderBottomRightRadius.HasValue && s.BorderBottomRightRadius.Value.Unit > 0)
         {
-            var r = s.BorderBottomRightRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
-            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var r = s.BorderBottomRightRadius.Value.GetPixels(halfSize);
+            r = MathF.Min(MathF.Min(r, maxRadiusX), maxRadiusY);
             var c = new Vector2(rect.Width - r, rect.Height - r);
             if (pos.x > c.x && pos.y > c.y && Vector2.Distance(pos, c) > r)
                 return false;
@@ -88,8 +93,8 @@ public partial class Panel
         // Test bottom-left corner radius
         if (s.BorderBottomLeftRadius.HasValue && s.BorderBottomLeftRadius.Value.Unit > 0)
         {
-            var r = s.BorderBottomLeftRadius.Value.GetPixels((rect.Width + rect.Height) * 0.5f);
-            r = MathF.Min(MathF.Min(r, rect.Width / 2.0f), rect.Height / 2.0f);
+            var r = s.BorderBottomLeftRadius.Value.GetPixels(halfSize);
+            r = MathF.Min(MathF.Min(r, maxRadiusX), maxRadiusY);
             var c = new Vector2(r, rect.Height - r);
             if (pos.x < c.x && pos.y > c.y && Vector2.Distance(pos, c) > r)
                 return false;
