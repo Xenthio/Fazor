@@ -341,4 +341,22 @@ public partial class RootPanel : Panel
 
         styleRuleUpdates.Clear();
     }
+
+    /// <summary>
+    /// Dirty all styles on this root panel and its children.
+    /// Called when stylesheets are hotloaded to force a complete style rebuild.
+    /// </summary>
+    internal void DirtyAllStyles()
+    {
+        DirtyStylesRecursive();
+    }
+
+    /// <summary>
+    /// Call OnHotloaded on this panel and all children.
+    /// Called when razor files or stylesheets are hotloaded.
+    /// </summary>
+    internal void TriggerHotload()
+    {
+        OnHotloaded();
+    }
 }

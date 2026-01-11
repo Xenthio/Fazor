@@ -245,6 +245,15 @@ public static class FazorApplication
             
             nativeWindow.RootPanel = rootPanel;
             
+#if DEBUG
+            // Set up hotloading: when stylesheets change, dirty all styles on the root panel
+            StyleSheet.OnStyleSheetsHotloaded += () =>
+            {
+                Sandbox.UI.Log.Info("[Hotload] Stylesheets changed - refreshing all panel styles");
+                rootPanel.DirtyAllStyles();
+            };
+#endif
+            
             // Initialize window manager for multi-window support (create once globally)
             if (_windowManager == null)
             {

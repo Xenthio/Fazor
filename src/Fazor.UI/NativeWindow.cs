@@ -233,6 +233,9 @@ public class NativeWindow : INativeWindow, IDisposable
     {
         if (RootPanel == null) return;
 
+        // Process file watcher notifications (DEBUG builds only - handles stylesheet/Razor hotloading)
+        FileWatcher.Tick((float)delta);
+
         // Update panel time for transitions and animations
         PanelRealTime.Update(delta);
         RealTime.Update(delta);
