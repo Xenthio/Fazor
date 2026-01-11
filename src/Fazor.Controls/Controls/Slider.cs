@@ -1,9 +1,11 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
 /// A horizontal slider control.
 /// Based on XGUI-3's Slider implementation.
 /// </summary>
+[Library("slider")]
 public class Slider : Panel
 {
     public Panel? Track { get; protected set; }

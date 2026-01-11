@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
@@ -5,6 +6,7 @@ namespace Fazor.Controls;
 /// The tab markup should include slot="tab" and attributes for tabname, tabtext, and optionally tabicon.
 /// Based on XGUI-3 pattern.
 /// </summary>
+[Library("tab")]
 public class Tab : Panel
 {
     public Tab()

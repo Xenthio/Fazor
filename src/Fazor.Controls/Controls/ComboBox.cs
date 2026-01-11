@@ -1,3 +1,4 @@
+using Sandbox;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,7 @@ namespace Fazor.Controls;
 /// Based on XGUI-3's ComboBox.
 /// Now uses BasePopup for proper popup window support.
 /// </summary>
+[Library("combobox"), Alias("selector")]
 public class ComboBox : Button
 {
     /// <summary>

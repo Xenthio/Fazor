@@ -1,9 +1,11 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
 /// A horizontal slider with scale markers and a text entry for numeric input.
 /// Based on XGUI-3's SliderScaleEntry implementation.
 /// </summary>
+[Library("sliderscaleentry")]
 public class SliderScaleEntry : Panel
 {
     public SliderScale? Slider { get; protected set; }

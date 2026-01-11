@@ -1,3 +1,4 @@
+using Sandbox;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 //using Sandbox.UI.Navigation;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// <summary>
 /// A simple button <see cref="Panel"/>.
 /// </summary>
+[Library("Button")]
 public class Button : Panel //, INavigationEvent
 {
     /// <summary>

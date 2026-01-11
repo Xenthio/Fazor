@@ -1,9 +1,11 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
 /// A panel that the user can enter text into.
 /// Based on S&box's TextEntry control.
 /// </summary>
+[Library("textentry")]
 public class TextEntry : Panel
 {
     /// <summary>

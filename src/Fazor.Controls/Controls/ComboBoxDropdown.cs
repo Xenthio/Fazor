@@ -1,3 +1,4 @@
+using Sandbox;
 using System;
 using System.Collections.Generic;
 
@@ -8,6 +9,7 @@ namespace Fazor.Controls;
 /// The dropdown popup for a ComboBox control.
 /// Extends BasePopup to support native popup windows.
 /// </summary>
+[Library("comboboxdropdown")]
 public class ComboBoxDropdown : BasePopup
 {
     /// <summary>

@@ -1,9 +1,11 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
 /// A label control that highlights when its children have focus.
 /// Based on XGUI-3's ControlLabel.
 /// </summary>
+[Library("controllabel")]
 public class ControlLabel : Panel
 {
     /// <summary>

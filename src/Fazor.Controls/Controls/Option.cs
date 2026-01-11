@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 
@@ -5,6 +6,7 @@ namespace Fazor.Controls;
 /// An option for a <see cref="ComboBox"/>.
 /// Based on s&amp;box's Option from game/addons/base/code/UI/Option.cs
 /// </summary>
+[Library("option")]
 public class Option
 {
     /// <summary>

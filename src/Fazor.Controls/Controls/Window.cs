@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 
@@ -7,6 +8,7 @@ namespace Fazor.Controls;
 /// Manages window properties like title, size, and controls, and creates the appropriate UI structure.
 /// Based on XGUI-3's Window implementation.
 /// </summary>
+[Library("window")]
 public class Window : Panel
 {
     private string _title = "Window";

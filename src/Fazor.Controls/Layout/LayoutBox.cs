@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 
 namespace Fazor.Controls;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// A layout box container panel.
 /// Port from XGUI-3.
 /// </summary>
+[Library("layoutbox")]
 public class LayoutBox : Panel
 {
 	public LayoutBox()
@@ -18,6 +20,7 @@ public class LayoutBox : Panel
 /// An inset layout box container panel.
 /// Port from XGUI-3.
 /// </summary>
+[Library("layoutbox")]
 public class LayoutBoxInset : Panel
 {
 	public LayoutBoxInset()

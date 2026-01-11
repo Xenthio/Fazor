@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 
 namespace Fazor.Controls;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// A sidebar container, essentially a TabContainer styled as a sidebar navigation menu.
 /// Port from XGUI-3.
 /// </summary>
+[Library("sidebar")]
 public class Sidebar : TabContainer
 {
 	public Sidebar()

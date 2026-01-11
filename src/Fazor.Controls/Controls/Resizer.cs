@@ -1,9 +1,11 @@
+using Sandbox;
 using Sandbox.UI;
 namespace Fazor.Controls;
 /// <summary>
 /// A resize handle for windows.
 /// Based on XGUI-3's Resizer implementation.
 /// </summary>
+[Library("resizer")]
 public class Resizer : Panel
 {
     public Resizer()

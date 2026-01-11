@@ -1,3 +1,4 @@
+using Sandbox;
 using System.Linq;
 using Sandbox.UI;
 namespace Fazor.Controls;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// You can position the tabs by adding the class tabs-bottom, tabs-left, tabs-right (default is tabs-top)
 /// Based on XGUI-3 TabContainer.
 /// </summary>
+[Library("tabcontainer"), Alias("tabcontrol", "tabs")]
 public class TabContainer : Panel
 {
     /// <summary>

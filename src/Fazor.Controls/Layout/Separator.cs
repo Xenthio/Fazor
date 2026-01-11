@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 
 namespace Fazor.Controls;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// A horizontal separator line for UI layouts.
 /// Port from XGUI-3.
 /// </summary>
+[Library("separator")]
 public class Separator : Panel
 {
 	public Separator()
@@ -18,6 +20,7 @@ public class Separator : Panel
 /// A vertical separator line for UI layouts.
 /// Port from XGUI-3.
 /// </summary>
+[Library("separator")]
 public class SeparatorVertical : Panel
 {
 	public SeparatorVertical()

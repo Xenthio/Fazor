@@ -1,3 +1,4 @@
+using Sandbox;
 using Sandbox.UI;
 
 namespace Fazor.Controls;
@@ -6,6 +7,7 @@ namespace Fazor.Controls;
 /// A Win32-inspired ListView control for XGUI, usable from C# and Razor.
 /// Port from XGUI-3.
 /// </summary>
+[Library("listview")]
 public class ListView : Panel
 {
 	public enum ListViewMode
