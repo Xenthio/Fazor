@@ -9,7 +9,9 @@
     <FazorBuildTasksPath Condition="'$(FazorBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\bin\$(Configuration)\net10.0\Fazor.Build.dll</FazorBuildTasksPath>
     <FazorGeneratedPath Condition="'$(FazorGeneratedPath)' == ''">$(IntermediateOutputPath)Fazor\Generated\</FazorGeneratedPath>
     <!-- Path to the themes folder - can be overridden by projects -->
-    <FazorThemesPath Condition="'$(FazorThemesPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\themes\</FazorThemesPath>
+    <FazorThemesPath Condition="'$(FazorThemesPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\Assets\themes\</FazorThemesPath>
+    <!-- Path to the Assets folder (fonts, XGUI, etc) -->
+    <FazorAssetsPath Condition="'$(FazorAssetsPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\Assets\</FazorAssetsPath>
   </PropertyGroup>
 
   <!-- UsingTask declarations - assembly will be loaded when tasks are executed -->
@@ -23,6 +25,10 @@
     <FazorScssFiles Include="**\*.scss" Exclude="$(BaseIntermediateOutputPath)**;$(BaseOutputPath)**;bin\**;obj\**" />
     <!-- Include theme SCSS files from the themes folder -->
     <FazorThemeFiles Include="$(FazorThemesPath)**\*.scss" Condition="Exists('$(FazorThemesPath)')" />
+    <!-- Include font files from the Assets folder -->
+    <FazorFontFiles Include="$(FazorAssetsPath)fonts\**\*" Condition="Exists('$(FazorAssetsPath)fonts\')" />
+    <!-- Include XGUI assets from the Assets folder -->
+    <FazorXGUIFiles Include="$(FazorAssetsPath)XGUI\**\*" Exclude="$(FazorAssetsPath)XGUI\**\README.md" Condition="Exists('$(FazorAssetsPath)XGUI\')" />
   </ItemGroup>
 
   <!-- Transpile Razor files before BeforeCompile (earlier than CoreCompile) -->
@@ -63,8 +69,20 @@
 
   <!-- Copy theme SCSS files to output directory -->
   <Target Name="FazorCopyThemesToOutput" AfterTargets="Build" Condition="Exists('$(FazorThemesPath)')">
-    <Copy SourceFiles="@(FazorThemeFiles)" DestinationFolder="$(OutputPath)themes\%(RecursiveDir)" SkipUnchangedFiles="true" />
-    <Message Importance="High" Text="Fazor: Copied @(FazorThemeFiles->Count()) theme file(s) to output/themes" Condition="'@(FazorThemeFiles)' != ''" />
+    <Copy SourceFiles="@(FazorThemeFiles)" DestinationFolder="$(OutputPath)Assets\themes\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="High" Text="Fazor: Copied @(FazorThemeFiles->Count()) theme file(s) to output/Assets/themes" Condition="'@(FazorThemeFiles)' != ''" />
+  </Target>
+
+  <!-- Copy font files to output directory -->
+  <Target Name="FazorCopyFontsToOutput" AfterTargets="Build" Condition="Exists('$(FazorAssetsPath)fonts\')">
+    <Copy SourceFiles="@(FazorFontFiles)" DestinationFolder="$(OutputPath)Assets\fonts\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="High" Text="Fazor: Copied @(FazorFontFiles->Count()) font file(s) to output/Assets/fonts" Condition="'@(FazorFontFiles)' != ''" />
+  </Target>
+
+  <!-- Copy XGUI assets to output directory -->
+  <Target Name="FazorCopyXGUIToOutput" AfterTargets="Build" Condition="Exists('$(FazorAssetsPath)XGUI\')">
+    <Copy SourceFiles="@(FazorXGUIFiles)" DestinationFolder="$(OutputPath)Assets\XGUI\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="High" Text="Fazor: Copied @(FazorXGUIFiles->Count()) XGUI file(s) to output/Assets/XGUI" Condition="'@(FazorXGUIFiles)' != ''" />
   </Target>
 
   <!-- Clean generated files -->

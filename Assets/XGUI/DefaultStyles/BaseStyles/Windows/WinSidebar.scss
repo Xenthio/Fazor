@@ -1,0 +1,59 @@
+.Sidebar {
+	margin: 6px;
+	flex-direction: row;
+	justify-content: flex-start;
+
+	> .tabs {
+		z-index: 1;
+		// This wrapper aligns the tabs vertically
+		flex-direction: column;
+		min-height: 0px;
+
+		> .button {
+			border-top: 1px solid $button-highlight;
+			border-left: 1px solid $button-highlight;
+			border-bottom: 1px solid $button-dark-shadow;
+			border-right: 1px solid $button-highlight;
+			border-radius: 0px;
+			border-top-left-radius: 3px;
+			border-bottom-left-radius: 3px;
+			padding: 0px;
+			padding-top: 6px;
+			padding-bottom: 6px;
+			padding-right: 1px;
+			// Move unselected ones right
+			width: 80px;
+			align-items: center;
+			height: 21px;
+			left: 4px;
+			z-index: -10;
+
+			> .label {
+				text-align: center;
+				flex-grow: 1;
+			}
+
+			&.active {
+				padding-right: 3px;
+				// Offset left when selected
+				left: 1px;
+				z-index: 15000;
+				border-right: 0px;
+				width: 83px;
+			}
+
+			&:hover {
+			}
+		}
+	}
+
+	> .sheets {
+		overflow: hidden;
+		background-color: $button-face;
+		border-top: 1px solid $button-highlight;
+		border-left: 1px solid $button-highlight;
+		border-bottom: 1px solid $button-dark-shadow;
+		border-right: 1px solid $button-dark-shadow;
+		padding: 5px;
+	}
+}
