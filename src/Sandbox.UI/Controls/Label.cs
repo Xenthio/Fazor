@@ -39,6 +39,11 @@ public partial class Label : Panel
     /// </summary>
     internal object? _textBlockWrapper;
 
+    // S&box fields for text measurement optimization
+    int layoutStateHash;
+    bool sizeFinalized;
+    Vector2 availableSpace;
+
     public override bool HasContent => true;
 
     /// <summary>
@@ -67,6 +72,30 @@ public partial class Label : Panel
     {
         if (string.IsNullOrEmpty(_text))
             return new Vector2(2, 10);
+
+        // Store available space for layout state hash calculation (s&box mechanism)
+        availableSpace = new Vector2(width, height);
+
+        // S&box optimization: If size is finalized and text is truncated, use cached size
+        // This prevents text from staying squished after window resize
+        if (sizeFinalized && _textBlockWrapper != null)
+        {
+            // Use reflection to check IsTruncated property (avoids compile-time dependency on Sandbox.UI.Skia)
+            var type = _textBlockWrapper.GetType();
+            var isTruncatedProp = type.GetProperty("IsTruncated");
+            var blockSizeProp = type.GetProperty("BlockSize");
+            
+            if (isTruncatedProp != null && blockSizeProp != null)
+            {
+                var isTruncated = (bool?)isTruncatedProp.GetValue(_textBlockWrapper);
+                if (isTruncated == true)
+                {
+                    var blockSize = blockSizeProp.GetValue(_textBlockWrapper);
+                    if (blockSize is Vector2 size)
+                        return size;
+                }
+            }
+        }
 
         // Process whitespace before measuring to get accurate dimensions
         // This ensures the layout matches what will actually be rendered
@@ -213,6 +242,28 @@ public partial class Label : Panel
             StringInfo.String = effectiveText;
             YogaNode?.MarkDirty();
         }
+
+        // S&box mechanism: Track layout state changes to detect when text needs remeasuring
+        // This prevents text from staying squished after window resize
+        bool isTruncated = false;
+        if (_textBlockWrapper != null)
+        {
+            // Use reflection to check IsTruncated property (avoids compile-time dependency on Sandbox.UI.Skia)
+            var type = _textBlockWrapper.GetType();
+            var isTruncatedProp = type.GetProperty("IsTruncated");
+            if (isTruncatedProp != null)
+            {
+                isTruncated = (bool?)isTruncatedProp.GetValue(_textBlockWrapper) ?? false;
+            }
+        }
+        
+        int newStateHash = HashCode.Combine((int)(availableSpace.x * 100), ScaleToScreen, isTruncated);
+
+        if (newStateHash != layoutStateHash)
+        {
+            layoutStateHash = newStateHash;
+            sizeFinalized = false;
+        }
     }
 
     public override void FinalLayout(Vector2 offset)
@@ -221,6 +272,14 @@ public partial class Label : Panel
 
         if (!IsVisible) return;
         if (ComputedStyle == null) return;
+
+        // S&box mechanism: After final layout, mark size as finalized and request one more layout pass
+        // This ensures text gets remeasured properly after window resize
+        if (!sizeFinalized)
+        {
+            sizeFinalized = true;
+            YogaNode?.MarkDirty();
+        }
 
         _textRect = Box.RectInner;
 
