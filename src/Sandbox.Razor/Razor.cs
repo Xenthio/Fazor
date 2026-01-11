@@ -18,8 +18,11 @@ public static class RazorProcessor
 
 		var engine = GetEngine();
 
+		// Generate bind tag helpers for @bind-value support
+		var tagHelpers = GetBuiltInTagHelpers();
+
 		RazorSourceDocument source = RazorSourceDocument.Create( text, filename );
-		RazorCodeDocument code = engine.Process( source, FileKinds.Component, new List<RazorSourceDocument>(), new List<TagHelperDescriptor>() );
+		RazorCodeDocument code = engine.Process( source, FileKinds.Component, new List<RazorSourceDocument>(), tagHelpers );
 		code.SetCodeGenerationOptions( RazorCodeGenerationOptions.Create( o => { } ) );
 
 		RazorCSharpDocument document = code.GetCSharpDocument();
@@ -77,6 +80,17 @@ public static class RazorProcessor
 		var razorProjectEngine = RazorProjectEngine.Create( configuration, RazorProjectFileSystem.Create( "." ) );
 
 		return razorProjectEngine;
+	}
+
+	/// <summary>
+	/// Get built-in tag helpers for bind support
+	/// </summary>
+	static List<TagHelperDescriptor> GetBuiltInTagHelpers()
+	{
+		var context = TagHelperDescriptorProviderContext.Create();
+		var provider = new BindTagHelperProvider();
+		provider.Execute( context );
+		return new List<TagHelperDescriptor>( context.Results );
 	}
 
 }

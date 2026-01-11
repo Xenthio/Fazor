@@ -3,12 +3,12 @@
 @using Fazor.Controls
 @inherits Window
 
-<root title="@bind-value Test" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="600" windowheight="400">
+<root title="Bind Value Test" hasminimise="true" hasmaximise="true" hasclose="true" windowwidth="600" windowheight="400">
     <div class="window-content" style="padding: 20px; flex-direction: column; gap: 15px;">
-        <div style="font-size: 20px; font-weight: bold;">Testing @bind-value</div>
+        <div style="font-size: 20px; font-weight: bold;">Testing bind-value</div>
         
         <div style="flex-direction: column; gap: 10px;">
-            <div style="font-weight: bold;">Test with @bind-value:</div>
+            <div style="font-weight: bold;">Test with bind-value:</div>
             <textentry @bind-value="testValue" placeholder="Type here..." style="padding: 5px; background-color: white; border: 1px solid #ccc;"></textentry>
             <div style="font-size: 12px;">Bound value: @testValue</div>
         </div>
