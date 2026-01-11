@@ -7,94 +7,92 @@ This report documents the differences between Fazor's Sandbox.UI and S&box's UI 
 - Implementation differences in existing files
 - Extra files in Fazor (not in S&box)
 
-## 1. Missing Files in Fazor (29 files)
+## 1. Missing Files in Fazor (Originally 29 files, now several implemented)
 
 ### Critical Missing Features
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `Panel/Panel.Drag.cs` | Drag scrolling support | HIGH |
-| `Panel/Panel.Data.cs` | StringValue property, CreateValueEvent | HIGH |
-| `Panel/Panel.Tooltip.cs` | Tooltip system | MEDIUM |
-| `Panel/Panel.Layer.cs` | Layer rendering for filters/masks | MEDIUM |
-| `Engine/TextBlock.cs` | Rich text rendering with RichTextKit | HIGH |
-| `Panel/Event/DragEvent.cs` | Drag event class | HIGH |
-| `Panel/Event/CutCopyPasteEvent.cs` | Copy/Cut/Paste events | MEDIUM |
-| `Panel/Event/PanelEventAttribute.cs` | Attribute-based event listeners | MEDIUM |
+| File | Description | Priority | Status |
+|------|-------------|----------|--------|
+| `Panel/Panel.Drag.cs` | Drag scrolling support | HIGH | ✅ IMPLEMENTED |
+| `Panel/Panel.Data.cs` | StringValue property, CreateValueEvent | HIGH | ✅ Already exists in Panel.Property.cs |
+| `Panel/Panel.Tooltip.cs` | Tooltip system | MEDIUM | ✅ IMPLEMENTED |
+| `Panel/Panel.Layer.cs` | Layer rendering for filters/masks | MEDIUM | ⏳ Not yet |
+| `Engine/TextBlock.cs` | Rich text rendering with RichTextKit | HIGH | ⏳ Not yet |
+| `Panel/Event/DragEvent.cs` | Drag event class | HIGH | ✅ IMPLEMENTED |
+| `Panel/Event/CutCopyPasteEvent.cs` | Copy/Cut/Paste events | MEDIUM | ✅ IMPLEMENTED |
+| `Panel/Event/PanelEventAttribute.cs` | Attribute-based event listeners | MEDIUM | ✅ IMPLEMENTED |
 
 ### VirtualLayouts (Performance Optimization)
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `VirtualLayouts/BaseVirtualPanel.cs` | Base virtualized scrolling panel | LOW |
-| `VirtualLayouts/VirtualList.cs` | Virtualized list | LOW |
-| `VirtualLayouts/VirtualGrid.cs` | Virtualized grid | LOW |
-| `VirtualLayouts/LayoutUtility/VerticalLayout.cs` | Vertical layout helper | LOW |
-| `VirtualLayouts/LayoutUtility/GridLayout.cs` | Grid layout helper | LOW |
+| File | Description | Priority | Status |
+|------|-------------|----------|--------|
+| `VirtualLayouts/BaseVirtualPanel.cs` | Base virtualized scrolling panel | LOW | ⏳ Not yet |
+| `VirtualLayouts/VirtualList.cs` | Virtualized list | LOW | ⏳ Not yet |
+| `VirtualLayouts/VirtualGrid.cs` | Virtualized grid | LOW | ⏳ Not yet |
+| `VirtualLayouts/LayoutUtility/VerticalLayout.cs` | Vertical layout helper | LOW | ⏳ Not yet |
+| `VirtualLayouts/LayoutUtility/GridLayout.cs` | Grid layout helper | LOW | ⏳ Not yet |
 
 ### Utility/Support Files
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `Utility/PanelCreator.cs` | Panel.Add helper | LOW |
-| `Utility/Clipboard.cs` | Clipboard access | MEDIUM |
-| `Utility/Emoji.cs` | Emoji support | LOW |
-| `Engine/SkiaCompat.cs` | Skia compatibility helpers | LOW |
-| `Razor/RouteAttribute.cs` | Route attribute for pages | LOW |
+| File | Description | Priority | Status |
+|------|-------------|----------|--------|
+| `Utility/PanelCreator.cs` | Panel.Add helper | LOW | ✅ IMPLEMENTED |
+| `Utility/Clipboard.cs` | Clipboard access | MEDIUM | ⏳ Not yet |
+| `Utility/Emoji.cs` | Emoji support | LOW | ⏳ Not yet |
+| `Engine/SkiaCompat.cs` | Skia compatibility helpers | LOW | ⏳ Not yet |
+| `Razor/RouteAttribute.cs` | Route attribute for pages | LOW | ⏳ Not yet |
 
-## 2. Key Implementation Differences
+## 2. Key Implementation Differences (Many Fixed)
 
 ### Panel.cs
-- **S&box**: Has `Task` property for async, `Invoke/InvokeOnce/CancelInvoke` methods
-- **S&box**: Has `Scene` and `GameObject` properties for game integration
-- **S&box**: Has `PlaySound` method
+- **S&box**: Has `Task` property for async, `Invoke/InvokeOnce/CancelInvoke` methods - ✅ IMPLEMENTED
+- **S&box**: Has `Scene` and `GameObject` properties for game integration - N/A for desktop app
+- **S&box**: Has `PlaySound` method - N/A for desktop app
 - **S&box**: Has `IsValid` property (Fazor has `IsValid()` method)
-- **Fazor**: Missing `InitializeEvents()` call in constructor
-- **Fazor**: Missing `AddToLists()`/`RemoveFromLists()` for event registration
+- **S&box**: `InitializeEvents()` call in constructor - ✅ IMPLEMENTED
+- **S&box**: `AddToLists()`/`RemoveFromLists()` for event registration - N/A for desktop app
 
 ### Panel.Children.cs
-- **S&box**: Has `PanelCreator Add` property for quick child creation
+- **S&box**: Has `PanelCreator Add` property for quick child creation - ✅ IMPLEMENTED
 - **S&box**: Throws exception in RemoveChild if child not found
 - **S&box**: Has UnsignedMod for looping in GetChild
 
 ### Panel.Input.cs
-- **S&box**: `MousePosition` uses GlobalMatrix transform
-- **S&box**: `IsInside` includes border-radius hit testing
-- **S&box**: Has `RayToLocalPosition` for world panel input
+- **S&box**: `MousePosition` uses GlobalMatrix transform - ✅ IMPLEMENTED
+- **S&box**: `IsInside` includes border-radius hit testing - ✅ IMPLEMENTED
+- **S&box**: Has `RayToLocalPosition` for world panel input - ✅ IMPLEMENTED
 - **S&box**: `GetClipboardValue` supports `AllowChildSelection`
 - **Fazor**: Has extra `GetPanelAt` method (useful but not in S&box)
 
 ### Panel.Event.cs
-- **S&box**: Full reflection-based `InitializeEvents()` with `PanelEventAttribute`
-- **S&box**: Handles `CopyEvent`, `CutEvent`, `PasteEvent` events
-- **S&box**: Handles `DragEvent` via `InternalDragEvent`
-- **Fazor**: Has placeholder `InitializeEvents()` - TODO comment
+- **S&box**: Full reflection-based `InitializeEvents()` with `PanelEventAttribute` - ✅ IMPLEMENTED
+- **S&box**: Handles `CopyEvent`, `CutEvent`, `PasteEvent` events - ✅ IMPLEMENTED
+- **S&box**: Handles `DragEvent` via `InternalDragEvent` - ✅ IMPLEMENTED
 
 ### Panel.Layout.cs
-- **S&box**: Has `OnVisibilityChanged()` virtual callback
-- **S&box**: Has `backgroundRenderDirty` tracking
-- **S&box**: Has detailed `HasBackdropFilter` and `HasFilter` calculations
-- **S&box**: Uses `CalcVisible()` from ComputedStyle
-- **Fazor**: Different visibility calculation
+- **S&box**: Has `OnVisibilityChanged()` virtual callback - ✅ IMPLEMENTED
+- **S&box**: Has `backgroundRenderDirty` tracking - N/A (Fazor uses different renderer)
+- **S&box**: Has detailed `HasBackdropFilter` and `HasFilter` calculations - N/A
+- **S&box**: Uses `CalcVisible()` from ComputedStyle - ✅ IMPLEMENTED (HasActiveTransitions check)
 
 ### Label.cs
-- **S&box**: Uses internal `TextBlock` class for rich text rendering
-- **S&box**: Has `SelectionStart`, `SelectionEnd`, `ShouldDrawSelection` properties
-- **S&box**: Has `GetSelectedText()`, `HasSelection()` methods
-- **S&box**: Has `SelectionColor` property
+- **S&box**: Uses internal `TextBlock` class for rich text rendering - ⏳ TextBlock not yet ported
+- **S&box**: Has `SelectionStart`, `SelectionEnd`, `ShouldDrawSelection` properties - ⏳ Not yet
+- **S&box**: Has `GetSelectedText()`, `HasSelection()` methods - ⏳ Not yet
+- **S&box**: Has `SelectionColor` property - ⏳ Not yet
 - **S&box**: Supports HTML parsing with style lookup
 - **S&box**: Has rich hover interaction for links
-- **Fazor**: Uses delegate-based text measurement
-- **Fazor**: Has reflection-based wrapper access (less type-safe)
+- **Fazor**: Uses delegate-based text measurement (works well)
+- **Fazor**: Has reflection-based wrapper access
 
 ### RootPanel.cs
-- **S&box**: Has VR support (`IsVR`, `IsHighQualityVR`)
-- **S&box**: Has `Render()` method using renderer
-- **S&box**: Has parallel style rule building
+- **S&box**: Has VR support (`IsVR`, `IsHighQualityVR`) - N/A for desktop app
+- **S&box**: Has `Render()` method using renderer - Fazor has different architecture
+- **S&box**: Has parallel style rule building - Fazor has single-threaded version
 - **S&box**: Has event attributes for transitions/language
-- **Fazor**: Has DPI scale support (SystemDpiScale)
-- **Fazor**: Has button event interceptor for inspector
-- **Fazor**: Has cursor retrieval method
+- **Fazor**: Has DPI scale support (SystemDpiScale) - Fazor addition
+- **Fazor**: Has button event interceptor for inspector - Fazor addition
+- **Fazor**: Has cursor retrieval method - Fazor addition
 
 ### Styles.cs
 - **S&box**: Uses `StyleParser.GetPropertyFromAlias` for property aliases
