@@ -102,6 +102,8 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
 
     public Panel()
     {
+        InitializeEvents();
+
         YogaNode = new YogaWrapper(this);
         Style = new PanelStyle(this);
         StyleSheet = new StyleSheetCollection(this);
@@ -365,12 +367,42 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     public bool AllowChildSelection { get; set; }
 
     /// <summary>
+    /// Collect selected text from child labels.
+    /// </summary>
+    internal string? CollectSelectedChildrenText(Panel p)
+    {
+        if (!p.IsVisible)
+            return null;
+
+        // TODO: When Label has GetSelectedText(), use it here:
+        // if (p is Label label)
+        // {
+        //     return label.GetSelectedText();
+        // }
+
+        string? selection = null;
+
+        var lines = p.ComputedStyle?.FlexDirection == FlexDirection.Column;
+
+        foreach (var child in p.Children)
+        {
+            var sel = CollectSelectedChildrenText(child);
+            if (string.IsNullOrEmpty(sel)) continue;
+
+            if (selection == null) selection = sel;
+            else selection = $"{selection}{(lines ? "\n" : " ")}{sel}";
+        }
+
+        return selection;
+    }
+
+    /// <summary>
     /// If AllowChildSelection is enabled, select all children text.
     /// TODO: This requires Label.ShouldDrawSelection, SelectionStart, SelectionEnd which are not yet implemented.
     /// </summary>
     public void SelectAllInChildren()
     {
-        // DISABLED: Requires text selection support in Label
+        // TODO: Enable when Label has selection support
         /*
         if (this is Label label)
         {
@@ -379,6 +411,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
             label.SelectionEnd = int.MaxValue;
             return;
         }
+        */
 
         if (HasChildren)
         {
@@ -387,7 +420,6 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 child.SelectAllInChildren();
             }
         }
-        */
     }
 
     /// <summary>
@@ -396,13 +428,14 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     /// </summary>
     public void UnselectAllInChildren()
     {
-        // DISABLED: Requires text selection support in Label
+        // TODO: Enable when Label has selection support
         /*
         if (this is Label label)
         {
             label.ShouldDrawSelection = false;
             return;
         }
+        */
 
         if (HasChildren)
         {
@@ -411,7 +444,6 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 child.UnselectAllInChildren();
             }
         }
-        */
     }
 
     /// <summary>
@@ -432,6 +464,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     public virtual void OnHotloaded()
     {
         LoadStyleSheet();
+        InitializeEvents();
 
         // If our render tree changed, rebuild it
         if (razorLastTreeChecksum != GetRenderTreeChecksum())
@@ -446,6 +479,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
 
         // Remove any null children that may have been deleted
         _children?.RemoveAll(x => x is null);
+        _renderChildren?.RemoveAll(x => x is null);
 
         foreach (var child in Children)
         {

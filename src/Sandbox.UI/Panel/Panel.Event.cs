@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Sandbox.UI;
 
 /// <summary>
@@ -22,11 +24,72 @@ public partial class Panel
 
     /// <summary>
     /// Called on creation and hotload to delete and re-initialize event listeners.
+    /// Matches s&box implementation - uses reflection to find methods with PanelEventAttribute.
     /// </summary>
     protected virtual void InitializeEvents()
     {
         EventListeners?.RemoveAll(x => x.Automatic);
-        // TODO: Add reflection-based event listener initialization from PanelEventAttribute
+
+        var type = GetType();
+
+        foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            var pea = method.GetCustomAttribute<PanelEventAttribute>();
+            if (pea == null) continue;
+
+            var eventName = method.Name.ToLower();
+
+            if (eventName.EndsWith("event")) eventName = eventName[..^5];
+            if (pea.Name != null) eventName = pea.Name.ToLower();
+
+            var args = method.GetParameters();
+
+            if (args.Length == 1)
+            {
+                var argType = args[0].ParameterType;
+                var argCache = new object[1];
+
+                if (argType == typeof(PanelEvent))
+                {
+                    AddAutomaticEventListener(eventName, (x) =>
+                    {
+                        argCache[0] = x;
+                        var response = method.Invoke(this, argCache);
+                        if (response is bool bReturnedValue)
+                        {
+                            x.Propagate = x.Propagate && bReturnedValue;
+                        }
+                    });
+                }
+                else
+                {
+                    AddAutomaticEventListener(eventName, (x) =>
+                    {
+                        argCache[0] = Convert.ChangeType(x.Value, argType)!;
+                        var response = method.Invoke(this, argCache);
+                        if (response is bool bReturnedValue)
+                        {
+                            x.Propagate = x.Propagate && bReturnedValue;
+                        }
+                    });
+                }
+            }
+            else if (args.Length == 0)
+            {
+                AddAutomaticEventListener(eventName, (x) =>
+                {
+                    var response = method.Invoke(this, null);
+                    if (response is bool bReturnedValue)
+                    {
+                        x.Propagate = x.Propagate && bReturnedValue;
+                    }
+                });
+            }
+            else
+            {
+                Console.WriteLine($"PanelEvent {method} - couldn't set up (too many arguments)");
+            }
+        }
     }
 
     internal void AddAutomaticEventListener(string name, Action<PanelEvent> e)
