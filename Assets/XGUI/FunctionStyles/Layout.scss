@@ -5,6 +5,21 @@
 	}
 }
 
+.auto-layout {
+	&.row {
+		flex-direction: row;
+		> *:not(:last-child) {
+			margin-right: 8px;
+		}
+	}
+	&.column {
+		flex-direction: column;
+		> *:not(:last-child) {
+			margin-bottom: 8px;
+		}
+	}
+}
+
 .margin {
 	margin: 8px;
 }
