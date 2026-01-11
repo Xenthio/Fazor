@@ -1,0 +1,123 @@
+@namespace TestApp
+@using Sandbox.UI
+@inherits Panel
+
+<root>
+    <style>
+        .container {
+            padding: 20px;
+            background-color: #1a1a1a;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .test-label {
+            padding: 8px;
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        .description {
+            font-size: 12px;
+            color: #888888;
+            margin-top: 5px;
+        }
+
+        .instruction {
+            font-size: 14px;
+            color: #ffcc00;
+            padding: 10px;
+            background-color: #3a2a00;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <div class="container">
+        <div class="instruction">
+            🧪 TEXT RESIZE BUG TEST
+            <br/>
+            Instructions:
+            <br/>
+            1. Make the window SMALLER (drag the edge) - text should wrap to multiple lines
+            <br/>
+            2. Make the window LARGER again - text should unwrap back to single/fewer lines
+            <br/>
+            <br/>
+            ✅ FIXED: Text now correctly unwraps when the window is resized larger
+            <br/>
+            ❌ BUG (before fix): Text would stay squished/wrapped even after expanding the window
+        </div>
+
+        <!-- Test 1: Normal wrapping text -->
+        <div class="test-section">
+            <div class="section-title">Test 1: Normal Wrapping Text</div>
+            <label class="test-label">
+                This is a long piece of text that will wrap to multiple lines when the window is narrow, and should unwrap back to fewer lines when the window is made wider again. The bug was that it would stay wrapped.
+            </label>
+            <div class="description">
+                Expected: Text wraps when narrow, unwraps when wide
+            </div>
+        </div>
+
+        <!-- Test 2: Even longer text -->
+        <div class="test-section">
+            <div class="section-title">Test 2: Longer Text Block</div>
+            <label class="test-label">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. This text is intentionally long to demonstrate the wrapping and unwrapping behavior.
+            </label>
+            <div class="description">
+                Expected: Wraps on narrow window, expands on wide window
+            </div>
+        </div>
+
+        <!-- Test 3: Multiple paragraphs -->
+        <div class="test-section">
+            <div class="section-title">Test 3: Multiple Short Sentences</div>
+            <label class="test-label">
+                Short sentence one. Short sentence two. Short sentence three. Short sentence four. Short sentence five. Short sentence six. Short sentence seven.
+            </label>
+            <div class="description">
+                Expected: Sentences flow naturally with window size
+            </div>
+        </div>
+
+        <!-- Test 4: Very long word -->
+        <div class="test-section">
+            <div class="section-title">Test 4: Text with Long Words</div>
+            <label class="test-label">
+                This text contains some supercalifragilisticexpialidocious words that are extraordinarily long and should wrap appropriately when the window is resized.
+            </label>
+            <div class="description">
+                Expected: Long words break appropriately
+            </div>
+        </div>
+    </div>
+</root>
+
+@code {
+    public TextResizeTest()
+    {
+        AddClass("text-resize-test");
+    }
+}
