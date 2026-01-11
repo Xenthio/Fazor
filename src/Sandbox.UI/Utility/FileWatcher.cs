@@ -85,15 +85,21 @@ public sealed class FileWatcher : IDisposable
 
     /// <summary>
     /// Check if this watcher is interested in a specific file.
+    /// Uses exact path matching to avoid false positives.
     /// </summary>
     private bool InterestedInFile(string file)
     {
+        // If no specific files registered, require explicit file registration
+        // to avoid excessive callbacks. This is a safety measure.
         if (_watchedFiles.Count == 0)
-            return true; // No specific files = watch all
+            return false;
 
+        // Normalize for comparison
+        file = NormalizePath(file);
+
+        // Use exact path matching only
         return _watchedFiles.Any(f => 
-            string.Equals(f, file, StringComparison.OrdinalIgnoreCase) ||
-            file.EndsWith(f, StringComparison.OrdinalIgnoreCase));
+            string.Equals(f, file, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -126,11 +132,11 @@ public sealed class FileWatcher : IDisposable
 
                 _directoryWatchers[directory] = watcher;
                 
-                Console.WriteLine($"[FileWatcher] Started watching: {directory}");
+                Log.Info($"[FileWatcher] Started watching: {directory}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[FileWatcher] Failed to watch directory '{directory}': {ex.Message}");
+                Log.Warning($"[FileWatcher] Failed to watch directory '{directory}': {ex.Message}");
             }
         }
     }
@@ -148,7 +154,7 @@ public sealed class FileWatcher : IDisposable
 
     private static void OnWatcherError(object sender, ErrorEventArgs e)
     {
-        Console.WriteLine($"[FileWatcher] Error: {e.GetException()?.Message}");
+        Log.Warning($"[FileWatcher] Error: {e.GetException()?.Message}");
     }
 
     private static void AddChangedFile(string filePath)
@@ -223,7 +229,7 @@ public sealed class FileWatcher : IDisposable
         // Log what changed
         foreach (var file in changedFiles)
         {
-            Console.WriteLine($"[FileWatcher] File changed: {file}");
+            Log.Info($"[FileWatcher] File changed: {file}");
         }
 
         // Notify watchers
@@ -262,7 +268,7 @@ public sealed class FileWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FileWatcher] Error in callback: {ex.Message}");
+            Log.Warning($"[FileWatcher] Error in callback: {ex.Message}");
         }
     }
 
