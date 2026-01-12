@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Sandbox.UI;
 
 /// <summary>
@@ -13,6 +15,28 @@ public partial class Panel
     /// String value for the panel. Can be used to store simple string data.
     /// </summary>
     public string? StringValue { get; set; }
+
+    /// <summary>
+    /// Same as <see cref="SetProperty"/>, but first tries to set the property on the panel object using reflection,
+    /// then processes any special properties such as <c>class</c>.
+    /// This allows setting properties with their native types (bool, int, etc.) without string conversion.
+    /// </summary>
+    /// <param name="name">Name of the property to modify.</param>
+    /// <param name="value">Value to assign to the property.</param>
+    public virtual void SetPropertyObject(string name, object? value)
+    {
+        // Try to find a property with this name using reflection
+        var prop = GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+
+        if (prop != null && value != null && prop.PropertyType.IsAssignableFrom(value.GetType()))
+        {
+            prop.SetValue(this, value);
+            return;
+        }
+
+        // Fall back to string-based SetProperty
+        SetProperty(name, Convert.ToString(value) ?? "");
+    }
 
     /// <summary>
     /// Set a property on the panel, such as special properties (class, id, style and value, etc.)
@@ -54,6 +78,67 @@ public partial class Panel
 
         // Store as attribute for derived classes to access
         SetAttribute(name, value);
+        
+        // Try to set using reflection (like S&box's TypeLibrary.SetProperty)
+        TrySetPropertyViaReflection(name, value);
+    }
+
+    /// <summary>
+    /// Try to set a property via reflection, converting the string value to the appropriate type.
+    /// </summary>
+    private void TrySetPropertyViaReflection(string name, string value)
+    {
+        var prop = GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+        
+        if (prop == null || !prop.CanWrite)
+            return;
+
+        try
+        {
+            object? convertedValue = null;
+            var propType = prop.PropertyType;
+            
+            // Handle nullable types
+            var underlyingType = Nullable.GetUnderlyingType(propType) ?? propType;
+            
+            if (underlyingType == typeof(bool))
+            {
+                convertedValue = value.Equals("true", StringComparison.OrdinalIgnoreCase) || value == "1";
+            }
+            else if (underlyingType == typeof(int))
+            {
+                if (int.TryParse(value, out var intVal))
+                    convertedValue = intVal;
+            }
+            else if (underlyingType == typeof(float))
+            {
+                if (float.TryParse(value, out var floatVal))
+                    convertedValue = floatVal;
+            }
+            else if (underlyingType == typeof(double))
+            {
+                if (double.TryParse(value, out var doubleVal))
+                    convertedValue = doubleVal;
+            }
+            else if (underlyingType == typeof(string))
+            {
+                convertedValue = value;
+            }
+            else if (underlyingType.IsEnum)
+            {
+                if (Enum.TryParse(underlyingType, value, true, out var enumVal))
+                    convertedValue = enumVal;
+            }
+            
+            if (convertedValue != null)
+            {
+                prop.SetValue(this, convertedValue);
+            }
+        }
+        catch
+        {
+            // Silently ignore conversion failures
+        }
     }
 
     /// <summary>
