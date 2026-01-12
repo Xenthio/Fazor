@@ -225,6 +225,14 @@ public class ComboBox : Button
             _override = value;
             return;
         }
+        if (name == "value")
+        {
+            // Store the value to be selected after options are populated
+            _override = value;
+            // Also set the Value property directly in case options are already available
+            Value = value;
+            return;
+        }
         base.SetProperty(name, value);
     }
     protected override void OnParametersSet()

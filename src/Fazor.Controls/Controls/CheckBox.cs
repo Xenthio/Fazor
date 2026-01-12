@@ -66,7 +66,8 @@ public class CheckBox : Panel
     {
         if (name == "checked" || name == "value")
         {
-            Checked = value == "true" || value == "1";
+            // Parse boolean case-insensitively, including "True"/"False" from .ToString()
+            Checked = value.Equals("true", StringComparison.OrdinalIgnoreCase) || value == "1";
             return;
         }
         if (name == "text")
