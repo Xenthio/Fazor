@@ -173,6 +173,27 @@ These are files that exist in Fazor but not in S&box's UI system. Many are becau
 
 ## 6. Implementation Differences Fixed in This PR
 
+### Panel.Property.cs - SetPropertyObject (NEW - Critical Fix)
+- **S&box**: Uses `SetPropertyObject(name, object value)` with reflection to set properties with native types
+- **Fazor**: Was only using `SetProperty(name, string value)` which converted everything to string
+- **Fix**: Added `SetPropertyObject` that uses reflection to set properties directly, and `TrySetPropertyViaReflection` for type conversion
+- This is critical for proper value binding from Razor (booleans, integers, etc.)
+
+### Panel.Property.cs - OnParametersSetAsync
+- **S&box**: Has both sync `OnParametersSet()` and async `OnParametersSetAsync()` lifecycle methods
+- **Fazor**: Only had sync version
+- **Fix**: Added `OnParametersSetAsync()` with proper async task tracking in `ParametersChanged()`
+
+### Panel.cs - TickInternal
+- **S&box**: Defers `OnAfterTreeRender()` until AFTER all children have been processed
+- **Fazor**: Was calling it immediately after `InternalRenderTree()`
+- **Fix**: Updated to match S&box's order - children tick first, then OnAfterTreeRender
+
+### PanelRenderTreeBuilder.cs - AddAttributeObject
+- **S&box**: Uses `SetPropertyObject` for object attributes
+- **Fazor**: Was converting to string with `$"{value}"`
+- **Fix**: Now calls `SetPropertyObject` to preserve native types
+
 ### StyleParser.cs
 - **S&box**: Uses `GetPropertyFromAlias()` for CSS property aliasing - ✅ IMPLEMENTED
 - **Aliases**: `color -> font-color`, `background-image-tint -> background-tint`
