@@ -205,11 +205,20 @@ public partial class Panel
     }
 
     /// <summary>
-    /// Called when parameters are set on the panel (e.g., from Razor).
-    /// Override this to handle parameter updates.
+    /// Called after all templated panel binds have been set.
+    /// Override this for synchronous parameter handling.
     /// </summary>
     protected virtual void OnParametersSet()
     {
         // Base implementation does nothing
+    }
+
+    /// <summary>
+    /// Called after all templated panel binds have been set.
+    /// Override this for async parameter handling (called before OnParametersSet).
+    /// </summary>
+    protected virtual Task OnParametersSetAsync()
+    {
+        return Task.CompletedTask;
     }
 }

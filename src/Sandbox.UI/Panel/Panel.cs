@@ -224,6 +224,9 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 StyleSelectorsChanged(true, true);
             }
 
+            var didBuildRenderTree = false;
+            var isFirstRender = renderTree == null;
+
             // Process Razor render tree if dirty
             InternalTreeBinds();
             
@@ -239,9 +242,8 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 
                 if (razorTreeDirty)
                 {
-                    bool firstTime = renderTree == null;
                     InternalRenderTree();
-                    OnAfterTreeRender(firstTime);
+                    didBuildRenderTree = true;
                 }
             }
 
@@ -249,7 +251,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
             UpdateBeforeAfterElements();
 
             // Tick styles if dirty or animating
-            if (Style.IsDirty || HasActiveTransitions || (ComputedStyle?.HasAnimation ?? false))
+            if (Style.IsDirty || HasActiveTransitions || (ComputedStyle?.HasAnimation ?? false) || ScrollVelocity != Vector2.Zero || IsDragScrolling)
             {
                 SetNeedsPreLayout();
             }
@@ -261,6 +263,12 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 {
                     _children[i]?.TickInternal();
                 }
+            }
+
+            // Defer OnAfterTreeRender so that children are all processed too (matches S&box)
+            if (didBuildRenderTree)
+            {
+                OnAfterTreeRender(isFirstRender);
             }
 
             RunPendingEvents();
@@ -593,32 +601,55 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     /// True when parameters have been set and OnParametersSet needs to be called
     /// </summary>
     private bool _templateBindsChanged = true;
+    private Task? _parametersSetTask;
     
     /// <summary>
-    /// Parameter change notification - marks panel for OnParametersSet callback
+    /// Parameter change notification - marks panel for OnParametersSet callback.
+    /// Matches S&box's implementation.
     /// </summary>
     public void ParametersChanged(bool immediately)
     {
         _templateBindsChanged = true;
         
+        // Task is still running
+        if (_parametersSetTask != null && !_parametersSetTask.IsCompleted)
+            return;
+        
         if (immediately)
         {
             _templateBindsChanged = false;
             razorTreeDirty = true;
-            OnParametersSetInternal();
+            _parametersSetTask = OnParametersSetInternalAsync();
         }
     }
     
-    internal void OnParametersSetInternal()
+    internal async Task OnParametersSetInternalAsync()
     {
+        try
+        {
+            await OnParametersSetAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"Exception in OnParametersSetAsync: {e.Message}");
+        }
+        
+        if (!IsValid())
+            return;
+        
         try
         {
             OnParametersSet();
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Exception in OnParametersSet: {e.Message}");
+            Log.Warning($"Exception in OnParametersSet: {e.Message}");
         }
+        
         StateHasChanged();
     }
 }
