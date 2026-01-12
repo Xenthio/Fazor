@@ -28,10 +28,23 @@ public partial class Panel
         // Try to find a property with this name using reflection
         var prop = GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
 
-        if (prop != null && value != null && prop.PropertyType.IsAssignableFrom(value.GetType()))
+        if (prop != null && prop.CanWrite)
         {
-            prop.SetValue(this, value);
-            return;
+            // Check if the property can accept this value (including null for nullable types)
+            var propType = prop.PropertyType;
+            var isNullable = !propType.IsValueType || Nullable.GetUnderlyingType(propType) != null;
+            
+            if (value == null && isNullable)
+            {
+                prop.SetValue(this, null);
+                return;
+            }
+            
+            if (value != null && propType.IsAssignableFrom(value.GetType()))
+            {
+                prop.SetValue(this, value);
+                return;
+            }
         }
 
         // Fall back to string-based SetProperty
@@ -96,41 +109,64 @@ public partial class Panel
         try
         {
             object? convertedValue = null;
+            bool conversionSucceeded = false;
             var propType = prop.PropertyType;
             
             // Handle nullable types
             var underlyingType = Nullable.GetUnderlyingType(propType) ?? propType;
+            var isNullable = Nullable.GetUnderlyingType(propType) != null || !propType.IsValueType;
+            
+            // Empty string to nullable type should set null
+            if (string.IsNullOrEmpty(value) && isNullable)
+            {
+                prop.SetValue(this, null);
+                return;
+            }
             
             if (underlyingType == typeof(bool))
             {
                 convertedValue = value.Equals("true", StringComparison.OrdinalIgnoreCase) || value == "1";
+                conversionSucceeded = true;
             }
             else if (underlyingType == typeof(int))
             {
                 if (int.TryParse(value, out var intVal))
+                {
                     convertedValue = intVal;
+                    conversionSucceeded = true;
+                }
             }
             else if (underlyingType == typeof(float))
             {
                 if (float.TryParse(value, out var floatVal))
+                {
                     convertedValue = floatVal;
+                    conversionSucceeded = true;
+                }
             }
             else if (underlyingType == typeof(double))
             {
                 if (double.TryParse(value, out var doubleVal))
+                {
                     convertedValue = doubleVal;
+                    conversionSucceeded = true;
+                }
             }
             else if (underlyingType == typeof(string))
             {
                 convertedValue = value;
+                conversionSucceeded = true;
             }
             else if (underlyingType.IsEnum)
             {
                 if (Enum.TryParse(underlyingType, value, true, out var enumVal))
+                {
                     convertedValue = enumVal;
+                    conversionSucceeded = true;
+                }
             }
             
-            if (convertedValue != null)
+            if (conversionSucceeded)
             {
                 prop.SetValue(this, convertedValue);
             }
