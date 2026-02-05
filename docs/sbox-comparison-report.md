@@ -22,6 +22,15 @@ This report documents the differences between Fazor's Sandbox.UI and S&box's UI 
 | `Panel/Event/CutCopyPasteEvent.cs` | Copy/Cut/Paste events | MEDIUM | ✅ IMPLEMENTED |
 | `Panel/Event/PanelEventAttribute.cs` | Attribute-based event listeners | MEDIUM | ✅ IMPLEMENTED |
 
+### SCSS Mixins (NEW)
+
+| File | Description | Priority | Status |
+|------|-------------|----------|--------|
+| `Parser/Mixin.cs` | MixinDefinition class | HIGH | ✅ IMPLEMENTED |
+| `Parser/StyleParser.Mixin.cs` | Mixin parsing (@mixin/@include) | HIGH | ✅ IMPLEMENTED |
+| `StyleSheet.cs` | Mixin storage (SetMixin/TryGetMixin) | HIGH | ✅ IMPLEMENTED |
+| `StyleParser.Sheet.cs` | @include in blocks + ProcessExpandedMixinContent | HIGH | ✅ IMPLEMENTED |
+
 ### VirtualLayouts (Performance Optimization)
 
 | File | Description | Priority | Status |
