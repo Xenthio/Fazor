@@ -171,9 +171,12 @@ public partial class Panel
                 prop.SetValue(this, convertedValue);
             }
         }
-        catch
+        catch (System.Exception ex)
         {
-            // Silently ignore conversion failures
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[Panel] Failed to set property '{name}' via reflection with value '{value}': {ex}");
+#endif
+            // Silently ignore conversion failures in release builds
         }
     }
 

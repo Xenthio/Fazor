@@ -267,8 +267,22 @@ internal static partial class StyleParser
 
 					if ( TryExpandInclude( content, contentBlock, sheet, p.FileAndLine, out var mixinName, out var expandedContent ) )
 					{
-						// Pass 'node' as the context for nested selector resolution
-						ProcessExpandedMixinContent( expandedContent, styles, sheet, node, p.FileName, p.CurrentLine );
+						IncludeLoops++;
+						if ( IncludeLoops > 64 )
+						{
+							IncludeLoops--;
+							throw new Exception( $"Too many nested @include expansions (possible circular reference) {p.FileAndLine}" );
+						}
+
+						try
+						{
+							// Pass 'node' as the context for nested selector resolution
+							ProcessExpandedMixinContent( expandedContent, styles, sheet, node, p.FileName, p.CurrentLine );
+						}
+						finally
+						{
+							IncludeLoops--;
+						}
 						p = p.SkipWhitespaceAndNewlines();
 						continue;
 					}
@@ -284,8 +298,22 @@ internal static partial class StyleParser
 				// Check if this is an @include directive (without content block)
 				if ( TryExpandInclude( content, null, sheet, p.FileAndLine, out var mixinName, out var expandedContent ) )
 				{
-					// Pass 'node' as the context for nested selector resolution
-					ProcessExpandedMixinContent( expandedContent, styles, sheet, node, p.FileName, p.CurrentLine );
+					IncludeLoops++;
+					if ( IncludeLoops > 64 )
+					{
+						IncludeLoops--;
+						throw new Exception( $"Too many nested @include expansions (possible circular reference) {p.FileAndLine}" );
+					}
+
+					try
+					{
+						// Pass 'node' as the context for nested selector resolution
+						ProcessExpandedMixinContent( expandedContent, styles, sheet, node, p.FileName, p.CurrentLine );
+					}
+					finally
+					{
+						IncludeLoops--;
+					}
 				}
 				else
 				{
@@ -387,7 +415,21 @@ internal static partial class StyleParser
 					// Could be an @include
 					if ( TryExpandInclude( propertyName, sheet, p.FileAndLine, out _, out var nestedExpanded ) )
 					{
-						ProcessExpandedMixinContent( nestedExpanded, styles, sheet, currentNode, fileName, lineOffset );
+						IncludeLoops++;
+						if ( IncludeLoops > 64 )
+						{
+							IncludeLoops--;
+							throw new Exception( $"Too many nested @include expansions (possible circular reference) {p.FileAndLine}" );
+						}
+
+						try
+						{
+							ProcessExpandedMixinContent( nestedExpanded, styles, sheet, currentNode, fileName, lineOffset );
+						}
+						finally
+						{
+							IncludeLoops--;
+						}
 					}
 					p.Pointer++;
 				}

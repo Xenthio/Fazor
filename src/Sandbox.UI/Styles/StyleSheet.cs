@@ -298,7 +298,7 @@ public class StyleSheet
 	/// <summary>
 	/// Get a mixin by name or null if not found.
 	/// </summary>
-	public MixinDefinition GetMixin( string name )
+	public MixinDefinition? GetMixin( string name )
 	{
 		Mixins.TryGetValue( name, out var mixin );
 		return mixin;
