@@ -1,3 +1,5 @@
+using Sandbox.UI.Construct;
+
 namespace Sandbox.UI;
 
 /// <summary>
@@ -6,6 +8,11 @@ namespace Sandbox.UI;
 /// </summary>
 public partial class Panel
 {
+    /// <summary>
+    /// Quickly add common panels with certain values as children.
+    /// </summary>
+    public PanelCreator Add => new(this);
+
     /// <inheritdoc cref="Children"/>
     internal List<Panel>? _children;
 
@@ -107,6 +114,10 @@ public partial class Panel
             OnChildRemoved(p);
             IndexesDirty = true;
             SetNeedsPreLayout();
+        }
+        else
+        {
+            throw new Exception("Removed Child but didn't have child!");
         }
     }
 

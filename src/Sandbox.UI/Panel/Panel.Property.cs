@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Sandbox.UI;
 
 /// <summary>
@@ -13,6 +15,41 @@ public partial class Panel
     /// String value for the panel. Can be used to store simple string data.
     /// </summary>
     public string? StringValue { get; set; }
+
+    /// <summary>
+    /// Same as <see cref="SetProperty"/>, but first tries to set the property on the panel object using reflection,
+    /// then processes any special properties such as <c>class</c>.
+    /// This allows setting properties with their native types (bool, int, etc.) without string conversion.
+    /// </summary>
+    /// <param name="name">Name of the property to modify.</param>
+    /// <param name="value">Value to assign to the property.</param>
+    public virtual void SetPropertyObject(string name, object? value)
+    {
+        // Try to find a property with this name using reflection
+        var prop = GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+
+        if (prop != null && prop.CanWrite)
+        {
+            // Check if the property can accept this value (including null for nullable types)
+            var propType = prop.PropertyType;
+            var isNullable = !propType.IsValueType || Nullable.GetUnderlyingType(propType) != null;
+            
+            if (value == null && isNullable)
+            {
+                prop.SetValue(this, null);
+                return;
+            }
+            
+            if (value != null && propType.IsAssignableFrom(value.GetType()))
+            {
+                prop.SetValue(this, value);
+                return;
+            }
+        }
+
+        // Fall back to string-based SetProperty
+        SetProperty(name, Convert.ToString(value) ?? "");
+    }
 
     /// <summary>
     /// Set a property on the panel, such as special properties (class, id, style and value, etc.)
@@ -54,6 +91,93 @@ public partial class Panel
 
         // Store as attribute for derived classes to access
         SetAttribute(name, value);
+        
+        // Try to set using reflection (like S&box's TypeLibrary.SetProperty)
+        TrySetPropertyViaReflection(name, value);
+    }
+
+    /// <summary>
+    /// Try to set a property via reflection, converting the string value to the appropriate type.
+    /// </summary>
+    private void TrySetPropertyViaReflection(string name, string value)
+    {
+        var prop = GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+        
+        if (prop == null || !prop.CanWrite)
+            return;
+
+        try
+        {
+            object? convertedValue = null;
+            bool conversionSucceeded = false;
+            var propType = prop.PropertyType;
+            
+            // Handle nullable types
+            var underlyingType = Nullable.GetUnderlyingType(propType) ?? propType;
+            var isNullable = Nullable.GetUnderlyingType(propType) != null || !propType.IsValueType;
+            
+            // Empty string to nullable type should set null
+            if (string.IsNullOrEmpty(value) && isNullable)
+            {
+                prop.SetValue(this, null);
+                return;
+            }
+            
+            if (underlyingType == typeof(bool))
+            {
+                convertedValue = value.Equals("true", StringComparison.OrdinalIgnoreCase) || value == "1";
+                conversionSucceeded = true;
+            }
+            else if (underlyingType == typeof(int))
+            {
+                if (int.TryParse(value, out var intVal))
+                {
+                    convertedValue = intVal;
+                    conversionSucceeded = true;
+                }
+            }
+            else if (underlyingType == typeof(float))
+            {
+                if (float.TryParse(value, out var floatVal))
+                {
+                    convertedValue = floatVal;
+                    conversionSucceeded = true;
+                }
+            }
+            else if (underlyingType == typeof(double))
+            {
+                if (double.TryParse(value, out var doubleVal))
+                {
+                    convertedValue = doubleVal;
+                    conversionSucceeded = true;
+                }
+            }
+            else if (underlyingType == typeof(string))
+            {
+                convertedValue = value;
+                conversionSucceeded = true;
+            }
+            else if (underlyingType.IsEnum)
+            {
+                if (Enum.TryParse(underlyingType, value, true, out var enumVal))
+                {
+                    convertedValue = enumVal;
+                    conversionSucceeded = true;
+                }
+            }
+            
+            if (conversionSucceeded)
+            {
+                prop.SetValue(this, convertedValue);
+            }
+        }
+        catch (System.Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[Panel] Failed to set property '{name}' via reflection with value '{value}': {ex}");
+#endif
+            // Silently ignore conversion failures in release builds
+        }
     }
 
     /// <summary>
@@ -120,11 +244,20 @@ public partial class Panel
     }
 
     /// <summary>
-    /// Called when parameters are set on the panel (e.g., from Razor).
-    /// Override this to handle parameter updates.
+    /// Called after all templated panel binds have been set.
+    /// Override this for synchronous parameter handling.
     /// </summary>
     protected virtual void OnParametersSet()
     {
         // Base implementation does nothing
+    }
+
+    /// <summary>
+    /// Called after all templated panel binds have been set.
+    /// Override this for async parameter handling (called before OnParametersSet).
+    /// </summary>
+    protected virtual Task OnParametersSetAsync()
+    {
+        return Task.CompletedTask;
     }
 }

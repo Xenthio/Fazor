@@ -181,7 +181,9 @@ public partial class PanelRenderTreeBuilder : Microsoft.AspNetCore.Components.Re
 		if ( CurrentBlock.CheckCacheValue( HashCode.Combine( scope.Element, attrName ), value?.GetHashCode() ?? 0 ) )
 			return;
 
-		scope.Element?.SetProperty( attrName, $"{value}" );
+		// Use SetPropertyObject to allow reflection-based property setting with native types
+		// This matches S&box's behavior where properties can be set with their actual types
+		scope.Element?.SetPropertyObject( attrName, value );
 	}
 
 	/// <summary>

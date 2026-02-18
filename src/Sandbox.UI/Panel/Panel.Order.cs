@@ -49,6 +49,6 @@ public partial class Panel
 		if (previousSibling.SiblingIndex == SiblingIndex - 1)
 			return;
 
-		Parent.SetChildIndex(this, previousSibling.SiblingIndex + 1);
+		Parent.SetChildIndex(this, previousSibling.SiblingIndex);
 	}
 }

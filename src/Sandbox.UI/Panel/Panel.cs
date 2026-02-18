@@ -102,6 +102,8 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
 
     public Panel()
     {
+        InitializeEvents();
+
         YogaNode = new YogaWrapper(this);
         Style = new PanelStyle(this);
         StyleSheet = new StyleSheetCollection(this);
@@ -222,6 +224,9 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 StyleSelectorsChanged(true, true);
             }
 
+            var didBuildRenderTree = false;
+            var isFirstRender = renderTree == null;
+
             // Process Razor render tree if dirty
             InternalTreeBinds();
             
@@ -237,9 +242,8 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 
                 if (razorTreeDirty)
                 {
-                    bool firstTime = renderTree == null;
                     InternalRenderTree();
-                    OnAfterTreeRender(firstTime);
+                    didBuildRenderTree = true;
                 }
             }
 
@@ -247,7 +251,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
             UpdateBeforeAfterElements();
 
             // Tick styles if dirty or animating
-            if (Style.IsDirty || HasActiveTransitions || (ComputedStyle?.HasAnimation ?? false))
+            if (Style.IsDirty || HasActiveTransitions || (ComputedStyle?.HasAnimation ?? false) || ScrollVelocity != Vector2.Zero || IsDragScrolling)
             {
                 SetNeedsPreLayout();
             }
@@ -259,6 +263,12 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 {
                     _children[i]?.TickInternal();
                 }
+            }
+
+            // Defer OnAfterTreeRender so that children are all processed too (matches S&box)
+            if (didBuildRenderTree)
+            {
+                OnAfterTreeRender(isFirstRender);
             }
 
             RunPendingEvents();
@@ -365,12 +375,42 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     public bool AllowChildSelection { get; set; }
 
     /// <summary>
+    /// Collect selected text from child labels.
+    /// </summary>
+    internal string? CollectSelectedChildrenText(Panel p)
+    {
+        if (!p.IsVisible)
+            return null;
+
+        // TODO: When Label has GetSelectedText(), use it here:
+        // if (p is Label label)
+        // {
+        //     return label.GetSelectedText();
+        // }
+
+        string? selection = null;
+
+        var lines = p.ComputedStyle?.FlexDirection == FlexDirection.Column;
+
+        foreach (var child in p.Children)
+        {
+            var sel = CollectSelectedChildrenText(child);
+            if (string.IsNullOrEmpty(sel)) continue;
+
+            if (selection == null) selection = sel;
+            else selection = $"{selection}{(lines ? "\n" : " ")}{sel}";
+        }
+
+        return selection;
+    }
+
+    /// <summary>
     /// If AllowChildSelection is enabled, select all children text.
     /// TODO: This requires Label.ShouldDrawSelection, SelectionStart, SelectionEnd which are not yet implemented.
     /// </summary>
     public void SelectAllInChildren()
     {
-        // DISABLED: Requires text selection support in Label
+        // TODO: Enable when Label has selection support
         /*
         if (this is Label label)
         {
@@ -379,6 +419,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
             label.SelectionEnd = int.MaxValue;
             return;
         }
+        */
 
         if (HasChildren)
         {
@@ -387,7 +428,6 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 child.SelectAllInChildren();
             }
         }
-        */
     }
 
     /// <summary>
@@ -396,13 +436,14 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     /// </summary>
     public void UnselectAllInChildren()
     {
-        // DISABLED: Requires text selection support in Label
+        // TODO: Enable when Label has selection support
         /*
         if (this is Label label)
         {
             label.ShouldDrawSelection = false;
             return;
         }
+        */
 
         if (HasChildren)
         {
@@ -411,7 +452,6 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
                 child.UnselectAllInChildren();
             }
         }
-        */
     }
 
     /// <summary>
@@ -432,6 +472,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     public virtual void OnHotloaded()
     {
         LoadStyleSheet();
+        InitializeEvents();
 
         // If our render tree changed, rebuild it
         if (razorLastTreeChecksum != GetRenderTreeChecksum())
@@ -446,6 +487,7 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
 
         // Remove any null children that may have been deleted
         _children?.RemoveAll(x => x is null);
+        _renderChildren?.RemoveAll(x => x is null);
 
         foreach (var child in Children)
         {
@@ -559,32 +601,55 @@ public partial class Panel : IDisposable, IStyleTarget, IComponent
     /// True when parameters have been set and OnParametersSet needs to be called
     /// </summary>
     private bool _templateBindsChanged = true;
+    private Task? _parametersSetTask;
     
     /// <summary>
-    /// Parameter change notification - marks panel for OnParametersSet callback
+    /// Parameter change notification - marks panel for OnParametersSet callback.
+    /// Matches S&box's implementation.
     /// </summary>
     public void ParametersChanged(bool immediately)
     {
         _templateBindsChanged = true;
         
+        // Task is still running
+        if (_parametersSetTask != null && !_parametersSetTask.IsCompleted)
+            return;
+        
         if (immediately)
         {
             _templateBindsChanged = false;
             razorTreeDirty = true;
-            OnParametersSetInternal();
+            _parametersSetTask = OnParametersSetInternalAsync();
         }
     }
     
-    internal void OnParametersSetInternal()
+    internal async Task OnParametersSetInternalAsync()
     {
+        try
+        {
+            await OnParametersSetAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"Exception in OnParametersSetAsync: {e.Message}");
+        }
+        
+        if (!IsValid())
+            return;
+        
         try
         {
             OnParametersSet();
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Exception in OnParametersSet: {e.Message}");
+            Log.Warning($"Exception in OnParametersSet: {e.Message}");
         }
+        
         StateHasChanged();
     }
 }

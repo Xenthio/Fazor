@@ -8,9 +8,8 @@ namespace Sandbox.UI
 		/// </summary>
 		public override bool Set( string property, string value )
 		{
-			// CSS standard: "color" is an alias for "font-color"
-			if ( property == "color" )
-				property = "font-color";
+			// Use property alias lookup like s&box does
+			property = StyleParser.GetPropertyFromAlias( property );
 
 			// Handle border shorthand properties and other common CSS properties
 			switch ( property )
@@ -177,10 +176,6 @@ namespace Sandbox.UI
 
 				case "background-repeat":
 					return SetBackgroundRepeat( value );
-
-				case "background-image-tint":
-					property = "background-tint";
-					break;
 
 				case "image-rendering":
 					return SetImageRendering( value );
